@@ -1,2 +1,7 @@
 .DS_STORE
+
+# ChuGL files
 *.ini
+
+# Scratch workspace for testing
+scratch/
