@@ -129,9 +129,13 @@ public class MidiInNode extends MidiNode {
         initJacks => this.numJacks;
         IOType.OUTPUT => int jackType;
 
+        // Parent class constructor
+        // Need to call this here to set nodeID
+        MidiInNode(deviceID, channel);
+
         for (int idx; idx < initJacks; idx++) {
             Jack jack(idx, jackType);
-            DropdownMenu jackMenu(MidiDataType.allTypes);
+            DropdownMenu jackMenu(MidiDataType.allTypes, this.nodeID, idx);
             Step out(0.);
 
             // Jack Position
@@ -152,8 +156,8 @@ public class MidiInNode extends MidiNode {
             jackMenu --> this;
         }
 
-        // Parent class constructor
-        MidiInNode(deviceID, channel);
+        // // Parent class constructor
+        // MidiInNode(deviceID, channel);
     }
 
     fun @construct(int deviceID, int channel) {

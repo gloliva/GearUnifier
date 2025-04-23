@@ -74,9 +74,18 @@ public class DropdownMenu extends GGen {
     // Menu Management
     Enum menuItems[];
     int selectedIdx;
+    int expanded;
+
+    // Menu Lookup ID
+    string menuID;
 
     fun @construct(Enum menuItems[]) {
+        DropdownMenu(menuItems, "", 0);
+    }
+
+    fun @construct(Enum menuItems[], string parentNodeID, int menuNum) {
         menuItems @=> this.menuItems;
+        parentNodeID + " Menu" + Std.itoa(menuNum) => this.menuID;
 
         // Handle menu items
         for (int idx; idx < this.menuItems.size(); idx++) {
@@ -84,6 +93,7 @@ public class DropdownMenu extends GGen {
 
             // Position
             idx * -0.5 => box.posY;
+            0.1 => box.posZ;
 
             // Handle borders
             if (idx == 0 && this.menuItems.size() > 1) {
@@ -111,19 +121,25 @@ public class DropdownMenu extends GGen {
     }
 
     fun void expand() {
+        if (this.expanded) return;
+
         for (int idx; idx < this.menuItems.size(); idx++) {
             this.menuItemBoxes[idx] --> this;
         }
 
         this.selectedBox --< this;
+        1 => this.expanded;
     }
 
-    fun void collpase() {
+    fun void collapse() {
+        if (!this.expanded) return;
+
         for (int idx; idx < this.menuItems.size(); idx++) {
             this.menuItemBoxes[idx] --< this;
         }
 
         this.selectedBox --> this;
+        0 => this.expanded;
     }
 }
 

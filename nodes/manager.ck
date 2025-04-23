@@ -1,4 +1,5 @@
 // Imports
+@import "../ui/menu.ck"
 @import "base.ck"
 
 
@@ -11,6 +12,10 @@ public class NodeManager {
     Connection nodeConnections[0];
     Connection @ currConnection;
     int openConnection;
+
+    // Menus
+    int openMenu;
+    DropdownMenu @ currMenu;
 
     fun void addNode(Node node) {
         this.nodesOnScreen << node;
@@ -40,13 +45,14 @@ public class NodeManager {
             // Mouse Click Down
             if (GWindow.mouseLeftDown() == 1) {
 
+                // Check if clicking on an on-screen Node
                 for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
                     this.nodesOnScreen[nodeIdx] @=> Node node;
                     node.mouseHoverContentBox(mousePos) => int nodeHover;
 
                     // Check if mouse is over this node
                     if (nodeHover == 1) {
-                        // Check if mouse is over an Input/Output jack
+                        // Check if clicking on an Input/Output jack
                         node.mouseHoverOverJack(mousePos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.jacks[jackIdx] @=> Jack jack;
@@ -84,14 +90,30 @@ public class NodeManager {
                                     null => this.currConnection;
                                 }
                             }
-                            // Check if Jack is input or output
-                            <<< "Hovered over node:", node.nodeID, "at position", mousePos.x, mousePos.y  >>>;
-                            <<< "Hovered over jack:", node.jacks[jackIdx].name() >>>;
                         }
 
+                        // Check if clicking on a menu
                         node.mouseHoverOverDropdownMenu(mousePos) => int dropdownMenuIdx;
                         if (dropdownMenuIdx != -1) {
-                            // TODO: do stuff here
+                            <<< "Clicked on", node.menus[dropdownMenuIdx].menuID >>>;
+
+                            // No existing menu opened
+                            if (!this.openMenu) {
+                                node.menus[dropdownMenuIdx] @=> this.currMenu;
+                                this.currMenu.expand();
+                                1 => this.openMenu;
+
+                            // Otherwise check if clicking active menu
+                            } else {
+                                if (node.menus[dropdownMenuIdx].menuID == this.currMenu.menuID) {
+                                    // Check what menu item was selected
+                                }
+                            }
+                        // Close active menu if Menu is open and click outside of menu
+                        } else if (dropdownMenuIdx == -1 && this.openMenu) {
+                            this.currMenu.collapse();
+                            0 => this.openMenu;
+                            null => this.currMenu;
                         }
                     }
                 }
