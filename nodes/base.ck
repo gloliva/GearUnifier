@@ -81,10 +81,10 @@ public class Node extends GGen {
         for (int idx; idx < this.menus.size(); idx++) {
             this.menus[idx] @=> DropdownMenu menu;
 
-            this.posX() + menu.posX() * this.scaX() => float centerX;
-            this.posY() + menu.posY() * this.scaY() => float centerY;
-            (menu.scaX() * this.scaX()) / 2.0 => float halfW;
-            (menu.scaY() * this.scaY()) / 2.0 => float halfH;
+            this.posX() + (menu.posX() * this.scaX()) + (menu.selectedBox.box.posX() * this.scaX()) => float centerX;
+            this.posY() + (menu.posY() * this.scaY()) + (menu.selectedBox.box.posY() * this.scaY()) => float centerY;
+            (menu.selectedBox.box.scaX() * menu.scaX() * this.scaX()) / 2.0 => float halfW;
+            (menu.selectedBox.box.scaY() * menu.scaY() * this.scaY()) / 2.0 => float halfH;
 
             if (
                 mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW

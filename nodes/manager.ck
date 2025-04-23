@@ -45,6 +45,9 @@ public class NodeManager {
             // Mouse Click Down
             if (GWindow.mouseLeftDown() == 1) {
 
+                // click in node
+                -1 => int clickedNodeIdx;
+
                 // Check if clicking on an on-screen Node
                 for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
                     this.nodesOnScreen[nodeIdx] @=> Node node;
@@ -115,13 +118,30 @@ public class NodeManager {
                             0 => this.openMenu;
                             null => this.currMenu;
                         }
+
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
                     }
+                }
+
+                // If clicked outside of a node and a menu is open, close the menu
+                if (clickedNodeIdx == -1 && this.openMenu) {
+                    this.currMenu.collapse();
+                    0 => this.openMenu;
+                    null => this.currMenu;
                 }
             }
 
             // Handle moving wire for open connection
             if (this.openConnection == 1) {
                 this.currConnection.updateWire(mousePos);
+            }
+
+            // Highlight menu item if mouse hovers over it
+            if (this.openMenu) {
+                this.currMenu.mouseHoverEntry(mousePos) => int hoveredMenuEntryIdx;
+                this.currMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
             }
 
             GG.nextFrame() => now;
