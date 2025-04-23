@@ -46,7 +46,7 @@ public class NodeManager {
 
                     // Check if mouse is over this node
                     if (nodeHover == 1) {
-                        // Check if mouse is over this jack
+                        // Check if mouse is over an Input/Output jack
                         node.mouseHoverOverJack(mousePos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.jacks[jackIdx] @=> Jack jack;
@@ -87,6 +87,11 @@ public class NodeManager {
                             // Check if Jack is input or output
                             <<< "Hovered over node:", node.nodeID, "at position", mousePos.x, mousePos.y  >>>;
                             <<< "Hovered over jack:", node.jacks[jackIdx].name() >>>;
+                        }
+
+                        node.mouseHoverOverDropdownMenu(mousePos) => int dropdownMenuIdx;
+                        if (dropdownMenuIdx != -1) {
+                            // TODO: do stuff here
                         }
                     }
                 }

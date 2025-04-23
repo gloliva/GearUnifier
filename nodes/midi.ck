@@ -10,8 +10,10 @@
 */
 
 // Imports
-@import "base.ck"
 @import "../tuning.ck"
+@import "../utils.ck"
+@import "../ui/menu.ck"
+@import "base.ck"
 
 
 public class MidiMessage {
@@ -26,29 +28,21 @@ public class MidiMessage {
 
 
 public class MidiDataType {
-    0 => static int PITCH;
-    1 => static int GATE;
-    2 => static int TRIGGER;
-    3 => static int VELOCITY;
-    4 => static int CC;
-    5 => static int AFTERTOUCH;
+    new Enum(0, "Pitch") @=> static Enum PITCH;
+    new Enum(1, "Gate") @=> static Enum GATE;
+    new Enum(2, "Trigger") @=> static Enum TRIGGER;
+    new Enum(3, "Velocity") @=> static Enum VELOCITY;
+    new Enum(4, "Aftertouch") @=> static Enum AFTERTOUCH;
+    new Enum(5, "CC") @=> static Enum CC;
 
     [
-        "Pitch",
-        "Gate",
-        "Trigger",
-        "Velocity",
-        "CC",
-        "Aftertouch"
-    ] @=> static string typeNames[];
-
-    fun static string toString(int dataType) {
-        if (dataType < MidiDataType.typeNames.size()) {
-            return MidiDataType.typeNames[dataType];
-        }
-
-        return "Null";
-    }
+        MidiDataType.PITCH,
+        MidiDataType.GATE,
+        MidiDataType.TRIGGER,
+        MidiDataType.VELOCITY,
+        MidiDataType.AFTERTOUCH,
+        MidiDataType.CC,
+    ] @=> static Enum allTypes[];
 }
 
 
@@ -137,17 +131,25 @@ public class MidiInNode extends MidiNode {
 
         for (int idx; idx < initJacks; idx++) {
             Jack jack(idx, jackType);
+            DropdownMenu jackMenu(MidiDataType.allTypes);
             Step out(0.);
 
             // Jack Position
             1.25 => jack.posX;
             idx * -1 => jack.posY;
 
+            // Menu Position
+            -0.75 => jackMenu.posX;
+            idx * -1 => jackMenu.posY;
+            0.1 => jackMenu.posZ;
+
             this.jacks << jack;
+            this.menus << jackMenu;
             this.outs << out;
 
             // Jack Connection
             jack --> this;
+            jackMenu --> this;
         }
 
         // Parent class constructor
@@ -177,17 +179,17 @@ public class MidiInNode extends MidiNode {
         return this._synthMode;
     }
 
-    fun void outputDataTypeIdx(int midiDataType, int voiceIdx, int outIdx) {
+    fun void outputDataTypeIdx(Enum midiDataType, int voiceIdx, int outIdx) {
         // Update midi data type to output idx
-        Std.itoa(midiDataType) + Std.itoa(voiceIdx) => string key;
+        Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
         outIdx => this.midiDataTypeToOut[key];
 
         // Add Step output to Jack
         this.jacks[outIdx].setUgen(this.outs[outIdx]);
     }
 
-    fun int outputDataTypeIdx(int midiDataType, int voiceIdx) {
-        Std.itoa(midiDataType) + Std.itoa(voiceIdx) => string key;
+    fun int outputDataTypeIdx(Enum midiDataType, int voiceIdx) {
+        Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
 
         if (this.midiDataTypeToOut.isInMap(key)) {
             return this.midiDataTypeToOut[key];

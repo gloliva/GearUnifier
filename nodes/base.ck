@@ -1,3 +1,6 @@
+@import "../ui/menu.ck"
+
+
 public class Node extends GGen {
     string nodeID;
     int numJacks;
@@ -5,7 +8,10 @@ public class Node extends GGen {
     GText nodeName;
     GCube nodeNameBox;
     GCube nodeContentBox;
+
+    // Contents
     Jack jacks[0];
+    DropdownMenu menus[0];
 
     fun @construct() {
         // Names
@@ -67,6 +73,16 @@ public class Node extends GGen {
         }
 
         return jackIdx;
+    }
+
+    fun int mouseHoverOverDropdownMenu(vec3 mouseWorldPos) {
+        -1 => int dropdownMenuIdx;
+
+        for (int idx; idx < this.menus.size(); idx++) {
+
+        }
+
+        return dropdownMenuIdx;
     }
 
     fun void connect(UGen ugen, int inputJackIdx) {
