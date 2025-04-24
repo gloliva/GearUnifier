@@ -1,6 +1,7 @@
 // Imports
 @import "../ui/menu.ck"
 @import "base.ck"
+@import "midi.ck"
 
 
 public class NodeManager {
@@ -44,6 +45,36 @@ public class NodeManager {
 
             // Mouse Click Down
             if (GWindow.mouseLeftDown() == 1) {
+
+                // If a menu is open, check if clicking on a menu entry item
+                // We check this here before checking nodes, because a dropdown menu
+                // can extend beyond the Node's Y position, which would skip any processing
+                // handled in the Node conditionals
+                -1 => int dropdownMenuEntryIdx;
+                if (this.openMenu) this.currMenu.mouseHoverEntry(mousePos) => dropdownMenuEntryIdx;
+
+                // Update menu entry
+                if (dropdownMenuEntryIdx != -1) {
+                    this.currMenu.getSelectedEntry() @=> Enum previousSelection;
+                    this.currMenu.updateSelectedEntry(dropdownMenuEntryIdx);
+
+                    // Make updates based on menu selection
+                    Type.of(this.currMenu.parent()).name() => string menuParentName;
+
+                    if (menuParentName == "MidiInNode") {
+                        this.currMenu.parent()$MidiInNode @=> MidiInNode midiIn;
+                        // Remove old mapping
+                        midiIn.removeOutputDataTypeMapping(previousSelection, 0);
+
+                        // Add new mapping
+                        midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
+                    }
+
+                    // Close menu
+                    this.currMenu.collapse();
+                    0 => this.openMenu;
+                    null => this.currMenu;
+                }
 
                 // click in node
                 -1 => int clickedNodeIdx;
@@ -97,7 +128,7 @@ public class NodeManager {
 
                         // Check if clicking on a menu
                         node.mouseHoverOverDropdownMenu(mousePos) => int dropdownMenuIdx;
-                        if (dropdownMenuIdx != -1) {
+                        if (dropdownMenuIdx != -1 && dropdownMenuEntryIdx == -1) {
                             <<< "Clicked on", node.menus[dropdownMenuIdx].menuID >>>;
 
                             // No existing menu opened
@@ -105,15 +136,9 @@ public class NodeManager {
                                 node.menus[dropdownMenuIdx] @=> this.currMenu;
                                 this.currMenu.expand();
                                 1 => this.openMenu;
-
-                            // Otherwise check if clicking active menu
-                            } else {
-                                if (node.menus[dropdownMenuIdx].menuID == this.currMenu.menuID) {
-                                    // Check what menu item was selected
-                                }
                             }
                         // Close active menu if Menu is open and click outside of menu
-                        } else if (dropdownMenuIdx == -1 && this.openMenu) {
+                        } else if (dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && this.openMenu) {
                             this.currMenu.collapse();
                             0 => this.openMenu;
                             null => this.currMenu;

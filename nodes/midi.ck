@@ -202,6 +202,11 @@ public class MidiInNode extends MidiNode {
         return -1;
     }
 
+    fun void removeOutputDataTypeMapping(Enum midiDataType, int voiceIdx) {
+        Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
+        this.midiDataTypeToOut.erase(key);
+    }
+
     fun void run() {
         while (true) {
             // Wait for Midi event

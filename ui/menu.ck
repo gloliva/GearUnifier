@@ -63,6 +63,10 @@ public class BorderedBox extends GGen {
         this.topBorder --> this;
         this.bottomBorder --> this;
     }
+
+    fun void setName(string n) {
+        n => this.text.text;
+    }
 }
 
 
@@ -78,14 +82,17 @@ public class DropdownMenu extends GGen {
 
     // Menu Lookup ID
     string menuID;
+    int menuIdx;
 
     fun @construct(Enum menuItems[]) {
         DropdownMenu(menuItems, "", 0);
     }
 
-    fun @construct(Enum menuItems[], string parentNodeID, int menuNum) {
+    fun @construct(Enum menuItems[], string parentNodeID, int menuIdx) {
         menuItems @=> this.menuItems;
-        parentNodeID + " Menu" + Std.itoa(menuNum) => this.menuID;
+        parentNodeID + " Menu" + Std.itoa(menuIdx) => this.menuID;
+        menuIdx => this.menuIdx;
+        -1 => this.selectedIdx;
 
         // Handle menu items
         for (int idx; idx < this.menuItems.size(); idx++) {
@@ -120,6 +127,17 @@ public class DropdownMenu extends GGen {
         this.selectedBox --> this;
     }
 
+    fun void updateSelectedEntry(int idx) {
+        if (idx < 0 || idx > this.menuItems.size()) return;
+
+        idx => this.selectedIdx;
+        this.selectedBox.setName(this.menuItems[idx].name);
+    }
+
+    fun Enum getSelectedEntry() {
+        return this.menuItems[this.selectedIdx];
+    }
+
     fun void expand() {
         if (this.expanded) return;
 
@@ -143,11 +161,10 @@ public class DropdownMenu extends GGen {
     }
 
     fun int mouseHoverEntry(vec3 mouseWorldPos) {
-        -1 => int menuEntryIdx;
-
-        this.parent()$GGen @=> GGen parent;
-
         if (!this.expanded) return -1;
+
+        -1 => int menuEntryIdx;
+        this.parent()$GGen @=> GGen parent;
 
         for (int idx; idx < this.menuItems.size(); idx++) {
             this.menuItemBoxes[idx] @=> BorderedBox borderedBox;
