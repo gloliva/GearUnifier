@@ -145,7 +145,7 @@ public class Connection extends GGen {
         0.05 => this.wire.width;
 
         // Color
-        Color.BLACK => this.wire.color;
+        Color.RED => this.wire.color;
 
         // Names
         "Open Connection: Node" + this.outputNodeIdx + " Jack" + this.outputNodeJackIdx => this.name;
@@ -162,10 +162,23 @@ public class Connection extends GGen {
         "Completed Connection: Node" + this.outputNodeIdx + " Jack" + this.outputNodeJackIdx + " -> Node" + this.inputNodeIdx + " Jack" + this.inputNodeJackIdx => this.name;
 
         [this.outputJackPos, this.inputJackPos] => this.wire.positions;
+
+        // Set Color
+        Color.BLACK => this.wire.color;
     }
 
     fun void updateWire(vec3 mouseWorldPos) {
         [this.outputJackPos, @(mouseWorldPos.x, mouseWorldPos.y)] => this.wire.positions;
+    }
+
+    fun void updateWireStartPos(vec2 outputJackPos) {
+        outputJackPos => this.outputJackPos;
+        [this.outputJackPos, this.inputJackPos] => this.wire.positions;
+    }
+
+    fun void updateWireEndPos(vec2 inputJackPos) {
+        inputJackPos => this.inputJackPos;
+        [this.outputJackPos, this.inputJackPos] => this.wire.positions;
     }
 
     fun void deleteWire() {
