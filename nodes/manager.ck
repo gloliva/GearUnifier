@@ -5,23 +5,28 @@
 
 
 public class NodeManager {
-    // Nodes
+    // All Nodes
     Node nodesOnScreen[0];
     int numNodes;
 
-    // Connections
+    // All Connections
     Connection nodeConnections[0];
-    Connection @ currConnection;
+    Connection @ currOpenConnection;
     int openConnection;
 
     // Menus
-    int openMenu;
+    int menuOpen;
     DropdownMenu @ currMenu;
 
     // Held Node
-    int heldNode;
+    int nodeHeld;
     int currHeldNodeIdx;
     Node @ currHeldNode;
+
+    // Selected Connection
+    int connectionSelected;
+    int currSelectedConnectionIdx;
+    Connection @ currSelectedConnection;
 
     fun void addNode(Node node) {
         this.nodesOnScreen << node;
@@ -68,7 +73,7 @@ public class NodeManager {
                 // can extend beyond the Node's Y position, which would skip any processing
                 // handled in the Node conditionals
                 -1 => int dropdownMenuEntryIdx;
-                if (this.openMenu) this.currMenu.mouseHoverEntry(mouseWorldPos) => dropdownMenuEntryIdx;
+                if (this.menuOpen) this.currMenu.mouseHoverEntry(mouseWorldPos) => dropdownMenuEntryIdx;
 
                 // Update menu entry
                 if (dropdownMenuEntryIdx != -1) {
@@ -89,8 +94,34 @@ public class NodeManager {
 
                     // Close menu
                     this.currMenu.collapse();
-                    0 => this.openMenu;
+                    0 => this.menuOpen;
                     null => this.currMenu;
+                }
+
+                // Check if clicking on a connection wire
+                -1 => int clickedConnectionIdx;
+                for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+                    this.nodeConnections[connIdx] @=> Connection conn;
+                    conn.mouseHoverOverWire(mouseWorldPos) => int hoverOverWire;
+                    if (hoverOverWire) {
+                        // If a wire is already selected, unselect that wire
+                        if (this.connectionSelected) this.currSelectedConnection.unselectWire();
+
+                        connIdx => clickedConnectionIdx;
+                        connIdx => this.currSelectedConnectionIdx;
+                        1 => this.connectionSelected;
+                        conn @=> this.currSelectedConnection;
+                        conn.selectWire();
+                        break;
+                    }
+                }
+
+                // Remove connection selection if clicked on something else
+                if (this.connectionSelected && clickedConnectionIdx == -1) {
+                    this.currSelectedConnection.unselectWire();
+                    0 => this.connectionSelected;
+                    -1 => this.currSelectedConnectionIdx;
+                    null => this.currSelectedConnection;
                 }
 
                 // click in node
@@ -121,33 +152,33 @@ public class NodeManager {
                                 if (jack.ioType == IOType.OUTPUT) {
                                     <<< "Starting a new Connection" >>>;
                                     Connection newConnection(nodeIdx, jackIdx, jackPos, mouseWorldPos);
-                                    newConnection @=> this.currConnection;
+                                    newConnection @=> this.currOpenConnection;
                                     1 => this.openConnection;
                                 }
                             } else {
                                 // Completing a connection needs to be an Input jack
                                 if (jack.ioType == IOType.INPUT) {
                                     // Output to input == complete the connection
-                                    this.currConnection.completeWire(nodeIdx, jackIdx, jackPos);
+                                    this.currOpenConnection.completeWire(nodeIdx, jackIdx, jackPos);
 
                                     // Connect output data to input data
-                                    this.nodesOnScreen[this.currConnection.outputNodeIdx] @=> Node outputNode;
-                                    this.nodesOnScreen[this.currConnection.inputNodeIdx] @=> Node inputNode;
-                                    outputNode.jacks[this.currConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                                    inputNode.connect(ugen, this.currConnection.inputNodeJackIdx);
-                                    inputNode.jacks[this.currConnection.inputNodeJackIdx].setUgen(ugen);
+                                    this.nodesOnScreen[this.currOpenConnection.outputNodeIdx] @=> Node outputNode;
+                                    this.nodesOnScreen[this.currOpenConnection.inputNodeIdx] @=> Node inputNode;
+                                    outputNode.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
+                                    inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
+                                    inputNode.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
 
                                     // Add connection to connections list
-                                    this.nodeConnections << this.currConnection;
+                                    this.nodeConnections << this.currOpenConnection;
 
                                     // Remove open connection
                                     0 => this.openConnection;
-                                    null => this.currConnection;
+                                    null => this.currOpenConnection;
                                 } else {
                                     // Output to output == delete the connection
-                                    this.currConnection.deleteWire();
+                                    this.currOpenConnection.deleteWire();
                                     0 => this.openConnection;
-                                    null => this.currConnection;
+                                    null => this.currOpenConnection;
                                 }
                             }
                         }
@@ -158,15 +189,15 @@ public class NodeManager {
                             <<< "Clicked on", node.menus[dropdownMenuIdx].menuID >>>;
 
                             // No existing menu opened
-                            if (!this.openMenu) {
+                            if (!this.menuOpen) {
                                 node.menus[dropdownMenuIdx] @=> this.currMenu;
                                 this.currMenu.expand();
-                                1 => this.openMenu;
+                                1 => this.menuOpen;
                             }
                         // Close active menu if Menu is open and click outside of menu
-                        } else if (dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && this.openMenu) {
+                        } else if (dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && this.menuOpen) {
                             this.currMenu.collapse();
-                            0 => this.openMenu;
+                            0 => this.menuOpen;
                             null => this.currMenu;
                         }
 
@@ -177,9 +208,9 @@ public class NodeManager {
                 }
 
                 // If clicked outside of a node and a menu is open, close the menu
-                if (clickedNodeIdx == -1 && this.openMenu) {
+                if (clickedNodeIdx == -1 && this.menuOpen) {
                     this.currMenu.collapse();
-                    0 => this.openMenu;
+                    0 => this.menuOpen;
                     null => this.currMenu;
                 }
             }
@@ -187,7 +218,7 @@ public class NodeManager {
             // Check if mouse left click is held down
             if (GWindow.mouseLeft()) {
 
-                if (!this.heldNode) {
+                if (!this.nodeHeld) {
                     // Check if clicking on an on-screen Node
                     for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
                         this.nodesOnScreen[nodeIdx] @=> Node node;
@@ -195,7 +226,7 @@ public class NodeManager {
                         // Check if mouse is over this node's name box
                         node.mouseHoverNameBox(mouseWorldPos) => int nodeNameHover;
                         if (nodeNameHover) {
-                            1 => this.heldNode;
+                            1 => this.nodeHeld;
                             nodeIdx => this.currHeldNodeIdx;
                             node @=> this.currHeldNode;
                             break;
@@ -204,7 +235,7 @@ public class NodeManager {
                 }
 
                 // Move node if its being held down
-                if (this.heldNode) {
+                if (this.nodeHeld) {
                     this.currHeldNode.translate(mouseWorldDelta);
 
                     // Update the position of all wires connected to this node
@@ -228,19 +259,43 @@ public class NodeManager {
             if (GWindow.mouseLeftUp()) {
 
                 // If a node was being held to move it, stop tracking it
-                if (this.heldNode) {
-                    0 => this.heldNode;
+                if (this.nodeHeld) {
+                    -1 => this.currHeldNodeIdx;
+                    0 => this.nodeHeld;
                     null => this.currHeldNode;
+                }
+            }
+
+            // Check if BACKSPACE key is pressed
+            if (GWindow.keyDown(GWindow.Key_Backspace)) {
+                // If a connection is selected, delete the connection
+                if (this.connectionSelected) {
+                    // Remove the connection UGen mapping
+                    this.nodesOnScreen[this.currSelectedConnection.outputNodeIdx] @=> Node outputNode;
+                    this.nodesOnScreen[this.currSelectedConnection.inputNodeIdx] @=> Node inputNode;
+                    outputNode.jacks[this.currSelectedConnection.outputNodeJackIdx].ugen @=> UGen ugen;
+                    inputNode.disconnect(ugen, this.currSelectedConnection.inputNodeJackIdx);
+
+                    // Delete the wire
+                    this.currSelectedConnection.deleteWire();
+
+                    // Remove the connection from the connections list
+                    this.nodeConnections.erase(this.currSelectedConnectionIdx);
+
+                    // Unset selected connection variables
+                    0 => this.connectionSelected;
+                    -1 => this.currSelectedConnectionIdx;
+                    null => this.currSelectedConnection;
                 }
             }
 
             // Handle moving wire for open connection
             if (this.openConnection == 1) {
-                this.currConnection.updateWire(mouseWorldPos);
+                this.currOpenConnection.updateWire(mouseWorldPos);
             }
 
             // Highlight menu item if mouse hovers over it
-            if (this.openMenu) {
+            if (this.menuOpen) {
                 this.currMenu.mouseHoverEntry(mouseWorldPos) => int hoveredMenuEntryIdx;
                 this.currMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
             }

@@ -184,6 +184,34 @@ public class Connection extends GGen {
     fun void deleteWire() {
         this --< GG.scene();
     }
+
+    fun int mouseHoverOverWire(vec3 mouseWorldPos) {
+        @(this.inputJackPos.x - this.outputJackPos.x, this.inputJackPos.y - this.outputJackPos.y) => vec2 d;  // vector along line
+        @(mouseWorldPos.x - this.outputJackPos.x, mouseWorldPos.y - this.outputJackPos.y) => vec2 m; // Vector from start to mouse
+        d.dot(d) => float lenSq; // squared length of the line
+
+        // Project m onto d
+        m.dot(d) / lenSq => float t;
+        if (t < 0.) 0. => t;
+        if (t > 1.) 1. => t;
+
+        // Find closest point on the line segment to the mouse
+        this.outputJackPos + (d * t) => vec2 closest;
+
+        // Distance from mouse to closest point
+        (@(mouseWorldPos.x, mouseWorldPos.y) - closest) => vec2 mouseToClosest;
+        Math.sqrt(mouseToClosest.dot(mouseToClosest)) => float dist;
+
+        return dist <= this.wire.width() / 2.;
+    }
+
+    fun void selectWire() {
+        Color.RED => this.wire.color;
+    }
+
+    fun void unselectWire() {
+        Color.BLACK => this.wire.color;
+    }
 }
 
 
