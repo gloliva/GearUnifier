@@ -275,6 +275,7 @@ public class NodeManager {
                     this.nodesOnScreen[this.currSelectedConnection.inputNodeIdx] @=> Node inputNode;
                     outputNode.jacks[this.currSelectedConnection.outputNodeJackIdx].ugen @=> UGen ugen;
                     inputNode.disconnect(ugen, this.currSelectedConnection.inputNodeJackIdx);
+                    inputNode.jacks[this.currSelectedConnection.inputNodeJackIdx].removeUgen();
 
                     // Delete the wire
                     this.currSelectedConnection.deleteWire();

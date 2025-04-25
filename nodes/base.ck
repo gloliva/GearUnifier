@@ -220,6 +220,7 @@ public class Jack extends GGen {
     GCylinder jack;
 
     int ioType;
+    int isConnected;
     UGen @ ugen;
 
     fun @construct(int jackID, int ioType) {
@@ -253,12 +254,18 @@ public class Jack extends GGen {
     }
 
     fun void setUgen(UGen ugen) {
+        1 => this.isConnected;
         ugen @=> this.ugen;
+    }
+
+    fun void removeUgen() {
+        Color.BLACK => this.jack.color;
+        0 => this.isConnected;
     }
 
     fun void setColor() {
         while (true) {
-            if (this.ugen == null) {
+            if (!this.isConnected) {
                 GG.nextFrame() => now;
                 continue;
             }
