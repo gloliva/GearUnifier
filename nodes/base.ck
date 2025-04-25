@@ -8,6 +8,7 @@ public class Node extends GGen {
     GText nodeName;
     GCube nodeNameBox;
     GCube nodeContentBox;
+    JackModifierBox @ jackModifierBox;
 
     // Contents
     Jack jacks[0];
@@ -289,5 +290,37 @@ public class Jack extends GGen {
 
             GG.nextFrame() => now;
         }
+    }
+}
+
+
+public class JackModifierBox extends GGen {
+    GCube contentBox;
+    BorderedBox @ addBox;
+    BorderedBox @ removeBox;
+
+    fun @construct(float xScale) {
+        new BorderedBox("+", 0.5, 0.5) @=> this.addBox;
+        new BorderedBox("-", 0.5, 0.5) @=> this.removeBox;
+
+        // Position
+        0.5 => this.addBox.posX;
+        -0.5 => this.removeBox.posX;
+
+        // Scale
+        @(xScale, 1., 0.2) => this.contentBox.sca;
+
+        // Color
+        Color.BLACK => this.contentBox.color;
+
+        // Names
+        "Jack Modifier Box" => this.name;
+        "Add Bordered Box" => this.addBox.name;
+        "Remove Bordered Box" => this.removeBox.name;
+
+        // Connections
+        this.contentBox --> this;
+        this.addBox --> this;
+        this.removeBox --> this;
     }
 }

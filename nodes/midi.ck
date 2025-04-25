@@ -71,10 +71,14 @@ public class MidiNode extends Node {
         1. => float yPos;
         if (this.numJacks > 0) this.numJacks => yPos;
 
+        // Create jack modifier box with this node's scale
+        new JackModifierBox(4.) @=> this.jackModifierBox;
+
         // Position
         @(0., 1., 0.101) => this.nodeName.pos;
         1. => this.nodeNameBox.posY;
         0.5 - (yPos / 2.) => this.nodeContentBox.posY;
+        this.nodeContentBox.posY() - 2. => this.jackModifierBox.posY;
 
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
@@ -103,6 +107,7 @@ public class MidiNode extends Node {
         this.nodeName --> this;
         this.nodeNameBox --> this;
         this.nodeContentBox --> this;
+        this.jackModifierBox --> this;
     }
 }
 
@@ -155,9 +160,6 @@ public class MidiInNode extends MidiNode {
             jack --> this;
             jackMenu --> this;
         }
-
-        // // Parent class constructor
-        // MidiInNode(deviceID, channel);
     }
 
     fun @construct(int deviceID, int channel) {
@@ -207,6 +209,13 @@ public class MidiInNode extends MidiNode {
         this.midiDataTypeToOut.erase(key);
     }
 
+    fun void sendTrigger(int triggerOutIdx) {
+        // Send a short trigger signal
+        1. => this.outs[triggerOutIdx].next;
+        5::ms => now;
+        0. => this.outs[triggerOutIdx].next;
+    }
+
     fun void run() {
         while (true) {
             // Wait for Midi event
@@ -224,20 +233,27 @@ public class MidiInNode extends MidiNode {
                     if (midiStatus == MidiMessage.NOTE_ON + this.channel) {
                         this.msg.data2 => int noteNumber;
                         this.heldNotes << noteNumber;
+                        this.msg.data3 => int velocity;
+
+                        // Pitch out
+                        this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
+                        if (pitchOutIdx != -1) this.tuning.cv(noteNumber) => this.outs[pitchOutIdx].next;
 
                         // Gate out
                         this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
                         if (gateOutIdx != -1) 1. => this.outs[gateOutIdx].next;
 
                         // Trigger out
+                        this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
+                        if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
 
-                        // Pitch out
-                        this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                        if (pitchOutIdx != -1) this.tuning.cv(noteNumber) => this.outs[pitchOutIdx].next;
-
+                        // Velocity out
+                        this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
+                        if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.outs[velocityOutIdx].next;
                     // Note off
                     } else if (midiStatus == MidiMessage.NOTE_OFF + this.channel) {
                         this.msg.data2 => int noteNumber;
+                        this.msg.data3 => int velocity;
 
                         // Remove note from held notes
                         for (this.heldNotes.size() - 1 => int idx; idx >= 0; idx-- ) {
@@ -257,10 +273,18 @@ public class MidiInNode extends MidiNode {
                             this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
                             if (aftertouchOutIdx != -1) 0. => this.outs[aftertouchOutIdx].next;
 
+                            // Turn off velocity
+                            this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
+                            if (velocityOutIdx != -1) 0. => this.outs[velocityOutIdx].next;
+
                         // Otherwise go back to previously held note
                         } else {
                             this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
                             if (pitchOutIdx != -1) this.tuning.cv(this.heldNotes[-1]) => this.outs[pitchOutIdx].next;
+
+                            // Resend Trigger for previously held note
+                            this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
+                            if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
                         }
 
                     // Polyphonic aftertouch
@@ -272,7 +296,11 @@ public class MidiInNode extends MidiNode {
                     }
                 }
 
-                <<< msg.data1, msg.data2, msg.data3 >>>;
+                // CC messages do not depend on synth mode
+                if (midiStatus == MidiMessage.CONTROL_CHANGE + this.channel) {
+                    this.msg.data2 => int controllerNumber;
+                    this.msg.data3 => int controllerData;
+                }
             }
         }
     }

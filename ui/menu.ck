@@ -15,22 +15,29 @@ public class BorderedBox extends GGen {
     }
 
     fun @construct(string nameText) {
+        BorderedBox(nameText, 2., 0.5);
+    }
+
+    fun @construct(string nameText, float xScale, float yScale) {
+        // Scale
+        @(xScale, yScale, 0.2) => this.box.sca;
+        @(0.25, 0.25, 0.25) => this.text.sca;
+
+        @(0.05, yScale, 0.2) => this.leftBorder.sca;
+        @(0.05, yScale, 0.2) => this.rightBorder.sca;
+        @(xScale, 0.05, 0.2) => this.topBorder.sca;
+        @(xScale, 0.05, 0.2) => this.bottomBorder.sca;
+
         // Position
         0.101 => this.text.posZ;
 
-        @(-0.975, 0., 0.001) => this.leftBorder.pos;
-        @(0.975, 0., 0.001) => this.rightBorder.pos;
-        @(0., 0.225, 0.001) => this.topBorder.pos;
-        @(0., -0.225, 0.001) => this.bottomBorder.pos;
+        (xScale / 2.) - (this.leftBorder.scaX() / 2.) => float xBorderPos;
+        (yScale / 2.) - (this.topBorder.scaY() / 2.) => float yBorderPos;
 
-        // Scale
-        @(2., 0.5, 0.2) => this.box.sca;
-        @(0.25, 0.25, 0.25) => this.text.sca;
-
-        @(0.05, 0.5, 0.2) => this.leftBorder.sca;
-        @(0.05, 0.5, 0.2) => this.rightBorder.sca;
-        @(2., 0.05, 0.2) => this.topBorder.sca;
-        @(2., 0.05, 0.2) => this.bottomBorder.sca;
+        @(-xBorderPos, 0., 0.001) => this.leftBorder.pos;
+        @(xBorderPos, 0., 0.001) => this.rightBorder.pos;
+        @(0., yBorderPos, 0.001) => this.topBorder.pos;
+        @(0., -yBorderPos, 0.001) => this.bottomBorder.pos;
 
         // Text
         nameText => this.text.text;
