@@ -78,7 +78,7 @@ public class MidiNode extends Node {
         @(0., 1., 0.101) => this.nodeName.pos;
         1. => this.nodeNameBox.posY;
         0.5 - (yPos / 2.) => this.nodeContentBox.posY;
-        this.nodeContentBox.posY() - 2. => this.jackModifierBox.posY;
+        this.nodeContentBox.posY() - (yPos - 1) => this.jackModifierBox.posY;
 
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
@@ -207,6 +207,67 @@ public class MidiInNode extends MidiNode {
     fun void removeOutputDataTypeMapping(Enum midiDataType, int voiceIdx) {
         Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
         this.midiDataTypeToOut.erase(key);
+    }
+
+    fun void addJack() {
+        this.numJacks => int jackIdx;
+        Jack jack(jackIdx, IOType.OUTPUT);
+        DropdownMenu jackMenu(MidiDataType.allTypes, this.nodeID, jackIdx);
+        Step out(0.);
+
+        // Update numJacks
+        this.numJacks++;
+
+        // Jack position
+        1.25 => jack.posX;
+        jackIdx * -1 => jack.posY;
+
+        // Menu position
+        -0.75 => jackMenu.posX;
+        jackIdx * -1 => jackMenu.posY;
+        0.1 => jackMenu.posZ;
+
+        // Update content box scale
+        this.numJacks => this.nodeContentBox.scaY;
+
+        // Update position of content box and jack modifier box
+        0.5 - (this.numJacks / 2.) => this.nodeContentBox.posY;
+        this.jackModifierBox.posY() - 1 => this.jackModifierBox.posY;
+
+        // Add objects to lists
+        this.jacks << jack;
+        this.menus << jackMenu;
+        this.outs << out;
+
+        // Jack Connection
+        jack --> this;
+        jackMenu --> this;
+    }
+
+    fun void removeJack() {
+        if (this.numJacks == 1) return;
+
+        this.jacks[-1] @=> Jack jack;
+        this.menus[-1] @=> DropdownMenu jackMenu;
+
+        // Remove objects from lists
+        this.jacks.popBack();
+        this.menus.popBack();
+        this.outs.popBack();
+
+        // Update numJacks
+        this.numJacks--;
+
+        // Update content box scale
+        this.numJacks => this.nodeContentBox.scaY;
+
+        // Update position of content box and jack modifier box
+        0.5 - (this.numJacks / 2.) => this.nodeContentBox.posY;
+        this.jackModifierBox.posY() + 1 => this.jackModifierBox.posY;
+
+        // Remove connections
+        jack --< this;
+        jackMenu --< this;
     }
 
     fun void sendTrigger(int triggerOutIdx) {

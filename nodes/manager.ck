@@ -205,6 +205,17 @@ public class NodeManager {
                         nodeIdx => clickedNodeIdx;
                         break;
                     }
+
+                    // Check if mouse is over this node's jack modifier box
+                    node.mouseHoverOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
+                    if (nodeJackModifierHover) {
+                        node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
+                        if (jackModifier == JackModifierBox.ADD) {
+                            node.addJack();
+                        } else if (jackModifier == JackModifierBox.REMOVE) {
+                            node.removeJack();
+                        }
+                    }
                 }
 
                 // If clicked outside of a node and a menu is open, close the menu

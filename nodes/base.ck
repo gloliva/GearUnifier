@@ -99,12 +99,38 @@ public class Node extends GGen {
         return dropdownMenuIdx;
     }
 
+    fun int mouseHoverOverJackModifierBox(vec3 mouseWorldPos) {
+        if (this.jackModifierBox == null) return false;
+
+        this.posX() + this.jackModifierBox.posX() * this.scaX() => float centerX;
+        this.posY() + this.jackModifierBox.posY() * this.scaY() => float centerY;
+        (this.jackModifierBox.scaX() * this.scaX()) / 2.0 => float halfW;
+        (this.jackModifierBox.scaY() * this.scaY()) / 2.0 => float halfH;
+
+        if (
+            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
+            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
     fun void connect(UGen ugen, int inputJackIdx) {
         <<< "ERROR: Override the Connect function for Child Nodes." >>>;
     }
 
     fun void disconnect(UGen ugen, int inputJackIdx) {
         <<< "ERROR: Override the Disconnect function for Child Nodes." >>>;
+    }
+
+    fun void addJack() {
+        <<< "ERROR: Override the addJack function for Child Nodes" >>>;
+    }
+
+    fun void removeJack() {
+        <<< "ERROR: Override the removeJack function for Child Nodes" >>>;
     }
 }
 
@@ -299,6 +325,9 @@ public class JackModifierBox extends GGen {
     BorderedBox @ addBox;
     BorderedBox @ removeBox;
 
+    1 => static int ADD;
+    -1 => static int REMOVE;
+
     fun @construct(float xScale) {
         new BorderedBox("+", 0.5, 0.5) @=> this.addBox;
         new BorderedBox("-", 0.5, 0.5) @=> this.removeBox;
@@ -322,5 +351,37 @@ public class JackModifierBox extends GGen {
         this.contentBox --> this;
         this.addBox --> this;
         this.removeBox --> this;
+    }
+
+    fun int mouseHoverModifiers(vec3 mouseWorldPos) {
+        this.parent()$GGen @=> GGen parent;
+
+        // Check AddBox
+        parent.posX() + (this.posX() * parent.scaX()) + (this.addBox.posX() * parent.scaX()) + (this.addBox.box.posX() * parent.scaX()) => float centerX;
+        parent.posY() + (this.posY() * parent.scaY()) + (this.addBox.posY() * parent.scaY()) + (this.addBox.box.posY() * parent.scaY()) => float centerY;
+        (this.addBox.box.scaX() * this.addBox.scaX() * this.scaX() * parent.scaX()) / 2.0 => float halfW;
+        (this.addBox.box.scaY() * this.addBox.scaY() * this.scaY() * parent.scaY()) / 2.0 => float halfH;
+
+        if (
+            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
+            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
+        ) {
+            return this.ADD;
+        }
+
+        // Check RemoveBox
+        parent.posX() + (this.posX() * parent.scaX()) + (this.removeBox.posX() * parent.scaX()) + (this.removeBox.box.posX() * parent.scaX()) => centerX;
+        parent.posY() + (this.posY() * parent.scaY()) + (this.removeBox.posY() * parent.scaY()) + (this.removeBox.box.posY() * parent.scaY()) => centerY;
+        (this.removeBox.box.scaX() * this.removeBox.scaX() * this.scaX() * parent.scaX()) / 2.0 => halfW;
+        (this.removeBox.box.scaY() * this.removeBox.scaY() * this.scaY() * parent.scaY()) / 2.0 => halfH;
+
+        if (
+            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
+            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
+        ) {
+            return this.REMOVE;
+        }
+
+        return 0;
     }
 }
