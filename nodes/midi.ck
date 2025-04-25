@@ -250,11 +250,6 @@ public class MidiInNode extends MidiNode {
         this.jacks[-1] @=> Jack jack;
         this.menus[-1] @=> DropdownMenu jackMenu;
 
-        // Remove objects from lists
-        this.jacks.popBack();
-        this.menus.popBack();
-        this.outs.popBack();
-
         // Update numJacks
         this.numJacks--;
 
@@ -265,9 +260,18 @@ public class MidiInNode extends MidiNode {
         0.5 - (this.numJacks / 2.) => this.nodeContentBox.posY;
         this.jackModifierBox.posY() + 1 => this.jackModifierBox.posY;
 
+        // Remove OutputDataType mapping
+        jackMenu.getSelectedEntry() @=> Enum menuSelection;
+        this.removeOutputDataTypeMapping(menuSelection, 0);
+
         // Remove connections
         jack --< this;
         jackMenu --< this;
+
+        // Remove objects from lists
+        this.jacks.popBack();
+        this.menus.popBack();
+        this.outs.popBack();
     }
 
     fun void sendTrigger(int triggerOutIdx) {

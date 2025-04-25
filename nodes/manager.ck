@@ -213,6 +213,37 @@ public class NodeManager {
                         if (jackModifier == JackModifierBox.ADD) {
                             node.addJack();
                         } else if (jackModifier == JackModifierBox.REMOVE) {
+                            // If removed jack has a connection, remove it
+                            node.numJacks - 1 => int removedJackIdx;
+
+                            -1 => int removedConnectionIdx;
+                            for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+                                this.nodeConnections[connIdx] @=> Connection conn;
+                                if (
+                                    (conn.outputNodeIdx == nodeIdx && conn.outputNodeJackIdx == removedJackIdx)
+                                    || (conn.inputNodeIdx == nodeIdx && conn.inputNodeJackIdx == removedJackIdx)
+                                ) {
+                                    connIdx => removedConnectionIdx;
+                                    break;
+                                }
+                            }
+
+                            if (removedConnectionIdx != -1) {
+                                this.nodeConnections[removedConnectionIdx] @=> Connection conn;
+
+                                // Remove the connection UGen mapping
+                                this.nodesOnScreen[conn.outputNodeIdx] @=> Node outputNode;
+                                this.nodesOnScreen[conn.inputNodeIdx] @=> Node inputNode;
+                                outputNode.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                                inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                                inputNode.jacks[conn.inputNodeJackIdx].removeUgen();
+
+                                // Delete the wire
+                                conn.deleteWire();
+
+                                // Remove connection from connection list
+                                this.nodeConnections.erase(removedConnectionIdx);
+                            }
                             node.removeJack();
                         }
                     }
