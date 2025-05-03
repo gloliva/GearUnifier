@@ -1,4 +1,13 @@
+@import "../ui/base.ck"
 @import "../ui/menu.ck"
+
+
+public class NodeType {
+    0 => static int MIDI_IN;
+    1 => static int MIDI_OUT;
+    2 => static int AUDIO_IN;
+    3 => static int AUDIO_OUT;
+}
 
 
 public class Node extends GGen {

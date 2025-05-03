@@ -1,4 +1,5 @@
 // Imports
+@import "../events.ck"
 @import "../ui/menu.ck"
 @import "base.ck"
 @import "midi.ck"
@@ -94,6 +95,17 @@ public class NodeManager {
 
         // Remove from scene
         node --< GG.scene();
+    }
+
+    fun void addNodeHandler(AddNodeEvent addNodeEvent) {
+        while (true) {
+            addNodeEvent => now;
+            if (addNodeEvent.nodeType == NodeType.MIDI_IN) {
+                addNodeEvent.menuIdx => int midiDeviceID;
+                MidiInNode midiIn(midiDeviceID, 0, 3);
+                this.addNode(midiIn);
+            }
+        }
     }
 
     fun void run() {

@@ -6,13 +6,25 @@
 @import "nodes/audio.ck"
 @import "nodes/manager.ck"
 @import "nodes/midi.ck"
+@import "ui/manager.ck"
+@import "events.ck"
+@import "utils.ck"
 
 
 // Camera / Background
 8. => GG.scene().camera().posZ;
 GG.scene().camera().orthographic();
 Color.WHITE => GG.scene().backgroundColor;
-GWindow.fullscreen();
+// GWindow.fullscreen();
+
+// Events
+AddNodeEvent addNodeEvent;
+
+// UI
+UIManager uiManager(addNodeEvent);
+uiManager.setMidiInUI([new Enum(0, "IAC Driver Default"), new Enum(1, "IAC Driver ChucK")]);
+spork ~ uiManager.resize();
+spork ~ uiManager.run();
 
 
 // Audio
@@ -27,10 +39,13 @@ audioIn --> GG.scene();
 2. => audioIn.posY;
 
 
+// TODO: MidiDevice, remove when done testing
+1 => int midiDeviceID;
+
+
 // Midi 1
-MidiInNode midiIn1(0, 1, 3);
-midiIn1 --> GG.scene();
-2. => midiIn1.posY;
+MidiInNode midiIn1(midiDeviceID, 1, 3);
+2.5 => midiIn1.posY;
 
 midiIn1.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
 midiIn1.outputDataTypeIdx(MidiDataType.GATE, 0, 1);
@@ -40,8 +55,7 @@ spork ~ midiIn1.run();
 
 
 // Midi 2
-MidiInNode midiIn2(0, 2, 3);
-midiIn2 --> GG.scene();
+MidiInNode midiIn2(midiDeviceID, 2, 3);
 1. => midiIn2.posY;
 
 midiIn2.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
@@ -52,9 +66,8 @@ spork ~ midiIn2.run();
 
 
 // Midi 3
-MidiInNode midiIn3(0, 3, 3);
-midiIn3 --> GG.scene();
-0. => midiIn3.posY;
+MidiInNode midiIn3(midiDeviceID, 3, 3);
+-1. => midiIn3.posY;
 
 midiIn3.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
 midiIn3.outputDataTypeIdx(MidiDataType.GATE, 0, 1);
@@ -64,13 +77,12 @@ spork ~ midiIn3.run();
 
 
 // Midi 4
-MidiInNode midiIn4(0, 4, 3);
-midiIn4 --> GG.scene();
--1. => midiIn4.posY;
+MidiInNode midiIn4(midiDeviceID, 4, 3);
+-2.5 => midiIn4.posY;
 
-midiIn4.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
-midiIn4.outputDataTypeIdx(MidiDataType.GATE, 0, 1);
-midiIn4.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0, 2);
+// midiIn4.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
+// midiIn4.outputDataTypeIdx(MidiDataType.GATE, 0, 1);
+// midiIn4.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0, 2);
 
 spork ~ midiIn4.run();
 
@@ -85,6 +97,7 @@ nodeManager.addNode(midiIn3);
 nodeManager.addNode(midiIn4);
 
 spork ~ nodeManager.run();
+spork ~ nodeManager.addNodeHandler(addNodeEvent);
 
 
 while (true) {
