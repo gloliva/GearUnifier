@@ -1,5 +1,5 @@
 /*
-    How to run: chuck --caution-to-the-wind --dac:2 --out:16 main.ck
+    How to run: chuck --caution-to-the-wind --dac:5 --out:16 --adc:5 --in:16 main.ck
 */
 
 // Imports
@@ -22,25 +22,25 @@ AddNodeEvent addNodeEvent;
 
 // UI
 UIManager uiManager(addNodeEvent);
-uiManager.setMidiInUI([new Enum(0, "IAC Driver Default"), new Enum(1, "IAC Driver ChucK")]);
+uiManager.setMidiInUI([new Enum(0, "IAC Driver Default"), new Enum(1, "IAC Driver ChucK"), new Enum(2, "Lumatone")]);
 spork ~ uiManager.resize();
 spork ~ uiManager.run();
 
 
 // Audio
-AudioOutNode audioOut(16);
+AudioOutNode audioOut(dac.channels());
 audioOut --> GG.scene();
 3. => audioOut.posX;
 2. => audioOut.posY;
 
-AudioInNode audioIn(12);
+AudioInNode audioIn(adc.channels());
 audioIn --> GG.scene();
 -3. => audioIn.posX;
 2. => audioIn.posY;
 
 
 // TODO: MidiDevice, remove when done testing
-1 => int midiDeviceID;
+2 => int midiDeviceID;
 
 
 // Midi 1

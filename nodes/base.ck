@@ -158,18 +158,18 @@ public class IOType {
 
 
 public class Connection extends GGen {
-    int outputNodeIdx;
+    Node @ outputNode;
     int outputNodeJackIdx;
     vec2 outputJackPos;
 
-    int inputNodeIdx;
+    Node @ inputNode;
     int inputNodeJackIdx;
     vec2 inputJackPos;
 
     GLines wire;
 
-    fun @construct(int outputNodeIdx, int outputNodeJackIdx, vec2 outputJackPos, vec3 mouseWorldPos) {
-        outputNodeIdx => this.outputNodeIdx;
+    fun @construct(Node @ outputNode, int outputNodeJackIdx, vec2 outputJackPos, vec3 mouseWorldPos) {
+        outputNode @=> this.outputNode;
         outputNodeJackIdx => this.outputNodeJackIdx;
         outputJackPos => this.outputJackPos;
 
@@ -184,18 +184,18 @@ public class Connection extends GGen {
         Color.RED => this.wire.color;
 
         // Names
-        "Open Connection: Node" + this.outputNodeIdx + " Jack" + this.outputNodeJackIdx => this.name;
+        "Open Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx => this.name;
         "Wire" => this.wire.name;
 
         // Connections
         this.wire --> this --> GG.scene();
     }
 
-    fun void completeWire(int inputNodeIdx, int inputNodeJackIdx, vec2 inputJackPos) {
-        inputNodeIdx => this.inputNodeIdx;
+    fun void completeWire(Node @ inputNode, int inputNodeJackIdx, vec2 inputJackPos) {
+        inputNode @=> this.inputNode;
         inputNodeJackIdx => this.inputNodeJackIdx;
         inputJackPos => this.inputJackPos;
-        "Completed Connection: Node" + this.outputNodeIdx + " Jack" + this.outputNodeJackIdx + " -> Node" + this.inputNodeIdx + " Jack" + this.inputNodeJackIdx => this.name;
+        "Completed Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx + " -> Node" + this.inputNode.nodeID + " Jack" + this.inputNodeJackIdx => this.name;
 
         [this.outputJackPos, this.inputJackPos] => this.wire.positions;
 

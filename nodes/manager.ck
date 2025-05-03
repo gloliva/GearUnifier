@@ -56,8 +56,8 @@ public class NodeManager {
         for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
             this.nodeConnections[connIdx] @=> Connection conn;
             if (
-                (conn.outputNodeIdx == nodeIdx)
-                || (conn.inputNodeIdx == nodeIdx)
+                (conn.outputNode.nodeID == node.nodeID)
+                || (conn.inputNode.nodeID == node.nodeID)
             ) {
                 connectionIdxs << connIdx;
             }
@@ -73,11 +73,9 @@ public class NodeManager {
                 this.nodeConnections[connIdx] @=> Connection conn;
 
                 // Remove the connection UGen mapping
-                this.nodesOnScreen[conn.outputNodeIdx] @=> Node outputNode;
-                this.nodesOnScreen[conn.inputNodeIdx] @=> Node inputNode;
-                outputNode.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
-                inputNode.disconnect(ugen, conn.inputNodeJackIdx);
-                inputNode.jacks[conn.inputNodeJackIdx].removeUgen();
+                conn.outputNode.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                conn.inputNode.jacks[conn.inputNodeJackIdx].removeUgen();
 
                 // Delete the wire
                 conn.deleteWire();
@@ -104,6 +102,7 @@ public class NodeManager {
                 addNodeEvent.menuIdx => int midiDeviceID;
                 MidiInNode midiIn(midiDeviceID, 0, 3);
                 this.addNode(midiIn);
+                spork ~ midiIn.run();
             }
         }
     }
@@ -217,7 +216,7 @@ public class NodeManager {
                                 // New connection needs to be from an Output jack
                                 if (jack.ioType == IOType.OUTPUT) {
                                     <<< "Starting a new Connection" >>>;
-                                    Connection newConnection(nodeIdx, jackIdx, jackPos, mouseWorldPos);
+                                    Connection newConnection(node, jackIdx, jackPos, mouseWorldPos);
                                     newConnection @=> this.currOpenConnection;
                                     1 => this.openConnection;
                                 }
@@ -225,14 +224,12 @@ public class NodeManager {
                                 // Completing a connection needs to be an Input jack
                                 if (jack.ioType == IOType.INPUT) {
                                     // Output to input == complete the connection
-                                    this.currOpenConnection.completeWire(nodeIdx, jackIdx, jackPos);
+                                    this.currOpenConnection.completeWire(node, jackIdx, jackPos);
 
                                     // Connect output data to input data
-                                    this.nodesOnScreen[this.currOpenConnection.outputNodeIdx] @=> Node outputNode;
-                                    this.nodesOnScreen[this.currOpenConnection.inputNodeIdx] @=> Node inputNode;
-                                    outputNode.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                                    inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
-                                    inputNode.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
+                                    this.currOpenConnection.outputNode.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
+                                    this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
+                                    this.currOpenConnection.inputNode.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
 
                                     // Add connection to connections list
                                     this.nodeConnections << this.currOpenConnection;
@@ -286,8 +283,8 @@ public class NodeManager {
                             for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
                                 this.nodeConnections[connIdx] @=> Connection conn;
                                 if (
-                                    (conn.outputNodeIdx == nodeIdx && conn.outputNodeJackIdx == removedJackIdx)
-                                    || (conn.inputNodeIdx == nodeIdx && conn.inputNodeJackIdx == removedJackIdx)
+                                    (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx)
+                                    || (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx)
                                 ) {
                                     connIdx => removedConnectionIdx;
                                     break;
@@ -298,11 +295,9 @@ public class NodeManager {
                                 this.nodeConnections[removedConnectionIdx] @=> Connection conn;
 
                                 // Remove the connection UGen mapping
-                                this.nodesOnScreen[conn.outputNodeIdx] @=> Node outputNode;
-                                this.nodesOnScreen[conn.inputNodeIdx] @=> Node inputNode;
-                                outputNode.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
-                                inputNode.disconnect(ugen, conn.inputNodeJackIdx);
-                                inputNode.jacks[conn.inputNodeJackIdx].removeUgen();
+                                conn.outputNode.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                                conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                                conn.inputNode.jacks[conn.inputNodeJackIdx].removeUgen();
 
                                 // Delete the wire
                                 conn.deleteWire();
@@ -353,12 +348,12 @@ public class NodeManager {
 
                     // Update the position of all wires connected to this node
                     for (Connection conn : this.nodeConnections) {
-                        if (this.currHeldNodeIdx == conn.outputNodeIdx) {
+                        if (this.currHeldNode.nodeID == conn.outputNode.nodeID) {
                             // Update Connection start (i.e. Output Jack position)
                             this.currHeldNode.jacks[conn.outputNodeJackIdx] @=> Jack jack;
                             @(this.currHeldNode.posX() + jack.posX() * jack.scaX(), this.currHeldNode.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;
                             conn.updateWireStartPos(jackPos);
-                        } else if (this.currHeldNodeIdx == conn.inputNodeIdx) {
+                        } else if (this.currHeldNode.nodeID== conn.inputNode.nodeID) {
                             // Update Connection end (i.e. Input Jack position)
                             this.currHeldNode.jacks[conn.inputNodeJackIdx] @=> Jack jack;
                             @(this.currHeldNode.posX() + jack.posX() * jack.scaX(), this.currHeldNode.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;
@@ -384,11 +379,9 @@ public class NodeManager {
                 // If a connection is selected, delete the connection
                 if (this.connectionSelected) {
                     // Remove the connection UGen mapping
-                    this.nodesOnScreen[this.currSelectedConnection.outputNodeIdx] @=> Node outputNode;
-                    this.nodesOnScreen[this.currSelectedConnection.inputNodeIdx] @=> Node inputNode;
-                    outputNode.jacks[this.currSelectedConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                    inputNode.disconnect(ugen, this.currSelectedConnection.inputNodeJackIdx);
-                    inputNode.jacks[this.currSelectedConnection.inputNodeJackIdx].removeUgen();
+                    this.currSelectedConnection.outputNode.jacks[this.currSelectedConnection.outputNodeJackIdx].ugen @=> UGen ugen;
+                    this.currSelectedConnection.inputNode.disconnect(ugen, this.currSelectedConnection.inputNodeJackIdx);
+                    this.currSelectedConnection.inputNode.jacks[this.currSelectedConnection.inputNodeJackIdx].removeUgen();
 
                     // Delete the wire
                     this.currSelectedConnection.deleteWire();
