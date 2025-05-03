@@ -88,7 +88,8 @@ public class MidiNode extends Node {
 
         // Text
         IOType.toString(type) => this.ioType;
-        "Midi " + this.ioType => this.nodeName.text;
+        // "Midi " + this.ioType => this.nodeName.text;
+        name + " " + this.ioType => this.nodeName.text;
         name => this.deviceName.text;
 
         // Color

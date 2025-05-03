@@ -18,6 +18,11 @@ public class NodeManager {
     int menuOpen;
     DropdownMenu @ currMenu;
 
+    // Selected Node
+    int nodeSelected;
+    int currSelectedNodeIdx;
+    Node @ currSelectedNode;
+
     // Held Node
     int nodeHeld;
     int currHeldNodeIdx;
@@ -31,22 +36,64 @@ public class NodeManager {
     fun void addNode(Node node) {
         this.nodesOnScreen << node;
         this.numNodes++;
+
+        // Add to scene
+        node --> GG.scene();
     }
 
     fun void removeNode(Node node) {
-        -1 => int nodePos;
+        -1 => int nodeIdx;
         for (int idx; idx < this.numNodes; idx++) {
             if (this.nodesOnScreen[idx].nodeID == node.nodeID) {
-                idx => nodePos;
+                idx => nodeIdx;
                 break;
             }
         }
 
+        // Check if there are connections from this node
+        int connectionIdxs[0];
+        for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+            this.nodeConnections[connIdx] @=> Connection conn;
+            if (
+                (conn.outputNodeIdx == nodeIdx)
+                || (conn.inputNodeIdx == nodeIdx)
+            ) {
+                connectionIdxs << connIdx;
+            }
+        }
+
+        // Remove any connections
+        if (connectionIdxs.size() > 0) {
+            // Start from the back
+            connectionIdxs.reverse();
+
+            // Remove each connection
+            for (int connIdx : connectionIdxs) {
+                this.nodeConnections[connIdx] @=> Connection conn;
+
+                // Remove the connection UGen mapping
+                this.nodesOnScreen[conn.outputNodeIdx] @=> Node outputNode;
+                this.nodesOnScreen[conn.inputNodeIdx] @=> Node inputNode;
+                outputNode.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                inputNode.jacks[conn.inputNodeJackIdx].removeUgen();
+
+                // Delete the wire
+                conn.deleteWire();
+
+                // Remove connection from connection list
+                this.nodeConnections.erase(connIdx);
+            }
+        }
+
         // Remove node if in list
-        if (nodePos != -1) {
-            this.nodesOnScreen.popOut(nodePos);
+        if (nodeIdx != -1) {
+            this.nodesOnScreen.popOut(nodeIdx);
             this.numNodes--;
         }
+
+        // Remove from scene
+        node --< GG.scene();
     }
 
     fun void run() {
@@ -135,6 +182,13 @@ public class NodeManager {
                     node.mouseHoverNameBox(mouseWorldPos) => int nodeNameHover;
                     if (nodeNameHover) {
                         <<< "clicked on node name box", node.nodeID >>>;
+                        1 => this.nodeSelected;
+                        nodeIdx => this.currSelectedNodeIdx;
+                        node @=> this.currSelectedNode;
+
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
                     }
 
                     // Check if mouse is over this node's content box
@@ -206,9 +260,9 @@ public class NodeManager {
                         break;
                     }
 
-                    // Check if mouse is over this node's jack modifier box
+                    // Check if mouse is over this node's jack modifier box and not in an open menu
                     node.mouseHoverOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
-                    if (nodeJackModifierHover) {
+                    if (nodeJackModifierHover && dropdownMenuEntryIdx == -1) {
                         node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
                         if (jackModifier == JackModifierBox.ADD) {
                             node.addJack();
@@ -254,6 +308,11 @@ public class NodeManager {
                     this.currMenu.collapse();
                     0 => this.menuOpen;
                     null => this.currMenu;
+                // If clicked outside of a node and a node is selected, remove the selection
+                } else if (clickedNodeIdx == -1 && this.nodeSelected) {
+                    0 => this.nodeSelected;
+                    -1 => this.currSelectedNodeIdx;
+                    null => this.currSelectedNode;
                 }
             }
 
@@ -329,6 +388,13 @@ public class NodeManager {
                     0 => this.connectionSelected;
                     -1 => this.currSelectedConnectionIdx;
                     null => this.currSelectedConnection;
+                // If a node is selected, delete the node
+                } else if (this.nodeSelected) {
+                    this.removeNode(this.currSelectedNode);
+
+                    0 => this.nodeSelected;
+                    -1 => this.currSelectedNodeIdx;
+                    null => this.currSelectedNode;
                 }
             }
 
@@ -341,6 +407,19 @@ public class NodeManager {
             if (this.menuOpen) {
                 this.currMenu.mouseHoverEntry(mouseWorldPos) => int hoveredMenuEntryIdx;
                 this.currMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
+            }
+
+            // TODO: Remove this block when done testing
+            for (Node node : this.nodesOnScreen) {
+                node.mouseHoverOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
+                if (nodeJackModifierHover) {
+                    node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
+                    if (jackModifier == JackModifierBox.ADD) {
+                        <<< "Hover over ADD box" >>>;
+                    } else if (jackModifier == JackModifierBox.REMOVE) {
+                        <<< "Hover over REMOVE box" >>>;
+                    }
+                }
             }
 
             GG.nextFrame() => now;
