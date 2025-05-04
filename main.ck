@@ -1,5 +1,5 @@
 /*
-    How to run: chuck --caution-to-the-wind --dac:5 --out:16 --adc:5 --in:16 main.ck
+    How to run: chuck --caution-to-the-wind --dac:5 --out:16 --adc:5 --in:12 main.ck
 */
 
 // Imports
@@ -20,9 +20,16 @@ Color.WHITE => GG.scene().backgroundColor;
 // Events
 AddNodeEvent addNodeEvent;
 
+// Node Manager
+NodeManager nodeManager;
+nodeManager.findMidiDevices();
+spork ~ nodeManager.run();
+spork ~ nodeManager.addNodeHandler(addNodeEvent);
+
+
 // UI
 UIManager uiManager(addNodeEvent);
-uiManager.setMidiInUI([new Enum(0, "IAC Driver Default"), new Enum(1, "IAC Driver ChucK"), new Enum(2, "Lumatone")]);
+uiManager.setMidiInUI(nodeManager.midiInDevices);
 spork ~ uiManager.resize();
 spork ~ uiManager.run();
 
@@ -87,17 +94,13 @@ MidiInNode midiIn4(midiDeviceID, 4, 3);
 spork ~ midiIn4.run();
 
 
-// Node manager
-NodeManager nodeManager;
+// Add nodes to node manager
 nodeManager.addNode(audioOut);
 nodeManager.addNode(audioIn);
 nodeManager.addNode(midiIn1);
 nodeManager.addNode(midiIn2);
 nodeManager.addNode(midiIn3);
 nodeManager.addNode(midiIn4);
-
-spork ~ nodeManager.run();
-spork ~ nodeManager.addNodeHandler(addNodeEvent);
 
 
 while (true) {

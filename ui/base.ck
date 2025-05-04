@@ -16,25 +16,8 @@ public class BorderedBox extends GGen {
     }
 
     fun @construct(string nameText, float xScale, float yScale) {
-        // Scale
-        @(xScale, yScale, 0.2) => this.box.sca;
-        @(0.25, 0.25, 0.25) => this.text.sca;
-
-        @(0.05, yScale, 0.2) => this.leftBorder.sca;
-        @(0.05, yScale, 0.2) => this.rightBorder.sca;
-        @(xScale, 0.05, 0.2) => this.topBorder.sca;
-        @(xScale, 0.05, 0.2) => this.bottomBorder.sca;
-
-        // Position
-        0.101 => this.text.posZ;
-
-        (xScale / 2.) - (this.leftBorder.scaX() / 2.) => float xBorderPos;
-        (yScale / 2.) - (this.topBorder.scaY() / 2.) => float yBorderPos;
-
-        @(-xBorderPos, 0., 0.001) => this.leftBorder.pos;
-        @(xBorderPos, 0., 0.001) => this.rightBorder.pos;
-        @(0., yBorderPos, 0.001) => this.topBorder.pos;
-        @(0., -yBorderPos, 0.001) => this.bottomBorder.pos;
+        // Scale and Position
+        this.setScale(xScale, yScale);
 
         // Text
         nameText => this.text.text;
@@ -66,6 +49,28 @@ public class BorderedBox extends GGen {
         this.rightBorder --> this;
         this.topBorder --> this;
         this.bottomBorder --> this;
+    }
+
+    fun void setScale(float xScale, float yScale) {
+        // Scale
+        @(xScale, yScale, 0.2) => this.box.sca;
+        @(0.25, 0.25, 0.25) => this.text.sca;
+
+        @(0.05, yScale, 0.2) => this.leftBorder.sca;
+        @(0.05, yScale, 0.2) => this.rightBorder.sca;
+        @(xScale, 0.05, 0.2) => this.topBorder.sca;
+        @(xScale, 0.05, 0.2) => this.bottomBorder.sca;
+
+        // Position
+        0.101 => this.text.posZ;
+
+        (xScale / 2.) - (this.leftBorder.scaX() / 2.) => float xBorderPos;
+        (yScale / 2.) - (this.topBorder.scaY() / 2.) => float yBorderPos;
+
+        @(-xBorderPos, 0., 0.001) => this.leftBorder.pos;
+        @(xBorderPos, 0., 0.001) => this.rightBorder.pos;
+        @(0., yBorderPos, 0.001) => this.topBorder.pos;
+        @(0., -yBorderPos, 0.001) => this.bottomBorder.pos;
     }
 
     fun void setName(string n) {

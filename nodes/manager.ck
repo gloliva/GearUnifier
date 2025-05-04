@@ -34,6 +34,10 @@ public class NodeManager {
     int currSelectedConnectionIdx;
     Connection @ currSelectedConnection;
 
+    // Available Midi Devices
+    Enum midiInDevices[0];
+    Enum midiOutDevices[0];
+
     fun void addNode(Node node) {
         this.nodesOnScreen << node;
         this.numNodes++;
@@ -103,6 +107,70 @@ public class NodeManager {
                 MidiInNode midiIn(midiDeviceID, 0, 3);
                 this.addNode(midiIn);
                 spork ~ midiIn.run();
+            }
+        }
+    }
+
+    fun void findMidiDevices() {
+        // Write `chuck --probe` output to file
+        "chuck --probe 2>&1 | grep -A 10 \"MIDI\" > .midiDevices.txt" => string chuckProbeCmd;
+        Std.system(chuckProbeCmd);
+
+        FileIO fio;
+        StringTokenizer tokenizer;
+        string line;
+        string token;
+
+        ".midiDevices.txt" => fio.open;
+        // Ensure file opened correctly
+        if( !fio.good() ) {
+            cherr <= "ERROR: Unable to open file/dir: " <= ".midiDevices.txt" <= " for reading."
+                    <= IO.newline();
+            me.exit();
+        }
+
+        0 => int processInputs;
+        0 => int processOutputs;
+
+        while (fio.more()) {
+            fio.readLine() => line;
+            line => tokenizer.set;
+
+            if (tokenizer.size() == 1) {
+                0 => processInputs;
+                0 => processOutputs;
+            }
+
+            if (processInputs || processOutputs) {
+                // [chuck]:  line start
+                tokenizer.next();
+
+                // Device ID
+                tokenizer.next().charAt(1) - "0".charAt(0) => int deviceId;
+
+                // Colon
+                tokenizer.next();
+
+                // Rest of the line is device name
+                tokenizer.next() => string deviceName;
+                while (tokenizer.more()) {
+                    deviceName + " " + tokenizer.next() => deviceName;
+                }
+
+                // Remove " in beginning and end of name
+                deviceName.substring(1, deviceName.length() - 2) => deviceName;
+
+                if (processInputs) this.midiInDevices << new Enum(deviceId, deviceName);
+                if (processOutputs) this.midiOutDevices << new Enum(deviceId, deviceName);
+            }
+
+            while ( tokenizer.more() && (!processInputs || !processOutputs) ) {
+                tokenizer.next() => token;
+                if (token == "MIDI") {
+                    tokenizer.next() => token;
+                    if (token == "input" || token == "inputs") 1 => processInputs;
+                    if (token == "output" || token == "outputs") 1 => processOutputs;
+                }
             }
         }
     }

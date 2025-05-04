@@ -29,6 +29,11 @@ public class UIManager {
 
     fun void setMidiInUI(Enum midiDeviceNames[]) {
         new DropdownMenu(midiDeviceNames) @=> this.midiInMenu;
+
+        // Set name and scale
+        this.midiInMenu.setSelectedName("Midi In");
+        this.midiInMenu.setScale(4., 0.5);
+
         @(0.3, 0.3, 1.) => this.midiInMenu.sca;
         0.201 => this.midiInMenu.posZ;
         this.midiInMenu --> GG.scene();
