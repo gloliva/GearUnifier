@@ -250,7 +250,7 @@ public class NodeManager {
                     node.mouseOverOptionsBox(mouseWorldPos) => int nodeOptionsHover;
                     if (nodeOptionsHover || (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen)) {
                         <<< "Clicked on node option's box" >>>;
-                        node.nodeOptionsBox.handleMouseLeftDown(mouseWorldPos);
+                        node.nodeOptionsBox.handleMouseLeftDown(mouseWorldPos) => nodeOptionsBoxIteractedWith;
 
                         // Found the node that was clicked on, can exit early
                         if (nodeOptionsBoxIteractedWith) {
