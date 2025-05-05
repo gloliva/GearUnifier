@@ -19,6 +19,7 @@ public class Node extends GGen {
     GCube nodeContentBox;
     OptionsBox @ nodeOptionsBox;
     JackModifierBox @ jackModifierBox;
+    VisibilityBox @ nodeVisibilityBox;
 
     // Contents
     Jack jacks[0];
@@ -120,6 +121,46 @@ public class Node extends GGen {
     fun int mouseOverJackModifierBox(vec3 mouseWorldPos) {
         if (this.jackModifierBox == null) return false;
         return this.mouseOverBox(mouseWorldPos, [this.jackModifierBox, this.jackModifierBox.contentBox]);
+    }
+
+    fun int mouseOverVisibilityBox(vec3 mouseWorldPos) {
+        if (this.nodeVisibilityBox == null) return false;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeVisibilityBox, this.nodeVisibilityBox.contentBox]);
+    }
+
+    fun void hideIOBox() {
+
+    }
+
+    fun void showIOBox() {
+
+    }
+
+    fun void hideOptionsBox() {
+        if (this.nodeOptionsBox == null) return;
+
+        this.nodeOptionsBox --< this;
+        0 => this.nodeOptionsBox.active;
+
+        // Order goes nodeNameBox --> jackModifierBox --> nodeContentBox --> nodeVisibilityBox
+        if (this.jackModifierBox != null && this.jackModifierBox.active) {
+            this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.jackModifierBox.contentBox.scaY() / 2.) => this.jackModifierBox.posY;
+            this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
+            this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
+        // Order goes nodeNameBox --> nodeVisibilityBox
+        } else if (this.jackModifierBox == null || (this.jackModifierBox != null && !this.jackModifierBox.active)){
+            this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
+        }
+
+    }
+
+    fun void showOptionsBox() {
+        if (this.nodeOptionsBox == null) return;
+
+        this.nodeOptionsBox --> this;
+        1 => this.nodeOptionsBox.active;
+
+        // Order goes nodeNameBox --> nodeOptionsBox --> jackModifierBox --> nodeContentBox --> nodeVisibilityBox
     }
 
     fun void connect(UGen ugen, int inputJackIdx) {
@@ -329,6 +370,7 @@ public class JackModifierBox extends GGen {
     GCube contentBox;
     BorderedBox @ addBox;
     BorderedBox @ removeBox;
+    1 => int active;
 
     1 => static int ADD;
     -1 => static int REMOVE;
@@ -376,8 +418,8 @@ public class OptionsBox extends GGen {
     GCube box;
     GText optionNames[0];
     int numOptions;
-    int active;
     int menuOpen;
+    1 => int active;
 
     fun @construct(string optionNames[], float xScale) {
         optionNames.size() => this.numOptions;
@@ -427,5 +469,52 @@ public class OptionsBox extends GGen {
 
     fun void handleNotClickedOn() {
         <<< "ERROR: Override the handleNotClickedOn function for Child Nodes" >>>;
+    }
+}
+
+
+public class VisibilityBox extends GGen {
+    GCube contentBox;
+    BorderedBox @ optionsBox;
+    BorderedBox @ ioBox;
+
+    1 => static int OPTIONS_BOX;
+    -1 => static int IO_BOX;
+
+    fun @construct(float xScale) {
+        new BorderedBox("Options", 1.5, 0.5) @=> this.optionsBox;
+        new BorderedBox("In/Out", 1.5, 0.5) @=> this.ioBox;
+
+        // Position
+        1. => this.optionsBox.posX;
+        -1. => this.ioBox.posX;
+
+        // Scale
+        @(xScale, 1.0, 0.2) => this.contentBox.sca;
+
+        // Color
+        Color.BLACK => this.contentBox.color;
+
+        // Names
+        "Visibility Box" => this.name;
+        "Options Button Box" => this.optionsBox.name;
+        "IO Button Box" => this.ioBox.name;
+
+        // Connections
+        this.contentBox --> this;
+        this.optionsBox --> this;
+        this.ioBox --> this;
+    }
+
+    fun int mouseHoverModifiers(vec3 mouseWorldPos) {
+        this.parent()$Node @=> Node parentNode;
+
+        // Check optionsBox
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.optionsBox, this.optionsBox.box])) return this.OPTIONS_BOX;
+
+        // Check ioBox
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.ioBox, this.ioBox.box])) return this.IO_BOX;
+
+        return 0;
     }
 }

@@ -47,7 +47,7 @@ audioIn --> GG.scene();
 
 
 // TODO: MidiDevice, remove when done testing
-2 => int midiDeviceID;
+1 => int midiDeviceID;
 
 
 // Midi 1
@@ -99,8 +99,8 @@ nodeManager.addNode(audioOut);
 nodeManager.addNode(audioIn);
 // nodeManager.addNode(midiIn1);
 // nodeManager.addNode(midiIn2);
-nodeManager.addNode(midiIn3);
-nodeManager.addNode(midiIn4);
+// nodeManager.addNode(midiIn3);
+// nodeManager.addNode(midiIn4);
 
 
 while (true) {

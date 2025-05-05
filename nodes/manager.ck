@@ -368,6 +368,24 @@ public class NodeManager {
                             node.removeJack();
                         }
                     }
+
+                    node.mouseOverVisibilityBox(mouseWorldPos) => int nodeVisibilityBoxHover;
+                    if (nodeVisibilityBoxHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                        node.nodeVisibilityBox.mouseHoverModifiers(mouseWorldPos) => int visibilityModifier;
+                        if (visibilityModifier == VisibilityBox.OPTIONS_BOX) {
+                            if (node.nodeOptionsBox.active) {
+                                node.hideOptionsBox();
+                            } else {
+                                node.showOptionsBox();
+                            }
+                        } else if (visibilityModifier == VisibilityBox.IO_BOX) {
+                            if (node.jackModifierBox.active) {
+                                node.hideIOBox();
+                            } else {
+                                node.showIOBox();
+                            }
+                        }
+                    }
                 }
 
                 // Check if clicking on a connection wire

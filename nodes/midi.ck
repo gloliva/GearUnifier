@@ -107,7 +107,6 @@ public class MidiOptionsBox extends OptionsBox {
         if (this.channelSelectMenu.expanded) {
             this.parent()$Node @=> Node parentNode;
             this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.channelSelectMenu) => int hoveredMenuEntryIdx;
-            <<< "Menu entry over", hoveredMenuEntryIdx >>>;
             this.channelSelectMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
         }
     }
@@ -182,6 +181,9 @@ public class MidiNode extends Node {
         // Create jack modifier box with this node's scale
         new JackModifierBox(4.) @=> this.jackModifierBox;
 
+        // Create visibility box with this node's scale
+        new VisibilityBox(4.) @=> this.nodeVisibilityBox;
+
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
         @(0.25, 0.25, 0.25) => this.nodeName.sca;
@@ -195,6 +197,7 @@ public class MidiNode extends Node {
         this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.nodeOptionsBox.box.scaY() / 2.) => this.nodeOptionsBox.posY;
         this.nodeOptionsBox.posY() - (this.nodeOptionsBox.box.scaY() / 2.) - (this.jackModifierBox.contentBox.scaY() / 2.) => this.jackModifierBox.posY;
         this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
+        this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
 
         // Update NodeOptionsBox text positions
         // This has to happen after 1) all the boxes are scaled and 2) each box has its positions
@@ -225,6 +228,7 @@ public class MidiNode extends Node {
         this.nodeContentBox --> this;
         this.nodeOptionsBox --> this;
         this.jackModifierBox --> this;
+        this.nodeVisibilityBox --> this;
     }
 
     fun void setChannel(int channel) {
@@ -357,9 +361,9 @@ public class MidiInNode extends MidiNode {
         // Update content box scale
         this.numJacks => this.nodeContentBox.scaY;
 
-        // Update position of content box and jack modifier box
+        // Update position of content box and visibility box
         this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
-
+        this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
 
         // Add objects to lists
         this.jacks << jack;
@@ -385,6 +389,7 @@ public class MidiInNode extends MidiNode {
 
         // Update position of content box and jack modifier box
         this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
+        this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
 
         // Remove OutputDataType mapping
         jackMenu.getSelectedEntry() @=> Enum menuSelection;
