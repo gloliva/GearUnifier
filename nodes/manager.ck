@@ -335,7 +335,7 @@ public class NodeManager {
                         node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
                         if (jackModifier == JackModifierBox.ADD) {
                             node.addJack();
-                        } else if (jackModifier == JackModifierBox.REMOVE) {
+                        } else if (jackModifier == JackModifierBox.REMOVE && node.numJacks > 1) {
                             // If removed jack has a connection, remove it
                             node.numJacks - 1 => int removedJackIdx;
 
@@ -504,19 +504,6 @@ public class NodeManager {
             for (Node node : this.nodesOnScreen) {
                 if (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen) {
                     node.nodeOptionsBox.handleMouseOver(mouseWorldPos);
-                }
-            }
-
-            // TODO: Remove this block when done testing
-            for (Node node : this.nodesOnScreen) {
-                node.mouseOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
-                if (nodeJackModifierHover) {
-                    node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
-                    if (jackModifier == JackModifierBox.ADD) {
-                        <<< "Hover over ADD box", Math.random() >>>;
-                    } else if (jackModifier == JackModifierBox.REMOVE) {
-                        <<< "Hover over REMOVE box", Math.random() >>>;
-                    }
                 }
             }
 
