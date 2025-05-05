@@ -17,6 +17,7 @@ public class Node extends GGen {
     GText nodeName;
     GCube nodeNameBox;
     GCube nodeContentBox;
+    OptionsBox @ nodeOptionsBox;
     JackModifierBox @ jackModifierBox;
 
     // Contents
@@ -30,11 +31,11 @@ public class Node extends GGen {
         "Node Content Box" => this.nodeContentBox.name;
     }
 
-    fun int mouseHoverNameBox(vec3 mouseWorldPos) {
-        this.posX() + this.nodeNameBox.posX() * this.scaX() => float centerX;
-        this.posY() + this.nodeNameBox.posY() * this.scaY() => float centerY;
-        (this.nodeNameBox.scaX() * this.scaX()) / 2.0 => float halfW;
-        (this.nodeNameBox.scaY() * this.scaY()) / 2.0 => float halfH;
+    fun int mouseOverBox(vec3 mouseWorldPos, GGen box) {
+        this.posX() + box.posX() * this.scaX() => float centerX;
+        this.posY() + box.posY() * this.scaY() => float centerY;
+        (box.scaX() * this.scaX()) / 2.0 => float halfW;
+        (box.scaY() * this.scaY()) / 2.0 => float halfH;
 
         if (
             mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
@@ -46,11 +47,11 @@ public class Node extends GGen {
         return false;
     }
 
-    fun int mouseHoverContentBox(vec3 mouseWorldPos) {
-        this.posX() + this.nodeContentBox.posX() * this.scaX() => float centerX;
-        this.posY() + this.nodeContentBox.posY() * this.scaY() => float centerY;
-        (this.nodeContentBox.scaX() * this.scaX()) / 2.0 => float halfW;
-        (this.nodeContentBox.scaY() * this.scaY()) / 2.0 => float halfH;
+    fun int mouseOverBox(vec3 mouseWorldPos, GGen parentBox, GGen childBox) {
+        this.posX() + (parentBox.posX() * this.scaX()) + (childBox.posX() * this.scaX()) => float centerX;
+        this.posY() + (parentBox.posY() * this.scaY()) + (childBox.posY() * this.scaY()) => float centerY;
+        (childBox.scaX() * parentBox.scaX() * this.scaX()) / 2.0 => float halfW;
+        (childBox.scaY() * parentBox.scaY() * this.scaY()) / 2.0 => float halfH;
 
         if (
             mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
@@ -60,6 +61,19 @@ public class Node extends GGen {
         }
 
         return false;
+    }
+
+    fun int mouseOverNameBox(vec3 mouseWorldPos) {
+        return this.mouseOverBox(mouseWorldPos, this.nodeNameBox);
+    }
+
+    fun int mouseOverOptionsBox(vec3 mouseWorldPos) {
+        if (this.nodeOptionsBox == null) return false;
+        return this.mouseOverBox(mouseWorldPos, this.nodeOptionsBox, this.nodeOptionsBox.box);
+    }
+
+    fun int mouseOverContentBox(vec3 mouseWorldPos) {
+        return this.mouseOverBox(mouseWorldPos, this.nodeContentBox);
     }
 
     fun int mouseHoverOverJack(vec3 mouseWorldPos) {
@@ -68,15 +82,7 @@ public class Node extends GGen {
         for (int idx; idx < this.jacks.size(); idx++) {
             this.jacks[idx] @=> Jack jack;
 
-            this.posX() + jack.posX() * this.scaX() => float centerX;
-            this.posY() + jack.posY() * this.scaY() => float centerY;
-            (jack.scaX() * this.scaX()) / 2.0 => float halfW;
-            (jack.scaY() * this.scaY()) / 2.0 => float halfH;
-
-            if (
-                mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
-                && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
-            ) {
+            if (this.mouseOverBox(mouseWorldPos, jack)) {
                 idx => jackIdx;
                 break;
             }
@@ -85,21 +91,13 @@ public class Node extends GGen {
         return jackIdx;
     }
 
-    fun int mouseHoverOverDropdownMenu(vec3 mouseWorldPos) {
+    fun int mouseOverDropdownMenu(vec3 mouseWorldPos) {
         -1 => int dropdownMenuIdx;
 
         for (int idx; idx < this.menus.size(); idx++) {
             this.menus[idx] @=> DropdownMenu menu;
 
-            this.posX() + (menu.posX() * this.scaX()) + (menu.selectedBox.box.posX() * this.scaX()) => float centerX;
-            this.posY() + (menu.posY() * this.scaY()) + (menu.selectedBox.box.posY() * this.scaY()) => float centerY;
-            (menu.selectedBox.box.scaX() * menu.scaX() * this.scaX()) / 2.0 => float halfW;
-            (menu.selectedBox.box.scaY() * menu.scaY() * this.scaY()) / 2.0 => float halfH;
-
-            if (
-                mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
-                && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
-            ) {
+            if (this.mouseOverBox(mouseWorldPos, menu, menu.selectedBox.box)) {
                 idx => dropdownMenuIdx;
                 break;
             }
@@ -108,22 +106,9 @@ public class Node extends GGen {
         return dropdownMenuIdx;
     }
 
-    fun int mouseHoverOverJackModifierBox(vec3 mouseWorldPos) {
+    fun int mouseOverJackModifierBox(vec3 mouseWorldPos) {
         if (this.jackModifierBox == null) return false;
-
-        this.posX() + this.jackModifierBox.posX() * this.scaX() => float centerX;
-        this.posY() + this.jackModifierBox.posY() * this.scaY() => float centerY;
-        (this.jackModifierBox.scaX() * this.scaX()) / 2.0 => float halfW;
-        (this.jackModifierBox.scaY() * this.scaY()) / 2.0 => float halfH;
-
-        if (
-            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
-            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
-        ) {
-            return true;
-        }
-
-        return false;
+        return this.mouseOverBox(mouseWorldPos, this.jackModifierBox);
     }
 
     fun void connect(UGen ugen, int inputJackIdx) {
@@ -221,7 +206,7 @@ public class Connection extends GGen {
         this --< GG.scene();
     }
 
-    fun int mouseHoverOverWire(vec3 mouseWorldPos) {
+    fun int mouseOverWire(vec3 mouseWorldPos) {
         @(this.inputJackPos.x - this.outputJackPos.x, this.inputJackPos.y - this.outputJackPos.y) => vec2 d;  // vector along line
         @(mouseWorldPos.x - this.outputJackPos.x, mouseWorldPos.y - this.outputJackPos.y) => vec2 m; // Vector from start to mouse
         d.dot(d) => float lenSq; // squared length of the line
@@ -349,7 +334,7 @@ public class JackModifierBox extends GGen {
         @(xScale, 1., 0.2) => this.contentBox.sca;
 
         // Color
-        Color.BLACK => this.contentBox.color;
+        Color.GRAY => this.contentBox.color;
 
         // Names
         "Jack Modifier Box" => this.name;
@@ -392,5 +377,47 @@ public class JackModifierBox extends GGen {
         }
 
         return 0;
+    }
+}
+
+
+public class OptionsBox extends GGen {
+    GCube box;
+    GText optionNames[0];
+    int numOptions;
+    int active;
+
+    fun @construct(string optionNames[], float xScale) {
+        optionNames.size() => this.numOptions;
+
+        for (int idx; idx < optionNames.size(); idx++) {
+            GText text;
+            optionNames[idx] => text.text;
+            @(0., 0.5) => text.controlPoints;
+
+            @(-1 * ((xScale - (xScale * 0.2)) / 2.), 0.5 - idx, 0.201) => text.pos;
+            @(0.25, 0.25, 0.25) => text.sca;
+            this.optionNames << text;
+
+            "GText " + optionNames[idx] => text.name;
+            text --> this;
+        }
+
+        // Scale
+        @(xScale, numOptions, 0.2) => this.box.sca;
+
+        // Color
+        Color.GRAY => this.box.color;
+
+        // Name
+        "OptionsBox GCube" => this.box.name;
+        "Node Options Box" => this.name;
+
+        // Connections
+        this.box --> this;
+    }
+
+    fun void handleMouseOver(vec3 mouseWorldPos) {
+        <<< "ERROR: Override the handleMouseOver function for Child Nodes" >>>;
     }
 }

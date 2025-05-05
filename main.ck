@@ -87,9 +87,9 @@ spork ~ midiIn3.run();
 MidiInNode midiIn4(midiDeviceID, 4, 3);
 -2.5 => midiIn4.posY;
 
-// midiIn4.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
-// midiIn4.outputDataTypeIdx(MidiDataType.GATE, 0, 1);
-// midiIn4.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0, 2);
+midiIn4.outputDataTypeIdx(MidiDataType.PITCH, 0, 0);
+midiIn4.outputDataTypeIdx(MidiDataType.GATE, 0, 1);
+midiIn4.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0, 2);
 
 spork ~ midiIn4.run();
 
@@ -97,8 +97,8 @@ spork ~ midiIn4.run();
 // Add nodes to node manager
 nodeManager.addNode(audioOut);
 nodeManager.addNode(audioIn);
-nodeManager.addNode(midiIn1);
-nodeManager.addNode(midiIn2);
+// nodeManager.addNode(midiIn1);
+// nodeManager.addNode(midiIn2);
 nodeManager.addNode(midiIn3);
 nodeManager.addNode(midiIn4);
 

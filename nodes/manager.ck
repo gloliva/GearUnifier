@@ -228,7 +228,7 @@ public class NodeManager {
                 -1 => int clickedConnectionIdx;
                 for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
                     this.nodeConnections[connIdx] @=> Connection conn;
-                    conn.mouseHoverOverWire(mouseWorldPos) => int hoverOverWire;
+                    conn.mouseOverWire(mouseWorldPos) => int hoverOverWire;
                     if (hoverOverWire) {
                         // If a wire is already selected, unselect that wire
                         if (this.connectionSelected) this.currSelectedConnection.unselectWire();
@@ -258,7 +258,7 @@ public class NodeManager {
                     this.nodesOnScreen[nodeIdx] @=> Node node;
 
                     // Check if mouse is over this node's name box
-                    node.mouseHoverNameBox(mouseWorldPos) => int nodeNameHover;
+                    node.mouseOverNameBox(mouseWorldPos) => int nodeNameHover;
                     if (nodeNameHover) {
                         <<< "clicked on node name box", node.nodeID >>>;
                         1 => this.nodeSelected;
@@ -270,8 +270,17 @@ public class NodeManager {
                         break;
                     }
 
+                    // Check if mouse is over this node's options box
+                    node.mouseOverOptionsBox(mouseWorldPos) => int nodeOptionsHover;
+                    if (nodeOptionsHover) {
+                        <<< "Clicked on node option's box" >>>;
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
+                    }
+
                     // Check if mouse is over this node's content box
-                    node.mouseHoverContentBox(mouseWorldPos) => int nodeContentHover;
+                    node.mouseOverContentBox(mouseWorldPos) => int nodeContentHover;
                     if (nodeContentHover == 1) {
                         // Check if clicking on an Input/Output jack
                         node.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
@@ -315,7 +324,7 @@ public class NodeManager {
                         }
 
                         // Check if clicking on a menu
-                        node.mouseHoverOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
+                        node.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
                         if (dropdownMenuIdx != -1 && dropdownMenuEntryIdx == -1) {
                             <<< "Clicked on", node.menus[dropdownMenuIdx].menuID >>>;
 
@@ -338,7 +347,7 @@ public class NodeManager {
                     }
 
                     // Check if mouse is over this node's jack modifier box and not in an open menu
-                    node.mouseHoverOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
+                    node.mouseOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
                     if (nodeJackModifierHover && dropdownMenuEntryIdx == -1) {
                         node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
                         if (jackModifier == JackModifierBox.ADD) {
@@ -400,7 +409,7 @@ public class NodeManager {
                         this.nodesOnScreen[nodeIdx] @=> Node node;
 
                         // Check if mouse is over this node's name box
-                        node.mouseHoverNameBox(mouseWorldPos) => int nodeNameHover;
+                        node.mouseOverNameBox(mouseWorldPos) => int nodeNameHover;
                         if (nodeNameHover) {
                             1 => this.nodeHeld;
                             nodeIdx => this.currHeldNodeIdx;
@@ -484,13 +493,13 @@ public class NodeManager {
 
             // TODO: Remove this block when done testing
             for (Node node : this.nodesOnScreen) {
-                node.mouseHoverOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
+                node.mouseOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
                 if (nodeJackModifierHover) {
                     node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
                     if (jackModifier == JackModifierBox.ADD) {
-                        <<< "Hover over ADD box" >>>;
+                        <<< "Hover over ADD box", Math.random() >>>;
                     } else if (jackModifier == JackModifierBox.REMOVE) {
-                        <<< "Hover over REMOVE box" >>>;
+                        <<< "Hover over REMOVE box", Math.random() >>>;
                     }
                 }
             }

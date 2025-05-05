@@ -53,6 +53,41 @@ public class SynthMode {
 }
 
 
+public class MidiOptionsBox extends OptionsBox {
+    DropdownMenu @ channelSelect;
+
+    fun @construct(string optionNames[], float xScale) {
+        OptionsBox(optionNames, xScale);
+
+        // Channel Menu
+        Enum channelMenuItems[0];
+        channelMenuItems << new Enum(-1, "All");
+        for (int idx; idx < 16; idx++) {
+            channelMenuItems << new Enum(idx, Std.itoa(idx + 1));
+        }
+
+        new DropdownMenu(channelMenuItems) @=> this.channelSelect;
+        this.channelSelect.updateSelectedEntry(0);
+
+        // Position
+        @(0.75, 0.5, 0.201) => this.channelSelect.pos;
+
+        // Scale
+
+        // Name
+        "ChannelSelect Dropdown Menu" => this.channelSelect.name;
+        "Midi Options Box" => this.name;
+
+        // Connections
+        this.channelSelect --> this;
+    }
+
+    fun void handleMouseOver(vec3 mouseWorldPos) {
+        <<< "ERROR: Override the handleMouseOver function for Child Nodes" >>>;
+    }
+}
+
+
 public class MidiNode extends Node {
     int channel;
     string ioType;
@@ -71,20 +106,25 @@ public class MidiNode extends Node {
         1. => float yPos;
         if (this.numJacks > 0) this.numJacks => yPos;
 
+        // Create options box with this node's scale
+        new MidiOptionsBox(["Channel", "Mode"], 4.) @=> this.nodeOptionsBox;
+
         // Create jack modifier box with this node's scale
         new JackModifierBox(4.) @=> this.jackModifierBox;
-
-        // Position
-        @(0., 1., 0.101) => this.nodeName.pos;
-        1. => this.nodeNameBox.posY;
-        0.5 - (yPos / 2.) => this.nodeContentBox.posY;
-        this.nodeContentBox.posY() - (yPos - 1) => this.jackModifierBox.posY;
 
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
         @(0.25, 0.25, 0.25) => this.nodeName.sca;
         @(4., 1., 0.2) => this.nodeNameBox.sca;
         @(4., yPos, 0.2) => this.nodeContentBox.sca;
+
+        // Position
+        @(0., 1., 0.101) => this.nodeName.pos;
+        1. => this.nodeNameBox.posY;
+
+        this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.nodeOptionsBox.box.scaY() / 2.) => this.nodeOptionsBox.posY;
+        this.nodeOptionsBox.posY() - (this.nodeOptionsBox.box.scaY() / 2.) - (this.jackModifierBox.contentBox.scaY() / 2.) => this.jackModifierBox.posY;
+        this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
 
         // Text
         IOType.toString(type) => this.ioType;
@@ -108,6 +148,7 @@ public class MidiNode extends Node {
         this.nodeName --> this;
         this.nodeNameBox --> this;
         this.nodeContentBox --> this;
+        this.nodeOptionsBox --> this;
         this.jackModifierBox --> this;
     }
 }
@@ -139,6 +180,7 @@ public class MidiInNode extends MidiNode {
         // Need to call this here to set nodeID
         MidiInNode(deviceID, channel);
 
+        this.jackModifierBox.posY() - this.jackModifierBox.contentBox.scaY() => float startY;
         for (int idx; idx < initJacks; idx++) {
             Jack jack(idx, jackType);
             DropdownMenu jackMenu(MidiDataType.allTypes, this.nodeID, idx);
@@ -146,11 +188,11 @@ public class MidiInNode extends MidiNode {
 
             // Jack Position
             1.25 => jack.posX;
-            idx * -1 => jack.posY;
+            (idx * -1) + startY => jack.posY;
 
             // Menu Position
             -0.75 => jackMenu.posX;
-            idx * -1 => jackMenu.posY;
+            (idx * -1) + startY => jackMenu.posY;
             0.1 => jackMenu.posZ;
 
             this.jacks << jack;
@@ -219,21 +261,24 @@ public class MidiInNode extends MidiNode {
         // Update numJacks
         this.numJacks++;
 
+        // Starting Y pos
+        this.jackModifierBox.posY() - this.jackModifierBox.contentBox.scaY() => float startY;
+
         // Jack position
         1.25 => jack.posX;
-        jackIdx * -1 => jack.posY;
+        (jackIdx * -1) + startY => jack.posY;
 
         // Menu position
         -0.75 => jackMenu.posX;
-        jackIdx * -1 => jackMenu.posY;
+        (jackIdx * -1) + startY => jackMenu.posY;
         0.1 => jackMenu.posZ;
 
         // Update content box scale
         this.numJacks => this.nodeContentBox.scaY;
 
         // Update position of content box and jack modifier box
-        0.5 - (this.numJacks / 2.) => this.nodeContentBox.posY;
-        this.jackModifierBox.posY() - 1 => this.jackModifierBox.posY;
+        this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
+
 
         // Add objects to lists
         this.jacks << jack;
@@ -258,8 +303,7 @@ public class MidiInNode extends MidiNode {
         this.numJacks => this.nodeContentBox.scaY;
 
         // Update position of content box and jack modifier box
-        0.5 - (this.numJacks / 2.) => this.nodeContentBox.posY;
-        this.jackModifierBox.posY() + 1 => this.jackModifierBox.posY;
+        this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
 
         // Remove OutputDataType mapping
         jackMenu.getSelectedEntry() @=> Enum menuSelection;
