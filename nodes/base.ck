@@ -388,7 +388,7 @@ public class OptionsBox extends GGen {
             @(3., 3., 3., 1.) => text.color;
             @(0., 0.5) => text.controlPoints;
 
-            @(-1 * ((xScale - (xScale * 0.2)) / 2.), 0.5 - idx, 0.201) => text.pos;
+            @(-1 * ((xScale - (xScale * 0.2)) / 2.), -1 * idx, 0.201) => text.pos;
             @(0.25, 0.25, 0.25) => text.sca;
             this.optionNames << text;
 
@@ -397,7 +397,7 @@ public class OptionsBox extends GGen {
         }
 
         // Scale
-        @(xScale, numOptions, 0.2) => this.box.sca;
+        @(xScale, this.numOptions, 0.2) => this.box.sca;
 
         // Color
         Color.GRAY => this.box.color;
@@ -408,6 +408,12 @@ public class OptionsBox extends GGen {
 
         // Connections
         this.box --> this;
+    }
+
+    fun void updatePos() {
+        for (int idx; idx < this.optionNames.size(); idx++) {
+            Math.fabs(this.posY()) - idx => this.optionNames[idx].posY;
+        }
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {

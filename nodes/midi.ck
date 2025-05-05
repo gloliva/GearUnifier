@@ -70,7 +70,7 @@ public class MidiOptionsBox extends OptionsBox {
         this.channelSelectMenu.updateSelectedEntry(0);
 
         // Position
-        @(0.75, 0.5, 0.201) => this.channelSelectMenu.pos;
+        @(0.75, 0., 0.201) => this.channelSelectMenu.pos;
 
         // Name
         "ChannelSelectMenu Dropdown Menu" => this.channelSelectMenu.name;
@@ -78,6 +78,14 @@ public class MidiOptionsBox extends OptionsBox {
 
         // Connections
         this.channelSelectMenu --> this;
+    }
+
+    fun void updatePos() {
+        for (int idx; idx < this.optionNames.size(); idx++) {
+            Math.fabs(this.posY()) - idx => this.optionNames[idx].posY;
+        }
+
+        this.optionNames[0].posY() => this.channelSelectMenu.posY;
     }
 
     fun int mouseOverMenuEntry(vec3 mouseWorldPos, Node parentNode, DropdownMenu menu) {
@@ -169,7 +177,7 @@ public class MidiNode extends Node {
         if (this.numJacks > 0) this.numJacks => yPos;
 
         // Create options box with this node's scale
-        new MidiOptionsBox(["Channel", "Mode"], 4.) @=> this.nodeOptionsBox;
+        new MidiOptionsBox(["Channel"], 4.) @=> this.nodeOptionsBox;
 
         // Create jack modifier box with this node's scale
         new JackModifierBox(4.) @=> this.jackModifierBox;
@@ -187,6 +195,11 @@ public class MidiNode extends Node {
         this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.nodeOptionsBox.box.scaY() / 2.) => this.nodeOptionsBox.posY;
         this.nodeOptionsBox.posY() - (this.nodeOptionsBox.box.scaY() / 2.) - (this.jackModifierBox.contentBox.scaY() / 2.) => this.jackModifierBox.posY;
         this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
+
+        // Update NodeOptionsBox text positions
+        // This has to happen after 1) all the boxes are scaled and 2) each box has its positions
+        // because the text is part of the MidiOptionsBox object, NOT the MidiOptionsBox.box GCube object
+        this.nodeOptionsBox.updatePos();
 
         // Text
         IOType.toString(type) => this.ioType;
