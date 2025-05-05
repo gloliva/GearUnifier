@@ -224,34 +224,9 @@ public class NodeManager {
                     null => this.currMenu;
                 }
 
-                // Check if clicking on a connection wire
-                -1 => int clickedConnectionIdx;
-                for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
-                    this.nodeConnections[connIdx] @=> Connection conn;
-                    conn.mouseOverWire(mouseWorldPos) => int hoverOverWire;
-                    if (hoverOverWire) {
-                        // If a wire is already selected, unselect that wire
-                        if (this.connectionSelected) this.currSelectedConnection.unselectWire();
-
-                        connIdx => clickedConnectionIdx;
-                        connIdx => this.currSelectedConnectionIdx;
-                        1 => this.connectionSelected;
-                        conn @=> this.currSelectedConnection;
-                        conn.selectWire();
-                        break;
-                    }
-                }
-
-                // Remove connection selection if clicked on something else
-                if (this.connectionSelected && clickedConnectionIdx == -1) {
-                    this.currSelectedConnection.unselectWire();
-                    0 => this.connectionSelected;
-                    -1 => this.currSelectedConnectionIdx;
-                    null => this.currSelectedConnection;
-                }
-
                 // click in node
                 -1 => int clickedNodeIdx;
+                0 => int connectionCompletedThisFrame;
 
                 // Check if clicking on an on-screen Node
                 for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
@@ -271,17 +246,22 @@ public class NodeManager {
                     }
 
                     // Check if mouse is over this node's options box
+                    int nodeOptionsBoxIteractedWith;
                     node.mouseOverOptionsBox(mouseWorldPos) => int nodeOptionsHover;
-                    if (nodeOptionsHover) {
+                    if (nodeOptionsHover || (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen)) {
                         <<< "Clicked on node option's box" >>>;
+                        node.nodeOptionsBox.handleMouseLeftDown(mouseWorldPos);
+
                         // Found the node that was clicked on, can exit early
-                        nodeIdx => clickedNodeIdx;
-                        break;
+                        if (nodeOptionsBoxIteractedWith) {
+                            nodeIdx => clickedNodeIdx;
+                            break;
+                        }
                     }
 
                     // Check if mouse is over this node's content box
                     node.mouseOverContentBox(mouseWorldPos) => int nodeContentHover;
-                    if (nodeContentHover == 1) {
+                    if (nodeContentHover == 1 && !nodeOptionsBoxIteractedWith) {
                         // Check if clicking on an Input/Output jack
                         node.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
                         if (jackIdx != -1) {
@@ -314,6 +294,9 @@ public class NodeManager {
                                     // Remove open connection
                                     0 => this.openConnection;
                                     null => this.currOpenConnection;
+
+                                    // Set connection complete this frame
+                                    1 => connectionCompletedThisFrame;
                                 } else {
                                     // Output to output == delete the connection
                                     this.currOpenConnection.deleteWire();
@@ -325,7 +308,7 @@ public class NodeManager {
 
                         // Check if clicking on a menu
                         node.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
-                        if (dropdownMenuIdx != -1 && dropdownMenuEntryIdx == -1) {
+                        if (dropdownMenuIdx != -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                             <<< "Clicked on", node.menus[dropdownMenuIdx].menuID >>>;
 
                             // No existing menu opened
@@ -348,7 +331,7 @@ public class NodeManager {
 
                     // Check if mouse is over this node's jack modifier box and not in an open menu
                     node.mouseOverJackModifierBox(mouseWorldPos) => int nodeJackModifierHover;
-                    if (nodeJackModifierHover && dropdownMenuEntryIdx == -1) {
+                    if (nodeJackModifierHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                         node.jackModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
                         if (jackModifier == JackModifierBox.ADD) {
                             node.addJack();
@@ -385,6 +368,32 @@ public class NodeManager {
                             node.removeJack();
                         }
                     }
+                }
+
+                // Check if clicking on a connection wire
+                -1 => int clickedConnectionIdx;
+                for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+                    this.nodeConnections[connIdx] @=> Connection conn;
+                    conn.mouseOverWire(mouseWorldPos) => int hoverOverWire;
+                    if (hoverOverWire && !connectionCompletedThisFrame) {
+                        // If a wire is already selected, unselect that wire
+                        if (this.connectionSelected) this.currSelectedConnection.unselectWire();
+
+                        connIdx => clickedConnectionIdx;
+                        connIdx => this.currSelectedConnectionIdx;
+                        1 => this.connectionSelected;
+                        conn @=> this.currSelectedConnection;
+                        conn.selectWire();
+                        break;
+                    }
+                }
+
+                // Remove connection selection if clicked on something else
+                if (this.connectionSelected && clickedConnectionIdx == -1) {
+                    this.currSelectedConnection.unselectWire();
+                    0 => this.connectionSelected;
+                    -1 => this.currSelectedConnectionIdx;
+                    null => this.currSelectedConnection;
                 }
 
                 // If clicked outside of a node and a menu is open, close the menu
@@ -489,6 +498,13 @@ public class NodeManager {
             if (this.menuOpen) {
                 this.currMenu.mouseHoverEntry(mouseWorldPos) => int hoveredMenuEntryIdx;
                 this.currMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
+            }
+
+            // Handle mouse over each node's options box, if applicable
+            for (Node node : this.nodesOnScreen) {
+                if (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen) {
+                    node.nodeOptionsBox.handleMouseOver(mouseWorldPos);
+                }
             }
 
             // TODO: Remove this block when done testing

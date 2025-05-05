@@ -47,11 +47,22 @@ public class Node extends GGen {
         return false;
     }
 
-    fun int mouseOverBox(vec3 mouseWorldPos, GGen parentBox, GGen childBox) {
-        this.posX() + (parentBox.posX() * this.scaX()) + (childBox.posX() * this.scaX()) => float centerX;
-        this.posY() + (parentBox.posY() * this.scaY()) + (childBox.posY() * this.scaY()) => float centerY;
-        (childBox.scaX() * parentBox.scaX() * this.scaX()) / 2.0 => float halfW;
-        (childBox.scaY() * parentBox.scaY() * this.scaY()) / 2.0 => float halfH;
+    fun int mouseOverBox(vec3 mouseWorldPos, GGen boxes[]) {
+        this.posX() => float centerX;
+        this.posY() => float centerY;
+        this.scaX() => float halfW;
+        this.scaY() => float halfH;
+
+        for (GGen box : boxes) {
+            centerX + (box.posX() * this.scaX()) => centerX;
+            centerY + (box.posY() * this.scaY()) => centerY;
+
+            halfW * box.scaX() => halfW;
+            halfH * box.scaY() => halfH;
+        }
+
+        halfW / 2. => halfW;
+        halfH / 2. => halfH;
 
         if (
             mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
@@ -69,7 +80,7 @@ public class Node extends GGen {
 
     fun int mouseOverOptionsBox(vec3 mouseWorldPos) {
         if (this.nodeOptionsBox == null) return false;
-        return this.mouseOverBox(mouseWorldPos, this.nodeOptionsBox, this.nodeOptionsBox.box);
+        return this.mouseOverBox(mouseWorldPos, [this.nodeOptionsBox, this.nodeOptionsBox.box]);
     }
 
     fun int mouseOverContentBox(vec3 mouseWorldPos) {
@@ -97,7 +108,7 @@ public class Node extends GGen {
         for (int idx; idx < this.menus.size(); idx++) {
             this.menus[idx] @=> DropdownMenu menu;
 
-            if (this.mouseOverBox(mouseWorldPos, menu, menu.selectedBox.box)) {
+            if (this.mouseOverBox(mouseWorldPos, [menu, menu.selectedBox.box])) {
                 idx => dropdownMenuIdx;
                 break;
             }
@@ -386,6 +397,7 @@ public class OptionsBox extends GGen {
     GText optionNames[0];
     int numOptions;
     int active;
+    int menuOpen;
 
     fun @construct(string optionNames[], float xScale) {
         optionNames.size() => this.numOptions;
@@ -393,6 +405,7 @@ public class OptionsBox extends GGen {
         for (int idx; idx < optionNames.size(); idx++) {
             GText text;
             optionNames[idx] => text.text;
+            @(3., 3., 3., 1.) => text.color;
             @(0., 0.5) => text.controlPoints;
 
             @(-1 * ((xScale - (xScale * 0.2)) / 2.), 0.5 - idx, 0.201) => text.pos;
@@ -419,5 +432,14 @@ public class OptionsBox extends GGen {
 
     fun void handleMouseOver(vec3 mouseWorldPos) {
         <<< "ERROR: Override the handleMouseOver function for Child Nodes" >>>;
+    }
+
+    fun int handleMouseLeftDown(vec3 mouseWorldPos) {
+        <<< "ERROR: Override the handleMouseLeftDown function for Child Nodes" >>>;
+        return false;
+    }
+
+    fun void handleNotClickedOn() {
+        <<< "ERROR: Override the handleNotClickedOn function for Child Nodes" >>>;
     }
 }

@@ -54,7 +54,7 @@ public class SynthMode {
 
 
 public class MidiOptionsBox extends OptionsBox {
-    DropdownMenu @ channelSelect;
+    DropdownMenu @ channelSelectMenu;
 
     fun @construct(string optionNames[], float xScale) {
         OptionsBox(optionNames, xScale);
@@ -66,24 +66,86 @@ public class MidiOptionsBox extends OptionsBox {
             channelMenuItems << new Enum(idx, Std.itoa(idx + 1));
         }
 
-        new DropdownMenu(channelMenuItems) @=> this.channelSelect;
-        this.channelSelect.updateSelectedEntry(0);
+        new DropdownMenu(channelMenuItems) @=> this.channelSelectMenu;
+        this.channelSelectMenu.updateSelectedEntry(0);
 
         // Position
-        @(0.75, 0.5, 0.201) => this.channelSelect.pos;
-
-        // Scale
+        @(0.75, 0.5, 0.201) => this.channelSelectMenu.pos;
 
         // Name
-        "ChannelSelect Dropdown Menu" => this.channelSelect.name;
+        "ChannelSelectMenu Dropdown Menu" => this.channelSelectMenu.name;
         "Midi Options Box" => this.name;
 
         // Connections
-        this.channelSelect --> this;
+        this.channelSelectMenu --> this;
+    }
+
+    fun int mouseOverMenuEntry(vec3 mouseWorldPos, Node parentNode, DropdownMenu menu) {
+        if (!menu.expanded) return -1;
+
+        -1 => int menuEntryIdx;
+        for (int idx; idx < this.channelSelectMenu.menuItemBoxes.size(); idx++) {
+            this.channelSelectMenu.menuItemBoxes[idx] @=> BorderedBox entryBox;
+            if (parentNode.mouseOverBox(mouseWorldPos, [this, this.channelSelectMenu, entryBox, entryBox.box])) {
+                idx => menuEntryIdx;
+                break;
+            }
+        }
+
+        return menuEntryIdx;
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {
-        <<< "ERROR: Override the handleMouseOver function for Child Nodes" >>>;
+        if (this.channelSelectMenu.expanded) {
+            this.parent()$Node @=> Node parentNode;
+            this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.channelSelectMenu) => int hoveredMenuEntryIdx;
+            <<< "Menu entry over", hoveredMenuEntryIdx >>>;
+            this.channelSelectMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
+        }
+    }
+
+    fun int handleMouseLeftDown(vec3 mouseWorldPos) {
+        false => int nodeOptionsBoxIteractedWith;
+
+        Type.of(this.parent()).name() => string parentName;
+
+        // MidiIn Nodes
+        if (parentName == MidiInNode.typeOf().name()) {
+            this.parent()$MidiInNode @=> MidiInNode parentNode;
+
+            // Check if menu is open and clicking on an option
+            if (this.channelSelectMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.channelSelectMenu) => int hoveredMenuEntryIdx;
+
+                if (hoveredMenuEntryIdx != -1) {
+                    this.channelSelectMenu.updateSelectedEntry(hoveredMenuEntryIdx);
+                    this.channelSelectMenu.getSelectedEntry() @=> Enum selectedChannel;
+                    selectedChannel.id => parentNode.setChannel;
+                    true => nodeOptionsBoxIteractedWith;
+                }
+            }
+
+            // Check if clicking on Channel menu options
+            if (parentNode.mouseOverBox(mouseWorldPos, [this, this.channelSelectMenu, this.channelSelectMenu.selectedBox.box])) {
+                if (!this.channelSelectMenu.expanded) {
+                    this.channelSelectMenu.expand();
+                    1 => this.menuOpen;
+                    true => nodeOptionsBoxIteractedWith;
+                }
+            } else {
+                this.channelSelectMenu.collapse();
+                0 => this.menuOpen;
+            }
+        }
+
+        return nodeOptionsBoxIteractedWith;
+    }
+
+    fun void handleNotClickedOn() {
+        if (this.channelSelectMenu.expanded) {
+            this.channelSelectMenu.collapse();
+            0 => this.menuOpen;
+        }
     }
 }
 
@@ -150,6 +212,12 @@ public class MidiNode extends Node {
         this.nodeContentBox --> this;
         this.nodeOptionsBox --> this;
         this.jackModifierBox --> this;
+    }
+
+    fun void setChannel(int channel) {
+        if (channel < 0 || channel >= 16) return;
+
+        channel => this.channel;
     }
 }
 
