@@ -366,6 +366,65 @@ public class Jack extends GGen {
 }
 
 
+public class IOBox extends GGen {
+    GCube contentBox;
+    JackModifierBox @ ioModifierBox;
+
+    // Contents
+    Jack jacks[0];
+    DropdownMenu menus[0];
+
+    // Data handling
+    Step outs[0];
+
+    // IO Type
+    int ioType;
+
+    fun @construct(int numStartJacks, Enum ioMenuEntries[], int ioType, float xScale) {
+        // Member variables
+        ioType => this.ioType;
+
+        // Scale
+        @(xScale, numStartJacks, 0.2) => this.contentBox.sca;
+
+        // Create ioModifierBox with the parent node's scale
+        new JackModifierBox(xScale) @=> this.ioModifierBox;
+
+
+        1 => int xPosModifier;
+        if (ioType == IOType.INPUT) {
+            -1 => xPosModifier;
+        }
+
+        this.ioModifierBox.posY() - this.ioModifierBox.contentBox.scaY() => float startY;
+        // Jacks and Menus
+        for (int idx; idx < numStartJacks; idx++) {
+            Jack jack(idx, ioType);
+            DropdownMenu menu(ioMenuEntries, idx);
+            Step out(0.);
+
+            // Jack Position
+            1.25 * xPosModifier => jack.posX;
+            (idx * -1) + startY => jack.posY;
+
+            // Menu Position
+            -0.75 * xPosModifier => menu.posX;
+            (idx * -1) + startY => menu.posY;
+            0.1 => menu.posZ;
+
+            // Add to lists
+            this.jacks << jack;
+            this.menus << menu;
+            this.outs << out;
+
+            // Jack Connection
+            jack --> this;
+            menu --> this;
+        }
+    }
+}
+
+
 public class JackModifierBox extends GGen {
     GCube contentBox;
     BorderedBox @ addBox;

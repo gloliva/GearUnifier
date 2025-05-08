@@ -20,6 +20,10 @@ public class DropdownMenu extends GGen {
         DropdownMenu(menuItems, "", 0);
     }
 
+    fun @construct(Enum menuItems[], int menuIdx) {
+        DropdownMenu(menuItems, this.parent().name(), menuIdx);
+    }
+
     fun @construct(Enum menuItems[], string parentNodeID, int menuIdx) {
         menuItems @=> this.menuItems;
         parentNodeID + " Menu" + Std.itoa(menuIdx) => this.menuID;

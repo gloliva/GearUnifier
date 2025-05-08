@@ -164,6 +164,10 @@ public class MidiNode extends Node {
     GText deviceName;
 
     fun @construct(int channel, string name, int type) {
+        MidiNode(channel, name, type, 4.);
+    }
+
+    fun @construct(int channel, string name, int type, float xScale) {
         // Parent constructor
         Node();
 
