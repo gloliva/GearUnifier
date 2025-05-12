@@ -168,71 +168,67 @@ public class MidiNode extends Node {
     }
 
     fun @construct(int channel, string name, int type, float xScale) {
-        // Parent constructor
-        Node();
-
         // Member variables
         channel => this.channel;
-        ioType => this.ioType;
+        IOType.toString(type) => this.ioType;
 
         // Content Box parameters
         1. => float yPos;
         if (this.numJacks > 0) this.numJacks => yPos;
 
-        // Create options box with this node's scale
-        new MidiOptionsBox(["Channel"], 4.) @=> this.nodeOptionsBox;
+        // Create name box
+        new NameBox(name + " " + this.ioType, xScale, yPos) @=> this.nodeNameBox;
 
-        // Create jack modifier box with this node's scale
-        new JackModifierBox(4.) @=> this.jackModifierBox;
+        // Create options box with this node's scale
+        new MidiOptionsBox(["Channel"], xScale) @=> this.nodeOptionsBox;
 
         // Create visibility box with this node's scale
-        new VisibilityBox(4.) @=> this.nodeVisibilityBox;
+        new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
 
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
-        @(0.25, 0.25, 0.25) => this.nodeName.sca;
-        @(4., 1., 0.2) => this.nodeNameBox.sca;
-        @(4., yPos, 0.2) => this.nodeContentBox.sca;
-
-        // Position
-        @(0., 1., 0.101) => this.nodeName.pos;
-        1. => this.nodeNameBox.posY;
-
-        this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.nodeOptionsBox.box.scaY() / 2.) => this.nodeOptionsBox.posY;
-        this.nodeOptionsBox.posY() - (this.nodeOptionsBox.box.scaY() / 2.) - (this.jackModifierBox.contentBox.scaY() / 2.) => this.jackModifierBox.posY;
-        this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
-        this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
-
-        // Update NodeOptionsBox text positions
-        // This has to happen after 1) all the boxes are scaled and 2) each box has its positions
-        // because the text is part of the MidiOptionsBox object, NOT the MidiOptionsBox.box GCube object
-        this.nodeOptionsBox.updatePos();
 
         // Text
-        IOType.toString(type) => this.ioType;
         // "Midi " + this.ioType => this.nodeName.text;
-        name + " " + this.ioType => this.nodeName.text;
         name => this.deviceName.text;
 
-        // Color
-        @(3., 3., 3., 1.) => this.nodeName.color;
-        Color.BLACK => this.nodeNameBox.color;
-        Color.GRAY => this.nodeContentBox.color;
-
         // Names
-        this.nodeName.text() + " " + name + " Channel " + this.channel => this.name;
+        this.nodeNameBox.name() + " Channel " + this.channel => this.name;
 
         // Set ID
         Std.itoa(Math.random()) => string randomID;
         this.name() + " ID " + randomID => this.nodeID;
 
         // Connections
-        this.nodeName --> this;
         this.nodeNameBox --> this;
-        this.nodeContentBox --> this;
         this.nodeOptionsBox --> this;
-        this.jackModifierBox --> this;
         this.nodeVisibilityBox --> this;
+    }
+
+    fun void updatePos() {
+        // If Node has all 5 boxes positions go in the following order:
+        // nodeNameBox --> nodeOptionsBox --> nodeInputsBox --> nodeOutputsBox --> nodeVisibilityBox
+        // Optional boxes are nodeOptionsBox, nodeInputsBox, nodeOutputsBox
+
+        [this.nodeNameBox, this.nodeOptionsBox, this.nodeInputsBox, this.nodeOutputsBox, this.nodeVisibilityBox] @=> ContentBox boxes[];
+
+        0 => int prevBoxIdx;
+        1 => int currBoxIdx;
+
+        ContentBox @ prevBox;
+        ContentBox @ currBox;
+
+        while (currBoxIdx < boxes.size()) {
+            boxes[prevBoxIdx] @=> prevBox;
+            boxes[currBoxIdx] @=> currBox;
+
+            if (currBox != null) {
+                prevBox.posY() - (prevBox.scaY() / 2.) - (currBox.contentBox.scaY() / 2.) => currBox.posY;
+                currBoxIdx => prevBoxIdx;
+            }
+
+            currBoxIdx++;
+        }
     }
 
     fun void setChannel(int channel) {
@@ -260,41 +256,11 @@ public class MidiInNode extends MidiNode {
     int midiDataTypeToOut[0];
     Step outs[0];
 
-    fun @construct(int deviceID, int channel, int initJacks) {
-        // Handle Jacks
-        initJacks => this.numJacks;
-        IOType.OUTPUT => int jackType;
-
-        // Parent class constructor
-        // Need to call this here to set nodeID
-        MidiInNode(deviceID, channel);
-
-        this.jackModifierBox.posY() - this.jackModifierBox.contentBox.scaY() => float startY;
-        for (int idx; idx < initJacks; idx++) {
-            Jack jack(idx, jackType);
-            DropdownMenu jackMenu(MidiDataType.allTypes, this.nodeID, idx);
-            Step out(0.);
-
-            // Jack Position
-            1.25 => jack.posX;
-            (idx * -1) + startY => jack.posY;
-
-            // Menu Position
-            -0.75 => jackMenu.posX;
-            (idx * -1) + startY => jackMenu.posY;
-            0.1 => jackMenu.posZ;
-
-            this.jacks << jack;
-            this.menus << jackMenu;
-            this.outs << out;
-
-            // Jack Connection
-            jack --> this;
-            jackMenu --> this;
-        }
+    fun @construct(int deviceID, int channel, int numStartJacks) {
+        MidiInNode(deviceID, channel, numStartJacks, 4.);
     }
 
-    fun @construct(int deviceID, int channel) {
+    fun @construct(int deviceID, int channel, int numStartJacks, float xScale) {
         // Attempt to connect
         if ( !this.m.open(deviceID) ) {
             <<< "Unable to connect to MIDI In device with ID", deviceID >>>;
@@ -305,8 +271,18 @@ public class MidiInNode extends MidiNode {
         new EDO(12, -24) @=> this.tuning;
 
         // Parent class constructor
-        MidiNode(channel, this.m.name(), IOType.INPUT);
+        MidiNode(channel, this.m.name(), IOType.INPUT, xScale);
 
+        // Create Outputs IO box
+        new IOBox(numStartJacks, MidiDataType.allTypes, IOType.OUTPUT, xScale) @=> this.nodeOutputsBox;
+
+        // Update all box positions
+        this.updatePos();
+
+        // Update NodeOptionsBox text positions
+        // This has to happen after 1) all the boxes are scaled and 2) each box has its positions
+        // because the text is part of the MidiOptionsBox object, NOT the MidiOptionsBox.box GCube object
+        this.nodeOptionsBox.updatePos();
     }
 
     fun void synthMode(int mode) {
@@ -323,7 +299,7 @@ public class MidiInNode extends MidiNode {
         outIdx => this.midiDataTypeToOut[key];
 
         // Add Step output to Jack
-        this.jacks[outIdx].setUgen(this.outs[outIdx]);
+        this.nodeOutputsBox.jacks[outIdx].setUgen(this.outs[outIdx]);
     }
 
     fun int outputDataTypeIdx(Enum midiDataType, int voiceIdx) {
@@ -342,71 +318,14 @@ public class MidiInNode extends MidiNode {
     }
 
     fun void addJack() {
-        this.numJacks => int jackIdx;
-        Jack jack(jackIdx, IOType.OUTPUT);
-        DropdownMenu jackMenu(MidiDataType.allTypes, this.nodeID, jackIdx);
-        Step out(0.);
-
-        // Update numJacks
-        this.numJacks++;
-
-        // Starting Y pos
-        this.jackModifierBox.posY() - this.jackModifierBox.contentBox.scaY() => float startY;
-
-        // Jack position
-        1.25 => jack.posX;
-        (jackIdx * -1) + startY => jack.posY;
-
-        // Menu position
-        -0.75 => jackMenu.posX;
-        (jackIdx * -1) + startY => jackMenu.posY;
-        0.1 => jackMenu.posZ;
-
-        // Update content box scale
-        this.numJacks => this.nodeContentBox.scaY;
-
-        // Update position of content box and visibility box
-        this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
-        this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
-
-        // Add objects to lists
-        this.jacks << jack;
-        this.menus << jackMenu;
-        this.outs << out;
-
-        // Jack Connection
-        jack --> this;
-        jackMenu --> this;
+        this.nodeOutputsBox.addJack(MidiDataType.allTypes);
     }
 
     fun void removeJack() {
-        if (this.numJacks == 1) return;
-
-        this.jacks[-1] @=> Jack jack;
-        this.menus[-1] @=> DropdownMenu jackMenu;
-
-        // Update numJacks
-        this.numJacks--;
-
-        // Update content box scale
-        this.numJacks => this.nodeContentBox.scaY;
-
-        // Update position of content box and jack modifier box
-        this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
-        this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
+        this.nodeOutputsBox.removeJack() @=> Enum removedMenuSelection;
 
         // Remove OutputDataType mapping
-        jackMenu.getSelectedEntry() @=> Enum menuSelection;
-        this.removeOutputDataTypeMapping(menuSelection, 0);
-
-        // Remove connections
-        jack --< this;
-        jackMenu --< this;
-
-        // Remove objects from lists
-        this.jacks.popBack();
-        this.menus.popBack();
-        this.outs.popBack();
+        this.removeOutputDataTypeMapping(removedMenuSelection, 0);
     }
 
     fun void sendTrigger(int triggerOutIdx) {
