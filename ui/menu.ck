@@ -141,6 +141,31 @@ public class DropdownMenu extends GGen {
         return menuEntryIdx;
     }
 
+    fun int mouseHoverEntry(vec3 mouseWorldPos, GGen parent, GGen ioBoxParent) {
+        if (!this.expanded) return -1;
+
+        -1 => int menuEntryIdx;
+
+        for (int idx; idx < this.menuItems.size(); idx++) {
+            this.menuItemBoxes[idx] @=> BorderedBox borderedBox;
+
+            parent.posX() + (ioBoxParent.posX() * parent.scaX()) + (this.posX() * parent.scaX()) + (borderedBox.posX() * parent.scaX()) + (borderedBox.box.posX() * parent.scaX()) => float centerX;
+            parent.posY() + (ioBoxParent.posY() * parent.scaY()) + (this.posY() * parent.scaY()) + (borderedBox.posY() * parent.scaY()) + (borderedBox.box.posY() * parent.scaY()) => float centerY;
+            (borderedBox.box.scaX() * borderedBox.scaX() * this.scaX() * ioBoxParent.scaX() * parent.scaX()) / 2.0 => float halfW;
+            (borderedBox.box.scaY() * borderedBox.scaY() * this.scaY() * ioBoxParent.scaY() * parent.scaY()) / 2.0 => float halfH;
+
+            if (
+                mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
+                && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
+            ) {
+                idx => menuEntryIdx;
+                break;
+            }
+        }
+
+        return menuEntryIdx;
+    }
+
     fun void highlightHoveredEntry(int hoveredMenuEntryIdx) {
         if (!this.expanded) return;
 

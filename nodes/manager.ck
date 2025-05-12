@@ -199,7 +199,11 @@ public class NodeManager {
                 // can extend beyond the Node's Y position, which would skip any processing
                 // handled in the Node conditionals
                 -1 => int dropdownMenuEntryIdx;
-                if (this.menuOpen) this.currMenu.mouseHoverEntry(mouseWorldPos) => dropdownMenuEntryIdx;
+                if (this.menuOpen) {
+                    this.currMenu.parent()$IOBox @=> IOBox ioBoxParent;
+                    ioBoxParent.parent()$Node @=> Node parent;
+                    this.currMenu.mouseHoverEntry(mouseWorldPos, parent, ioBoxParent) => dropdownMenuEntryIdx;
+                }
 
                 // Update menu entry
                 if (dropdownMenuEntryIdx != -1) {
@@ -209,13 +213,22 @@ public class NodeManager {
                     // Make updates based on menu selection
                     Type.of(this.currMenu.parent()).name() => string menuParentName;
 
-                    if (menuParentName == "MidiInNode") {
-                        this.currMenu.parent()$MidiInNode @=> MidiInNode midiIn;
-                        // Remove old mapping
-                        midiIn.removeOutputDataTypeMapping(previousSelection, 0);
+                    if (menuParentName == IOBox.typeOf().name()) {
+                        this.currMenu.parent()$IOBox @=> IOBox ioBox;
+                        ioBox.parent()$Node @=> Node node;
 
-                        // Add new mapping
-                        midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
+                        if (Type.of(node).name() == MidiInNode.typeOf().name()) {
+                            node$MidiInNode @=> MidiInNode midiIn;
+                            // Remove old mapping
+                            midiIn.removeOutputDataTypeMapping(previousSelection, 0);
+
+                            <<< "Removed old mapping, before new mapping" >>>;
+
+                            // Add new mapping
+                            midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
+
+                            <<< "Added new mapping" >>>;
+                        }
                     }
 
                     // Close menu
@@ -345,7 +358,10 @@ public class NodeManager {
                         node.nodeOutputsBox.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.nodeOutputsBox.jacks[jackIdx] @=> Jack jack;
-                            @(node.posX() + jack.posX() * jack.scaX(), node.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;  // TODO: update this to use correct jack position based on IObox scale and position
+                            @(
+                                node.posX() + node.nodeOutputsBox.posX() * node.nodeOutputsBox.scaX() + jack.posX() * jack.scaX(),
+                                node.posY() + node.nodeOutputsBox.contentBox.posY() * node.nodeOutputsBox.contentBox.scaY() + jack.posY() * jack.scaY()
+                            ) => vec2 jackPos;  // TODO: update this to use correct jack position based on IObox scale and position
 
                             // Check if starting a new connection
                             // Jack's from an nodeOutputsBox are always Output jacks
@@ -535,7 +551,9 @@ public class NodeManager {
 
             // Highlight menu item if mouse hovers over it
             if (this.menuOpen) {
-                this.currMenu.mouseHoverEntry(mouseWorldPos) => int hoveredMenuEntryIdx;
+                this.currMenu.parent()$IOBox @=> IOBox ioBoxParent;
+                ioBoxParent.parent()$Node @=> Node parent;
+                this.currMenu.mouseHoverEntry(mouseWorldPos, parent, ioBoxParent) => int hoveredMenuEntryIdx;
                 this.currMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
             }
 

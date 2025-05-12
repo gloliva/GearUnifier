@@ -165,8 +165,6 @@ public class Node extends GGen {
             boxes << this.nodeVisibilityBox;
         }
 
-        <<< "boxes.size()", boxes.size() >>>;
-
         0 => int prevBoxIdx;
         1 => int currBoxIdx;
 
@@ -178,10 +176,7 @@ public class Node extends GGen {
             boxes[currBoxIdx] @=> currBox;
 
             if (currBox != null) {
-                <<< "prevBox.posY()", prevBox.posY() >>>;
-                <<< "prevBox.contentBox.scaY()", prevBox.contentBox.scaY() >>>;
-                <<< "currBox.contentBox.scaY()", currBox.contentBox.scaY() >>>;
-                prevBox.posY() - (prevBox.contentBox.scaY() / 2.) - (currBox.scaY() / 2.) => currBox.posY;
+                prevBox.posY() - (prevBox.contentBox.scaY() / 2.) - (currBox.contentBox.scaY() / 2.) => currBox.posY;
                 currBoxIdx => prevBoxIdx;
             }
 
@@ -440,6 +435,9 @@ public class IOBox extends ContentBox {
     // Jacks
     int numJacks;
 
+    // Menus
+    DropdownMenu @ openMenu;
+
     fun @construct(int numJacks, int ioType, string parentNodeID, float xScale) {
         // Create an IO box without menus
         IOBox(numJacks, null, ioType, parentNodeID, xScale);
@@ -454,9 +452,6 @@ public class IOBox extends ContentBox {
         // Scale
         @(xScale, numStartJacks, 0.2) => this.contentBox.sca;
 
-        // Position
-        0.5 - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
-
         // Color
         Color.GRAY => this.contentBox.color;
 
@@ -470,13 +465,14 @@ public class IOBox extends ContentBox {
         }
 
         // Jacks and Menus
+        (this.contentBox.scaY() - 1) / 2. => float startPosY;
         for (int idx; idx < numStartJacks; idx++) {
             Jack jack(idx, ioType);
             Step out(0.);
 
             // Jack Position
             1.25 * xPosModifier => jack.posX;
-            (idx * -1) => jack.posY;
+            startPosY + (idx * -1) => jack.posY;
 
             // Add jack to list
             this.jacks << jack;
@@ -490,7 +486,7 @@ public class IOBox extends ContentBox {
 
                 // Menus position
                 -0.75 * xPosModifier => menu.posX;
-                (idx * -1) => menu.posY;
+                startPosY + (idx * -1) => menu.posY;
                 0.1 => menu.posZ;
 
                 // Add menu to list
@@ -518,20 +514,16 @@ public class IOBox extends ContentBox {
         // Update numJacks
         this.numJacks++;
 
+        // Update contentBox scale
+        this.numJacks => this.contentBox.scaY;
+        (this.contentBox.scaY() - 1) / 2. => float startPosY;
+
         // Jack position
         1.25 => jack.posX;
-        (jackIdx * -1) => jack.posY;
 
         // Menu position
         -0.75 => jackMenu.posX;
-        (jackIdx * -1) => jackMenu.posY;
         0.1 => jackMenu.posZ;
-
-        // Update content box scale
-        this.numJacks => this.contentBox.scaY;
-
-        // Update position of content box and visibility box
-        // this.contentBox.posY() - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
 
         // Add objects to lists
         this.jacks << jack;
@@ -541,6 +533,9 @@ public class IOBox extends ContentBox {
         // Jack Connection
         jack --> this;
         jackMenu --> this;
+
+        // Update Jack and Menu Y Pos
+        this.updateJackandMenuYPos();
     }
 
     fun Enum removeJack() {
@@ -555,9 +550,6 @@ public class IOBox extends ContentBox {
         // Update content box scale
         this.numJacks => this.contentBox.scaY;
 
-        // Update position of content box and jack modifier box
-        // this.ioModifierBox.posY() - (this.ioModifierBox.contentBox.scaY() / 2.) - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
-
         // Remove connections
         jack --< this;
         jackMenu --< this;
@@ -567,10 +559,27 @@ public class IOBox extends ContentBox {
         this.menus.popBack();
         this.outs.popBack();
 
+        // Update Jack and Menu Y Pos
+        this.updateJackandMenuYPos();
+
         // Return the removed menu selection
         // Parent node will handle the removal of the output data type mapping
         jackMenu.getSelectedEntry() @=> Enum menuSelection;
         return menuSelection;
+    }
+
+    fun void updateJackandMenuYPos() {
+        (this.contentBox.scaY() - 1) / 2. => float startPosY;
+
+        for (int idx; idx < this.jacks.size(); idx++) {
+            this.jacks[idx] @=> Jack jack;
+            startPosY + (idx * -1) => jack.posY;
+        }
+
+        for (int idx; idx < this.menus.size(); idx++) {
+            this.menus[idx] @=> DropdownMenu menu;
+            startPosY + (idx * -1) => menu.posY;
+        }
     }
 
     fun int mouseHoverOverJack(vec3 mouseWorldPos) {
@@ -714,18 +723,22 @@ public class OptionsBox extends ContentBox {
 
 public class VisibilityBox extends ContentBox {
     BorderedBox @ optionsBox;
-    BorderedBox @ ioBox;
+    BorderedBox @ inputsBox;
+    BorderedBox @ outputsBox;
 
     1 => static int OPTIONS_BOX;
-    -1 => static int IO_BOX;
+    2 => static int INPUTS_BOX;
+    3 => static int OUTPUTS_BOX;
 
     fun @construct(float xScale) {
-        new BorderedBox("Options", 1.5, 0.5) @=> this.optionsBox;
-        new BorderedBox("In/Out", 1.5, 0.5) @=> this.ioBox;
+        new BorderedBox("Opts", 1., 0.5) @=> this.optionsBox;
+        new BorderedBox("Ins", 1., 0.5) @=> this.inputsBox;
+        new BorderedBox("Outs", 1., 0.5) @=> this.outputsBox;
 
         // Position
-        1. => this.optionsBox.posX;
-        -1. => this.ioBox.posX;
+        1.2 => this.optionsBox.posX;
+        0. => this.outputsBox.posX;
+        -1.2 => this.inputsBox.posX;
 
         // Scale
         @(xScale, 1.0, 0.2) => this.contentBox.sca;
@@ -736,12 +749,13 @@ public class VisibilityBox extends ContentBox {
         // Names
         "Visibility Box" => this.name;
         "Options Button Box" => this.optionsBox.name;
-        "IO Button Box" => this.ioBox.name;
+        "IO Button Box" => this.inputsBox.name;
 
         // Connections
         this.contentBox --> this;
         this.optionsBox --> this;
-        this.ioBox --> this;
+        this.inputsBox --> this;
+        this.outputsBox --> this;
     }
 
     fun int mouseHoverModifiers(vec3 mouseWorldPos) {
@@ -750,8 +764,11 @@ public class VisibilityBox extends ContentBox {
         // Check optionsBox
         if (parentNode.mouseOverBox(mouseWorldPos, [this, this.optionsBox, this.optionsBox.box])) return this.OPTIONS_BOX;
 
-        // Check ioBox
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.ioBox, this.ioBox.box])) return this.IO_BOX;
+        // Check inputsBox
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inputsBox, this.inputsBox.box])) return this.INPUTS_BOX;
+
+        // Check outputsBox
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outputsBox, this.outputsBox.box])) return this.OUTPUTS_BOX;
 
         return 0;
     }

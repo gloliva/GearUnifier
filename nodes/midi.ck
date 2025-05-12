@@ -217,7 +217,6 @@ public class MidiInNode extends MidiNode {
 
     // Data handling
     int midiDataTypeToOut[0];
-    Step outs[0];
 
     fun @construct(int deviceID, int channel, int numStartJacks) {
         MidiInNode(deviceID, channel, numStartJacks, 4.);
@@ -268,7 +267,7 @@ public class MidiInNode extends MidiNode {
         outIdx => this.midiDataTypeToOut[key];
 
         // Add Step output to Jack
-        this.nodeOutputsBox.jacks[outIdx].setUgen(this.outs[outIdx]);
+        this.nodeOutputsBox.jacks[outIdx].setUgen(this.nodeOutputsBox.outs[outIdx]);
     }
 
     fun int outputDataTypeIdx(Enum midiDataType, int voiceIdx) {
@@ -288,10 +287,12 @@ public class MidiInNode extends MidiNode {
 
     fun void addJack() {
         this.nodeOutputsBox.addJack(MidiDataType.allTypes);
+        this.updatePos();
     }
 
     fun void removeJack() {
         this.nodeOutputsBox.removeJack() @=> Enum removedMenuSelection;
+        this.updatePos();
 
         // Remove OutputDataType mapping
         this.removeOutputDataTypeMapping(removedMenuSelection, 0);
@@ -299,9 +300,9 @@ public class MidiInNode extends MidiNode {
 
     fun void sendTrigger(int triggerOutIdx) {
         // Send a short trigger signal
-        1. => this.outs[triggerOutIdx].next;
+        1. => this.nodeOutputsBox.outs[triggerOutIdx].next;
         5::ms => now;
-        0. => this.outs[triggerOutIdx].next;
+        0. => this.nodeOutputsBox.outs[triggerOutIdx].next;
     }
 
     fun void run() {
@@ -325,11 +326,11 @@ public class MidiInNode extends MidiNode {
 
                         // Pitch out
                         this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                        if (pitchOutIdx != -1) this.tuning.cv(noteNumber) => this.outs[pitchOutIdx].next;
+                        if (pitchOutIdx != -1) this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs[pitchOutIdx].next;
 
                         // Gate out
                         this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-                        if (gateOutIdx != -1) 1. => this.outs[gateOutIdx].next;
+                        if (gateOutIdx != -1) 1. => this.nodeOutputsBox.outs[gateOutIdx].next;
 
                         // Trigger out
                         this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
@@ -337,7 +338,7 @@ public class MidiInNode extends MidiNode {
 
                         // Velocity out
                         this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-                        if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.outs[velocityOutIdx].next;
+                        if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[velocityOutIdx].next;
                     // Note off
                     } else if (midiStatus == MidiMessage.NOTE_OFF + this.channel) {
                         this.msg.data2 => int noteNumber;
@@ -355,20 +356,20 @@ public class MidiInNode extends MidiNode {
                         if (this.heldNotes.size() == 0) {
                             // Turn off gate
                             this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-                            if (gateOutIdx != -1) 0. => this.outs[gateOutIdx].next;
+                            if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
 
                             // Turn off aftertouch
                             this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
-                            if (aftertouchOutIdx != -1) 0. => this.outs[aftertouchOutIdx].next;
+                            if (aftertouchOutIdx != -1) 0. => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
 
                             // Turn off velocity
                             this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-                            if (velocityOutIdx != -1) 0. => this.outs[velocityOutIdx].next;
+                            if (velocityOutIdx != -1) 0. => this.nodeOutputsBox.outs[velocityOutIdx].next;
 
                         // Otherwise go back to previously held note
                         } else {
                             this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                            if (pitchOutIdx != -1) this.tuning.cv(this.heldNotes[-1]) => this.outs[pitchOutIdx].next;
+                            if (pitchOutIdx != -1) this.tuning.cv(this.heldNotes[-1]) => this.nodeOutputsBox.outs[pitchOutIdx].next;
 
                             // Resend Trigger for previously held note
                             this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
@@ -379,7 +380,7 @@ public class MidiInNode extends MidiNode {
                     } else if (midiStatus == MidiMessage.POLYPHONIC_AFTERTOUCH + this.channel) {
                         this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
                         if (aftertouchOutIdx != -1 && this.msg.data2 == this.heldNotes[-1]) {
-                            Std.scalef(this.msg.data3, 0, 127, 0., 0.5) => this.outs[aftertouchOutIdx].next;
+                            Std.scalef(this.msg.data3, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
                         }
                     }
                 }
