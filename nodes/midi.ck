@@ -283,6 +283,9 @@ public class MidiInNode extends MidiNode {
         // This has to happen after 1) all the boxes are scaled and 2) each box has its positions
         // because the text is part of the MidiOptionsBox object, NOT the MidiOptionsBox.box GCube object
         this.nodeOptionsBox.updatePos();
+
+        // Connect IO box to node
+        this.nodeOutputsBox --> this;
     }
 
     fun void synthMode(int mode) {

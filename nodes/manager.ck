@@ -235,7 +235,6 @@ public class NodeManager {
                     // Check if mouse is over this node's name box
                     node.mouseOverNameBox(mouseWorldPos) => int nodeNameHover;
                     if (nodeNameHover) {
-                        <<< "clicked on node name box", node.nodeID >>>;
                         1 => this.nodeSelected;
                         nodeIdx => this.currSelectedNodeIdx;
                         node @=> this.currSelectedNode;
@@ -291,89 +290,91 @@ public class NodeManager {
                                 1 => connectionCompletedThisFrame;
                             }
                         }
+                    }
 
-                        // Check if mouse is over this node's nodeOutputsBox
-                        // This would be for starting a new connection
-                        node.mouseOverOutputsBox(mouseWorldPos) => int nodeOutputsBoxHover;
-                        if (nodeOutputsBoxHover == 1 && !nodeOptionsBoxIteractedWith) {
-                            // Check if clicking on an Output jack
-                            node.nodeOutputsBox.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
-                            if (jackIdx != -1) {
-                                node.nodeOutputsBox.jacks[jackIdx] @=> Jack jack;
-                                @(node.posX() + jack.posX() * jack.scaX(), node.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;  // TODO: update this to use correct jack position based on IObox scale and position
+                    // Check if mouse is over this node's nodeOutputsBox
+                    // This would be for starting a new connection
+                    node.mouseOverOutputsBox(mouseWorldPos) => int nodeOutputsBoxHover;
+                    if (nodeOutputsBoxHover == 1 && !nodeOptionsBoxIteractedWith) {
+                        <<< "Clicked on node outputs box", node.nodeID >>>;
+                        // Check if clicking on an Output jack
+                        node.nodeOutputsBox.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
+                        if (jackIdx != -1) {
+                            node.nodeOutputsBox.jacks[jackIdx] @=> Jack jack;
+                            @(node.posX() + jack.posX() * jack.scaX(), node.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;  // TODO: update this to use correct jack position based on IObox scale and position
 
-                                // Check if starting a new connection
-                                // Jack's from an nodeOutputsBox are always Output jacks
-                                if (this.openConnection == 0) {
-                                    <<< "Starting a new Connection" >>>;
-                                    Connection newConnection(node, jackIdx, jackPos, mouseWorldPos);
-                                    newConnection @=> this.currOpenConnection;
-                                    1 => this.openConnection;
-                                } else {
-                                    // Completing a connection needs to be an Input jack
-                                    // Output to Output == delete the connection
-                                    this.currOpenConnection.deleteWire();
-                                    0 => this.openConnection;
-                                    null => this.currOpenConnection;
-                                }
+                            // Check if starting a new connection
+                            // Jack's from an nodeOutputsBox are always Output jacks
+                            if (this.openConnection == 0) {
+                                <<< "Starting a new Connection" >>>;
+                                Connection newConnection(node, jackIdx, jackPos, mouseWorldPos);
+                                newConnection @=> this.currOpenConnection;
+                                1 => this.openConnection;
+                            } else {
+                                // Completing a connection needs to be an Input jack
+                                // Output to Output == delete the connection
+                                this.currOpenConnection.deleteWire();
+                                0 => this.openConnection;
+                                null => this.currOpenConnection;
                             }
+                        }
 
-                            // Check if clicking on a menu
-                            node.nodeOutputsBox.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
-                            if (dropdownMenuIdx != -1 && jackIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                                <<< "Clicked on", node.nodeOutputsBox.menus[dropdownMenuIdx].menuID >>>;
+                        // Check if clicking on a menu
+                        node.nodeOutputsBox.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
+                        if (dropdownMenuIdx != -1 && jackIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                            <<< "Clicked on", node.nodeOutputsBox.menus[dropdownMenuIdx].menuID >>>;
 
-                                // No existing menu opened
-                                if (!this.menuOpen) {
-                                    node.nodeOutputsBox.menus[dropdownMenuIdx] @=> this.currMenu;
-                                    this.currMenu.expand();
-                                    1 => this.menuOpen;
-                                }
-                            // Close active menu if Menu is open and click outside of menu
-                            } else if (dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && this.menuOpen) {
-                                this.currMenu.collapse();
-                                0 => this.menuOpen;
-                                null => this.currMenu;
+                            // No existing menu opened
+                            if (!this.menuOpen) {
+                                node.nodeOutputsBox.menus[dropdownMenuIdx] @=> this.currMenu;
+                                this.currMenu.expand();
+                                1 => this.menuOpen;
                             }
+                        // Close active menu if Menu is open and click outside of menu
+                        } else if (dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && this.menuOpen) {
+                            this.currMenu.collapse();
+                            0 => this.menuOpen;
+                            null => this.currMenu;
+                        }
 
-                            // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
-                            node.nodeOutputsBox.mouseOverIOModifierBox(mouseWorldPos) => int nodeIOModifierHover;
-                            if (nodeIOModifierHover && jackIdx == -1 && dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                                node.nodeOutputsBox.ioModifierBox.mouseHoverModifiers(mouseWorldPos) => int jackModifier;
-                                if (jackModifier == JackModifierBox.ADD) {
-                                    node.addJack();  // Call on the Node directly, not the IO box
-                                } else if (jackModifier == JackModifierBox.REMOVE && node.nodeOutputsBox.numJacks > 1) {
-                                    // If removed jack has a connection, remove it
-                                    node.nodeOutputsBox.numJacks - 1 => int removedJackIdx;
+                        // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
+                        node.nodeOutputsBox.mouseOverIOModifierBox(mouseWorldPos) => int nodeIOModifierHover;
+                        <<< "nodeIOModifierHover", nodeIOModifierHover >>>;
+                        if (nodeIOModifierHover && jackIdx == -1 && dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                            node.nodeOutputsBox.ioModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
+                            if (jackModifier == JackModifierBox.ADD) {
+                                node.addJack();  // Call on the Node directly, not the IO box
+                            } else if (jackModifier == JackModifierBox.REMOVE && node.nodeOutputsBox.numJacks > 1) {
+                                // If removed jack has a connection, remove it
+                                node.nodeOutputsBox.numJacks - 1 => int removedJackIdx;
 
-                                    -1 => int removedConnectionIdx;
-                                    for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
-                                        this.nodeConnections[connIdx] @=> Connection conn;
-                                        if (
-                                            (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx)
-                                            || (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx)
-                                        ) {
-                                            connIdx => removedConnectionIdx;
-                                            break;
-                                        }
+                                -1 => int removedConnectionIdx;
+                                for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+                                    this.nodeConnections[connIdx] @=> Connection conn;
+                                    if (
+                                        (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx)
+                                        || (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx)
+                                    ) {
+                                        connIdx => removedConnectionIdx;
+                                        break;
                                     }
-
-                                    if (removedConnectionIdx != -1) {
-                                        this.nodeConnections[removedConnectionIdx] @=> Connection conn;
-
-                                        // Remove the connection UGen mapping
-                                        conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
-                                        conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
-                                        conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
-
-                                        // Delete the wire
-                                        conn.deleteWire();
-
-                                        // Remove connection from connection list
-                                        this.nodeConnections.erase(removedConnectionIdx);
-                                    }
-                                    node.removeJack();  // Call on the Node directly, not the IO box
                                 }
+
+                                if (removedConnectionIdx != -1) {
+                                    this.nodeConnections[removedConnectionIdx] @=> Connection conn;
+
+                                    // Remove the connection UGen mapping
+                                    conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                                    conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                                    conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
+
+                                    // Delete the wire
+                                    conn.deleteWire();
+
+                                    // Remove connection from connection list
+                                    this.nodeConnections.erase(removedConnectionIdx);
+                                }
+                                node.removeJack();  // Call on the Node directly, not the IO box
                             }
                         }
 
@@ -381,6 +382,7 @@ public class NodeManager {
                         nodeIdx => clickedNodeIdx;
                         break;
                     }
+
 
                     // Check if clicking on a node's visibility box
                     node.mouseOverVisibilityBox(mouseWorldPos) => int nodeVisibilityBoxHover;
