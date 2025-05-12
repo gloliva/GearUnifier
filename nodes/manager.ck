@@ -222,12 +222,8 @@ public class NodeManager {
                             // Remove old mapping
                             midiIn.removeOutputDataTypeMapping(previousSelection, 0);
 
-                            <<< "Removed old mapping, before new mapping" >>>;
-
                             // Add new mapping
                             midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
-
-                            <<< "Added new mapping" >>>;
                         }
                     }
 
@@ -276,10 +272,13 @@ public class NodeManager {
                     node.mouseOverInputsBox(mouseWorldPos) => int nodeInputsBoxHover;
                     if (nodeInputsBoxHover == 1 && !nodeOptionsBoxIteractedWith) {
                         // Check if clicking on an Input jack
-                        node.nodeInputsBox.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
+                        node.nodeInputsBox.mouseOverJack(mouseWorldPos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.nodeInputsBox.jacks[jackIdx] @=> Jack jack;
-                            @(node.posX() + jack.posX() * jack.scaX(), node.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;
+                            @(
+                                node.posX() + (node.nodeInputsBox.posX() * node.scaX()) + (jack.posX() * node.scaX()),
+                                node.posY() + (node.nodeInputsBox.posY() * node.scaY()) + (jack.posY() * node.scaY())
+                            ) => vec2 jackPos;
 
                             // If clicking on an Input jack, must be completing a connection
                             // Otherwise, ignore the click
@@ -287,11 +286,16 @@ public class NodeManager {
                                 // Jacks from an nodeInputsBox are always Input jacks
                                 this.currOpenConnection.completeWire(node, jackIdx, jackPos);
 
+                                <<< "Complete physical connection, start connecting UGens" >>>;
+                                <<< "Prior to getting UGen" >>>;
                                 // Connect output data to input data
                                 this.currOpenConnection.outputNode.nodeOutputsBox.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                                this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
-                                this.currOpenConnection.inputNode.nodeInputsBox.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
+                                <<< "After getting UGen" >>>;
 
+                                this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
+                                <<< "After connecting UGen" >>>;
+                                this.currOpenConnection.inputNode.nodeInputsBox.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
+                                <<< "After setting UGen" >>>;
                                 // Add connection to connections list
                                 this.nodeConnections << this.currOpenConnection;
 
@@ -355,13 +359,13 @@ public class NodeManager {
                     if (nodeOutputsBoxHover == 1 && !nodeOptionsBoxIteractedWith) {
                         <<< "Clicked on node outputs box", node.nodeID >>>;
                         // Check if clicking on an Output jack
-                        node.nodeOutputsBox.mouseHoverOverJack(mouseWorldPos) => int jackIdx;
+                        node.nodeOutputsBox.mouseOverJack(mouseWorldPos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.nodeOutputsBox.jacks[jackIdx] @=> Jack jack;
                             @(
-                                node.posX() + node.nodeOutputsBox.posX() * node.nodeOutputsBox.scaX() + jack.posX() * jack.scaX(),
-                                node.posY() + node.nodeOutputsBox.contentBox.posY() * node.nodeOutputsBox.contentBox.scaY() + jack.posY() * jack.scaY()
-                            ) => vec2 jackPos;  // TODO: update this to use correct jack position based on IObox scale and position
+                                node.posX() + (node.nodeOutputsBox.posX() * node.scaX()) + (jack.posX() * node.scaX()),
+                                node.posY() + (node.nodeOutputsBox.posY() * node.scaY()) + (jack.posY() * node.scaY())
+                            ) => vec2 jackPos;
 
                             // Check if starting a new connection
                             // Jack's from an nodeOutputsBox are always Output jacks
@@ -492,12 +496,18 @@ public class NodeManager {
                         if (this.currHeldNode.nodeID == conn.outputNode.nodeID) {
                             // Update Connection start (i.e. Output Jack position)
                             this.currHeldNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx] @=> Jack jack;
-                            @(this.currHeldNode.posX() + jack.posX() * jack.scaX(), this.currHeldNode.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;
+                            @(
+                                this.currHeldNode.posX() + (this.currHeldNode.nodeOutputsBox.posX() * this.currHeldNode.scaX()) + (jack.posX() * this.currHeldNode.scaX()),
+                                this.currHeldNode.posY() + (this.currHeldNode.nodeOutputsBox.posY() * this.currHeldNode.scaY()) + (jack.posY() * this.currHeldNode.scaY())
+                            ) => vec2 jackPos;
                             conn.updateWireStartPos(jackPos);
                         } else if (this.currHeldNode.nodeID == conn.inputNode.nodeID) {
                             // Update Connection end (i.e. Input Jack position)
                             this.currHeldNode.nodeInputsBox.jacks[conn.inputNodeJackIdx] @=> Jack jack;
-                            @(this.currHeldNode.posX() + jack.posX() * jack.scaX(), this.currHeldNode.posY() + jack.posY() * jack.scaY()) => vec2 jackPos;
+                            @(
+                                this.currHeldNode.posX() + (this.currHeldNode.nodeInputsBox.posX() * this.currHeldNode.scaX()) + (jack.posX() * this.currHeldNode.scaX()),
+                                this.currHeldNode.posY() + (this.currHeldNode.nodeInputsBox.posY() * this.currHeldNode.scaY()) + (jack.posY() * this.currHeldNode.scaY())
+                            ) => vec2 jackPos;
                             conn.updateWireEndPos(jackPos);
                         }
                     }

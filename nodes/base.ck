@@ -582,7 +582,7 @@ public class IOBox extends ContentBox {
         }
     }
 
-    fun int mouseHoverOverJack(vec3 mouseWorldPos) {
+    fun int mouseOverJack(vec3 mouseWorldPos) {
         this.parent()$Node @=> Node parentNode;
         -1 => int jackIdx;
 
