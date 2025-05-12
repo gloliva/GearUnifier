@@ -10,42 +10,15 @@ public class AudioNode extends Node {
         // Member variables
         IOType.toString(type) => this.ioType;
 
-        // Node name box
-        new NameBox("Audio " + this.ioType, 2., 1.) @=> this.nodeNameBox;
+        // Set Node ID
+        "Audio " + this.ioType + " Node" => this.name;
+        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
 
-        // // Position
-        // 0.5 - (this.numJacks / 2.) => this.contentBox.posY;
+        // Node name box
+        new NameBox("Audio " + this.ioType, 2.) @=> this.nodeNameBox;
 
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
-        // @(2., this.numJacks, 0.2) => this.contentBox.sca;
-
-        // // Color
-        // Color.GRAY => this.contentBox.color;
-
-        // // Handle Jacks
-        // IOType.INPUT => int jackType;
-        // if (type == IOType.INPUT) {
-        //     IOType.OUTPUT => jackType;
-        // }
-
-        // for (int idx; idx < numJacks; idx++) {
-        //     Jack jack(idx, jackType);
-
-        //     // Jack Position
-        //     idx * -1. => jack.posY;
-
-        //     // Jack Connection
-        //     jack --> this;
-        //     this.jacks << jack;
-        // }
-
-        // Names
-        "Audio " + this.ioType + " Node" => this.name;
-
-        // Set ID
-        Std.itoa(Math.random()) => string randomID;
-        this.name() + " ID " + randomID => this.nodeID;
 
         // Connections
         this.nodeNameBox --> this;
@@ -59,15 +32,15 @@ public class AudioOutNode extends AudioNode {
 
         // Audio Out sends signals to the DAC
         // Therefore, all jacks are Inputs
-        Enum test(0, "Test");
-        <<< "Here?" >>>;
-        new IOBox(numOuts, IOType.INPUT, 2.) @=> this.nodeInputsBox;
-        <<< "Here again?" >>>;
+        new IOBox(numOuts, IOType.INPUT, this.nodeID, 2.) @=> this.nodeInputsBox;
         this.nodeInputsBox --> this;
+
+        // Update box positions
+        this.updatePos();
     }
 
     fun void connect(UGen ugen, int inputJackIdx) {
-        if (inputJackIdx >= this.numJacks) {
+        if (inputJackIdx >= this.nodeInputsBox.numJacks) {
             return;
         }
 
@@ -75,7 +48,7 @@ public class AudioOutNode extends AudioNode {
     }
 
     fun void disconnect(UGen ugen, int inputJackIdx) {
-        if (inputJackIdx >= this.numJacks) {
+        if (inputJackIdx >= this.nodeInputsBox.numJacks) {
             return;
         }
 
@@ -90,7 +63,10 @@ public class AudioInNode extends AudioNode {
 
         // Audio In sends receives signals and sends them from ADC
         // Therefore, all jacks are Outputs
-        new IOBox(numIns, IOType.OUTPUT, 2.) @=> this.nodeOutputsBox;
+        new IOBox(numIns, IOType.OUTPUT, this.nodeID, 2.) @=> this.nodeOutputsBox;
         this.nodeOutputsBox --> this;
+
+        // Update box positions
+        this.updatePos();
     }
 }

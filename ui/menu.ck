@@ -21,7 +21,7 @@ public class DropdownMenu extends GGen {
     }
 
     fun @construct(Enum menuItems[], int menuIdx) {
-        DropdownMenu(menuItems, this.parent().name(), menuIdx);
+        DropdownMenu(menuItems, "", menuIdx);
     }
 
     fun @construct(Enum menuItems[], string parentNodeID, int menuIdx) {

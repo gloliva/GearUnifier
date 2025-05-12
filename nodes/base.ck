@@ -12,11 +12,12 @@ public class NodeType {
 
 public class Node extends GGen {
     string nodeID;
-    int numJacks;
 
     NameBox @ nodeNameBox;
     OptionsBox @ nodeOptionsBox;
+    IOModifierBox @ nodeInputsModifierBox;
     IOBox @ nodeInputsBox;
+    IOModifierBox @ nodeOutputsModifierBox;
     IOBox @ nodeOutputsBox;
     VisibilityBox @ nodeVisibilityBox;
 
@@ -73,18 +74,24 @@ public class Node extends GGen {
         return this.mouseOverBox(mouseWorldPos, [this.nodeOptionsBox, this.nodeOptionsBox.contentBox]);
     }
 
+    fun int mouseOverInputsModifierBox(vec3 mouseWorldPos) {
+        if (this.nodeInputsModifierBox == null) return false;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeInputsModifierBox, this.nodeInputsModifierBox.contentBox]);
+    }
+
     fun int mouseOverInputsBox(vec3 mouseWorldPos) {
         if (this.nodeInputsBox == null) return false;
-        this.mouseOverBox(mouseWorldPos, [this.nodeInputsBox, this.nodeInputsBox.ioModifierBox, this.nodeInputsBox.ioModifierBox.contentBox]) => int mouseOverIOModifierBox;
-        this.mouseOverBox(mouseWorldPos, [this.nodeInputsBox, this.nodeInputsBox.contentBox]) => int mouseOverContentBox;
-        return mouseOverIOModifierBox || mouseOverContentBox;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeInputsBox, this.nodeInputsBox.contentBox]);
+    }
+
+    fun int mouseOverOutputsModifierBox(vec3 mouseWorldPos) {
+        if (this.nodeOutputsModifierBox == null) return false;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeOutputsModifierBox, this.nodeOutputsModifierBox.contentBox]);
     }
 
     fun int mouseOverOutputsBox(vec3 mouseWorldPos) {
         if (this.nodeOutputsBox == null) return false;
-        this.mouseOverBox(mouseWorldPos, [this.nodeOutputsBox, this.nodeOutputsBox.ioModifierBox, this.nodeOutputsBox.ioModifierBox.contentBox]) => int mouseOverIOModifierBox;
-        this.mouseOverBox(mouseWorldPos, [this.nodeOutputsBox, this.nodeOutputsBox.contentBox]) => int mouseOverContentBox;
-        return mouseOverIOModifierBox || mouseOverContentBox;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeOutputsBox, this.nodeOutputsBox.contentBox]);
     }
 
     fun int mouseOverVisibilityBox(vec3 mouseWorldPos) {
@@ -125,6 +132,61 @@ public class Node extends GGen {
         1 => this.nodeOptionsBox.active;
 
         // Order goes nodeNameBox --> nodeOptionsBox --> jackModifierBox --> nodeContentBox --> nodeVisibilityBox
+    }
+
+    fun void updatePos() {
+        // If Node has all 5 boxes positions go in the following order:
+        // nodeNameBox --> nodeOptionsBox --> nodeInputsModifierBox --> nodeInputsBox --> nodeOutputsModifierBox --> nodeOutputsBox --> nodeVisibilityBox
+        // The only non-optional box is nodeNameBox
+
+        [this.nodeNameBox] @=> ContentBox boxes[];
+
+        if (this.nodeOptionsBox != null) {
+            boxes << this.nodeOptionsBox;
+        }
+
+        if (this.nodeInputsModifierBox != null) {
+            boxes << this.nodeInputsModifierBox;
+        }
+
+        if (this.nodeInputsBox != null) {
+            boxes << this.nodeInputsBox;
+        }
+
+        if (this.nodeOutputsModifierBox != null) {
+            boxes << this.nodeOutputsModifierBox;
+        }
+
+        if (this.nodeOutputsBox != null) {
+            boxes << this.nodeOutputsBox;
+        }
+
+        if (this.nodeVisibilityBox != null) {
+            boxes << this.nodeVisibilityBox;
+        }
+
+        <<< "boxes.size()", boxes.size() >>>;
+
+        0 => int prevBoxIdx;
+        1 => int currBoxIdx;
+
+        ContentBox @ prevBox;
+        ContentBox @ currBox;
+
+        while (currBoxIdx < boxes.size()) {
+            boxes[prevBoxIdx] @=> prevBox;
+            boxes[currBoxIdx] @=> currBox;
+
+            if (currBox != null) {
+                <<< "prevBox.posY()", prevBox.posY() >>>;
+                <<< "prevBox.contentBox.scaY()", prevBox.contentBox.scaY() >>>;
+                <<< "currBox.contentBox.scaY()", currBox.contentBox.scaY() >>>;
+                prevBox.posY() - (prevBox.contentBox.scaY() / 2.) - (currBox.scaY() / 2.) => currBox.posY;
+                currBoxIdx => prevBoxIdx;
+            }
+
+            currBoxIdx++;
+        }
     }
 
     fun void connect(UGen ugen, int inputJackIdx) {
@@ -337,13 +399,12 @@ public class ContentBox extends GGen {
 public class NameBox extends ContentBox {
     GText nodeName;
 
-    fun @construct(string name,float xScale, float yPos) {
+    fun @construct(string name,float xScale) {
         // Text
         name => this.nodeName.text;
 
         // Position
-        @(0., yPos, 0.101) => this.nodeName.pos;
-        yPos => this.contentBox.posY;
+        0.101 => this.nodeName.posZ;
 
         // Scale
         @(0.25, 0.25, 0.25) => this.nodeName.sca;
@@ -356,21 +417,16 @@ public class NameBox extends ContentBox {
         // Names
         "GText Name" => this.nodeName.name;
         "GCube Content Box" => this.contentBox.name;
+        "Name Box " => this.name;
 
         // Connections
         this.nodeName --> this;
         this.contentBox --> this;
     }
-
-    fun string name() {
-        return this.nodeName.text();
-    }
 }
 
 
 public class IOBox extends ContentBox {
-    JackModifierBox @ ioModifierBox;
-
     // Contents
     Jack jacks[0];
     DropdownMenu menus[0];
@@ -384,13 +440,13 @@ public class IOBox extends ContentBox {
     // Jacks
     int numJacks;
 
-    fun @construct(int numJacks, int ioType, float xScale) {
+    fun @construct(int numJacks, int ioType, string parentNodeID, float xScale) {
         // Create an IO box without menus
-        IOBox(numJacks, null, ioType, xScale);
+        IOBox(numJacks, null, ioType, parentNodeID, xScale);
     }
 
 
-    fun @construct(int numStartJacks, Enum ioMenuEntries[], int ioType, float xScale) {
+    fun @construct(int numStartJacks, Enum ioMenuEntries[], int ioType, string parentNodeID, float xScale) {
         // Member variables
         ioType => this.ioType;
         numStartJacks => this.numJacks;
@@ -398,24 +454,20 @@ public class IOBox extends ContentBox {
         // Scale
         @(xScale, numStartJacks, 0.2) => this.contentBox.sca;
 
+        // Position
+        0.5 - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
+
         // Color
         Color.GRAY => this.contentBox.color;
-
-        // Create ioModifierBox with the parent node's scale
-        new JackModifierBox(xScale) @=> this.ioModifierBox;
 
         // Position handling for Jacks Only vs. Jacks and Menus
         int xPosModifier;
         if (ioMenuEntries != null) {
-            1 => int xPosModifier;
+            1 => xPosModifier;
             if (ioType == IOType.INPUT) {
                 -1 => xPosModifier;
             }
         }
-
-        // Handle Position for IOModifierBox and ContentBox
-        this.ioModifierBox.posY() - (this.ioModifierBox.contentBox.scaY()) => float startY;
-        this.ioModifierBox.posY() - (this.ioModifierBox.contentBox.scaY() / 2.) - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
 
         // Jacks and Menus
         for (int idx; idx < numStartJacks; idx++) {
@@ -424,7 +476,7 @@ public class IOBox extends ContentBox {
 
             // Jack Position
             1.25 * xPosModifier => jack.posX;
-            (idx * -1) + startY => jack.posY;
+            (idx * -1) => jack.posY;
 
             // Add jack to list
             this.jacks << jack;
@@ -434,11 +486,11 @@ public class IOBox extends ContentBox {
             jack --> this;
 
             if (ioMenuEntries != null) {
-                DropdownMenu menu(ioMenuEntries, idx);
+                DropdownMenu menu(ioMenuEntries, parentNodeID, idx);
 
                 // Menus position
                 -0.75 * xPosModifier => menu.posX;
-                (idx * -1) + this.ioModifierBox.posY() => menu.posY;
+                (idx * -1) => menu.posY;
                 0.1 => menu.posZ;
 
                 // Add menu to list
@@ -449,8 +501,11 @@ public class IOBox extends ContentBox {
             }
         }
 
+        // Names
+        "IOBox " + this.ioType => this.name;
+        "Content Box" => this.contentBox.name;
+
         // Connect boxes to IO box
-        this.ioModifierBox --> this;
         this.contentBox --> this;
     }
 
@@ -463,23 +518,20 @@ public class IOBox extends ContentBox {
         // Update numJacks
         this.numJacks++;
 
-        // Starting Y pos
-        this.ioModifierBox.posY() => float startY;
-
         // Jack position
         1.25 => jack.posX;
-        (jackIdx * -1) + startY => jack.posY;
+        (jackIdx * -1) => jack.posY;
 
         // Menu position
         -0.75 => jackMenu.posX;
-        (jackIdx * -1) + startY => jackMenu.posY;
+        (jackIdx * -1) => jackMenu.posY;
         0.1 => jackMenu.posZ;
 
         // Update content box scale
         this.numJacks => this.contentBox.scaY;
 
         // Update position of content box and visibility box
-        this.ioModifierBox.posY() - (this.ioModifierBox.contentBox.scaY() / 2.) - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
+        // this.contentBox.posY() - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
 
         // Add objects to lists
         this.jacks << jack;
@@ -504,7 +556,7 @@ public class IOBox extends ContentBox {
         this.numJacks => this.contentBox.scaY;
 
         // Update position of content box and jack modifier box
-        this.ioModifierBox.posY() - (this.ioModifierBox.contentBox.scaY() / 2.) - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
+        // this.ioModifierBox.posY() - (this.ioModifierBox.contentBox.scaY() / 2.) - (this.contentBox.scaY() / 2.) => this.contentBox.posY;
 
         // Remove connections
         jack --< this;
@@ -519,13 +571,6 @@ public class IOBox extends ContentBox {
         // Parent node will handle the removal of the output data type mapping
         jackMenu.getSelectedEntry() @=> Enum menuSelection;
         return menuSelection;
-    }
-
-    fun int mouseOverIOModifierBox(vec3 mouseWorldPos) {
-        if (this.ioModifierBox == null) return false;
-
-        this.parent()$Node @=> Node parentNode;
-        return parentNode.mouseOverBox(mouseWorldPos, [this, this.ioModifierBox, this.ioModifierBox.contentBox]);
     }
 
     fun int mouseHoverOverJack(vec3 mouseWorldPos) {
@@ -562,7 +607,7 @@ public class IOBox extends ContentBox {
 }
 
 
-public class JackModifierBox extends ContentBox {
+public class IOModifierBox extends ContentBox {
     BorderedBox @ addBox;
     BorderedBox @ removeBox;
     1 => int active;
@@ -585,7 +630,7 @@ public class JackModifierBox extends ContentBox {
         Color.GRAY => this.contentBox.color;
 
         // Names
-        "Jack Modifier Box" => this.name;
+        "IO Modifier Box" => this.name;
         "Add Bordered Box" => this.addBox.name;
         "Remove Bordered Box" => this.removeBox.name;
 
@@ -596,14 +641,13 @@ public class JackModifierBox extends ContentBox {
     }
 
     fun int mouseOverModifiers(vec3 mouseWorldPos) {
-        this.parent()$IOBox @=> IOBox parentIOBox;
-        parentIOBox.parent()$Node @=> Node parentNode;
+        this.parent()$Node @=> Node parentNode;
 
         // Check AddBox
-        if (parentNode.mouseOverBox(mouseWorldPos, [parentIOBox, this, this.addBox, this.addBox.box])) return this.ADD;
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.addBox, this.addBox.box])) return this.ADD;
 
         // Check RemoveBox
-        if (parentNode.mouseOverBox(mouseWorldPos, [parentIOBox, this, this.removeBox, this.removeBox.box])) return this.REMOVE;
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.removeBox, this.removeBox.box])) return this.REMOVE;
 
         return 0;
     }
@@ -649,7 +693,7 @@ public class OptionsBox extends ContentBox {
 
     fun void updatePos() {
         for (int idx; idx < this.optionNames.size(); idx++) {
-            Math.fabs(this.posY()) - idx => this.optionNames[idx].posY;
+            Math.fabs(this.contentBox.posY()) - idx => this.optionNames[idx].posY;
         }
     }
 

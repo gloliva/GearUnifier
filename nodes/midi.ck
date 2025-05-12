@@ -82,7 +82,7 @@ public class MidiOptionsBox extends OptionsBox {
 
     fun void updatePos() {
         for (int idx; idx < this.optionNames.size(); idx++) {
-            Math.fabs(this.posY()) - idx => this.optionNames[idx].posY;
+            Math.fabs(this.contentBox.posY()) - idx => this.optionNames[idx].posY;
         }
 
         this.optionNames[0].posY() => this.channelSelectMenu.posY;
@@ -161,8 +161,6 @@ public class MidiNode extends Node {
     int channel;
     string ioType;
 
-    GText deviceName;
-
     fun @construct(int channel, string name, int type) {
         MidiNode(channel, name, type, 4.);
     }
@@ -172,12 +170,8 @@ public class MidiNode extends Node {
         channel => this.channel;
         IOType.toString(type) => this.ioType;
 
-        // Content Box parameters
-        1. => float yPos;
-        if (this.numJacks > 0) this.numJacks => yPos;
-
         // Create name box
-        new NameBox(name + " " + this.ioType, xScale, yPos) @=> this.nodeNameBox;
+        new NameBox(name + " " + this.ioType, xScale) @=> this.nodeNameBox;
 
         // Create options box with this node's scale
         new MidiOptionsBox(["Channel"], xScale) @=> this.nodeOptionsBox;
@@ -188,47 +182,16 @@ public class MidiNode extends Node {
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
 
-        // Text
-        // "Midi " + this.ioType => this.nodeName.text;
-        name => this.deviceName.text;
-
         // Names
-        this.nodeNameBox.name() + " Channel " + this.channel => this.name;
+        name + " " + this.ioType + " Channel " + this.channel => this.name;
 
         // Set ID
-        Std.itoa(Math.random()) => string randomID;
-        this.name() + " ID " + randomID => this.nodeID;
+        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
 
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
         this.nodeVisibilityBox --> this;
-    }
-
-    fun void updatePos() {
-        // If Node has all 5 boxes positions go in the following order:
-        // nodeNameBox --> nodeOptionsBox --> nodeInputsBox --> nodeOutputsBox --> nodeVisibilityBox
-        // Optional boxes are nodeOptionsBox, nodeInputsBox, nodeOutputsBox
-
-        [this.nodeNameBox, this.nodeOptionsBox, this.nodeInputsBox, this.nodeOutputsBox, this.nodeVisibilityBox] @=> ContentBox boxes[];
-
-        0 => int prevBoxIdx;
-        1 => int currBoxIdx;
-
-        ContentBox @ prevBox;
-        ContentBox @ currBox;
-
-        while (currBoxIdx < boxes.size()) {
-            boxes[prevBoxIdx] @=> prevBox;
-            boxes[currBoxIdx] @=> currBox;
-
-            if (currBox != null) {
-                prevBox.posY() - (prevBox.scaY() / 2.) - (currBox.contentBox.scaY() / 2.) => currBox.posY;
-                currBoxIdx => prevBoxIdx;
-            }
-
-            currBoxIdx++;
-        }
     }
 
     fun void setChannel(int channel) {
@@ -270,22 +233,25 @@ public class MidiInNode extends MidiNode {
         // Set Default tuning
         new EDO(12, -24) @=> this.tuning;
 
+        // Create Outputs IO box
+        new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
+        new IOBox(numStartJacks, MidiDataType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+
         // Parent class constructor
         MidiNode(channel, this.m.name(), IOType.INPUT, xScale);
 
-        // Create Outputs IO box
-        new IOBox(numStartJacks, MidiDataType.allTypes, IOType.OUTPUT, xScale) @=> this.nodeOutputsBox;
+        // Connect IO box to node
+        this.nodeOutputsModifierBox --> this;
+        this.nodeOutputsBox --> this;
 
         // Update all box positions
+        // Must be done after all boxes are connected to the node
         this.updatePos();
 
         // Update NodeOptionsBox text positions
         // This has to happen after 1) all the boxes are scaled and 2) each box has its positions
         // because the text is part of the MidiOptionsBox object, NOT the MidiOptionsBox.box GCube object
         this.nodeOptionsBox.updatePos();
-
-        // Connect IO box to node
-        this.nodeOutputsBox --> this;
     }
 
     fun void synthMode(int mode) {

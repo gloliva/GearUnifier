@@ -292,6 +292,50 @@ public class NodeManager {
                         }
                     }
 
+                    // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
+                    node.mouseOverOutputsModifierBox(mouseWorldPos) => int nodeIOModifierHover;
+                    if (nodeIOModifierHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                        node.nodeOutputsModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
+                        if (jackModifier == IOModifierBox.ADD) {
+                            node.addJack();  // Call on the Node directly
+                        } else if (jackModifier == IOModifierBox.REMOVE && node.nodeOutputsBox.numJacks > 1) {
+                            // If removed jack has a connection, remove it
+                            node.nodeOutputsBox.numJacks - 1 => int removedJackIdx;
+
+                            -1 => int removedConnectionIdx;
+                            for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+                                this.nodeConnections[connIdx] @=> Connection conn;
+                                if (
+                                    (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx)
+                                    || (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx)
+                                ) {
+                                    connIdx => removedConnectionIdx;
+                                    break;
+                                }
+                            }
+
+                            if (removedConnectionIdx != -1) {
+                                this.nodeConnections[removedConnectionIdx] @=> Connection conn;
+
+                                // Remove the connection UGen mapping
+                                conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                                conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                                conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
+
+                                // Delete the wire
+                                conn.deleteWire();
+
+                                // Remove connection from connection list
+                                this.nodeConnections.erase(removedConnectionIdx);
+                            }
+                            node.removeJack();  // Call on the Node directly
+                        }
+
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
+                    }
+
                     // Check if mouse is over this node's nodeOutputsBox
                     // This would be for starting a new connection
                     node.mouseOverOutputsBox(mouseWorldPos) => int nodeOutputsBoxHover;
@@ -335,47 +379,6 @@ public class NodeManager {
                             this.currMenu.collapse();
                             0 => this.menuOpen;
                             null => this.currMenu;
-                        }
-
-                        // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
-                        node.nodeOutputsBox.mouseOverIOModifierBox(mouseWorldPos) => int nodeIOModifierHover;
-                        <<< "nodeIOModifierHover", nodeIOModifierHover >>>;
-                        if (nodeIOModifierHover && jackIdx == -1 && dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                            node.nodeOutputsBox.ioModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
-                            if (jackModifier == JackModifierBox.ADD) {
-                                node.addJack();  // Call on the Node directly, not the IO box
-                            } else if (jackModifier == JackModifierBox.REMOVE && node.nodeOutputsBox.numJacks > 1) {
-                                // If removed jack has a connection, remove it
-                                node.nodeOutputsBox.numJacks - 1 => int removedJackIdx;
-
-                                -1 => int removedConnectionIdx;
-                                for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
-                                    this.nodeConnections[connIdx] @=> Connection conn;
-                                    if (
-                                        (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx)
-                                        || (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx)
-                                    ) {
-                                        connIdx => removedConnectionIdx;
-                                        break;
-                                    }
-                                }
-
-                                if (removedConnectionIdx != -1) {
-                                    this.nodeConnections[removedConnectionIdx] @=> Connection conn;
-
-                                    // Remove the connection UGen mapping
-                                    conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
-                                    conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
-                                    conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
-
-                                    // Delete the wire
-                                    conn.deleteWire();
-
-                                    // Remove connection from connection list
-                                    this.nodeConnections.erase(removedConnectionIdx);
-                                }
-                                node.removeJack();  // Call on the Node directly, not the IO box
-                            }
                         }
 
                         // Found the node that was clicked on, can exit early
