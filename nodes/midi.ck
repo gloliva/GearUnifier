@@ -266,7 +266,7 @@ public class MidiInNode extends MidiNode {
         }
 
         // Set Default tuning
-        new EDO(12, -24) @=> this.tuning;
+        new EDO(12, -48) @=> this.tuning;
 
         // Create Outputs IO box
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
@@ -344,7 +344,7 @@ public class MidiInNode extends MidiNode {
             0 => int idx;
             for (int idx; idx < this.heldNotes.size(); idx++) {
                 this.heldNotes[idx] => int note;
-                this.outputDataTypeIdx(MidiDataType.PITCH, idx) => int pitchOutIdx;
+                this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
                 if (pitchOutIdx != -1) this.tuning.cv(note) => this.nodeOutputsBox.outs[pitchOutIdx].next;
                 ((60. / tempo) / divider)::second => now;
             }
@@ -370,7 +370,13 @@ public class MidiInNode extends MidiNode {
 
                     // Pitch out
                     this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                    if (pitchOutIdx != -1) this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                    if (pitchOutIdx != -1) {
+                        if (this.synthMode() == SynthMode.MONO.id) {
+                            this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                        } else if (this.synthMode() == SynthMode.ARP.id) {
+                            if (this.heldNotes.size() == 1) spork ~ this.arpeggiate();
+                        }
+                    }
 
                     // Gate out
                     this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
@@ -413,7 +419,7 @@ public class MidiInNode extends MidiNode {
                     // Otherwise go back to previously held note
                     } else {
                         this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                        if (pitchOutIdx != -1) this.tuning.cv(this.heldNotes[-1]) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                        if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(this.heldNotes[-1]) => this.nodeOutputsBox.outs[pitchOutIdx].next;
 
                         // Resend Trigger for previously held note
                         this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
