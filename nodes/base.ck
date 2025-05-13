@@ -99,12 +99,50 @@ public class Node extends GGen {
         return this.mouseOverBox(mouseWorldPos, [this.nodeVisibilityBox, this.nodeVisibilityBox.contentBox]);
     }
 
-    fun void hideIOBox() {
+    fun void hideInputsBox() {
+        if (this.nodeInputsBox == null) return;
 
+        this.nodeInputsModifierBox --< this;
+        this.nodeInputsBox --< this;
+        0 => this.nodeInputsModifierBox.active;
+        0 => this.nodeInputsBox.active;
+        this.updatePos();
     }
 
-    fun void showIOBox() {
+    fun void showInputsBox() {
+        if (this.nodeInputsBox == null) return;
 
+        this.nodeInputsModifierBox --> this;
+        this.nodeInputsBox --> this;
+        1 => this.nodeInputsModifierBox.active;
+        1 => this.nodeInputsBox.active;
+        this.updatePos();
+    }
+
+    fun void hideOutputsBox() {
+        if (this.nodeOutputsBox == null) return;
+
+        this.nodeOutputsModifierBox --< this;
+        this.nodeOutputsBox --< this;
+        0 => this.nodeOutputsModifierBox.active;
+        0 => this.nodeOutputsBox.active;
+        this.updatePos();
+    }
+
+    fun void showOutputsBox() {
+        if (this.nodeOutputsBox == null) return;
+
+        <<< "Showing Outputs Box" >>>;
+
+        this.nodeOutputsModifierBox --> this;
+        <<< "Outputs Modifier Box Connected" >>>;
+
+        this.nodeOutputsBox --> this;
+        <<< "Outputs Box Connected" >>>;
+
+        1 => this.nodeOutputsModifierBox.active;
+        1 => this.nodeOutputsBox.active;
+        this.updatePos();
     }
 
     fun void hideOptionsBox() {
@@ -112,17 +150,7 @@ public class Node extends GGen {
 
         this.nodeOptionsBox --< this;
         0 => this.nodeOptionsBox.active;
-
-        // // Order goes nodeNameBox --> jackModifierBox --> nodeContentBox --> nodeVisibilityBox
-        // if (this.jackModifierBox != null && this.jackModifierBox.active) {
-        //     this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.jackModifierBox.contentBox.scaY() / 2.) => this.jackModifierBox.posY;
-        //     this.jackModifierBox.posY() - (this.jackModifierBox.contentBox.scaY() / 2.) - (this.nodeContentBox.scaY() / 2.) => this.nodeContentBox.posY;
-        //     this.nodeContentBox.posY() - (this.nodeContentBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
-        // // Order goes nodeNameBox --> nodeVisibilityBox
-        // } else if (this.jackModifierBox == null || (this.jackModifierBox != null && !this.jackModifierBox.active)){
-        //     this.nodeNameBox.posY() - (this.nodeNameBox.scaY() / 2.) - (this.nodeVisibilityBox.scaY() / 2.) => this.nodeVisibilityBox.posY;
-        // }
-
+        this.updatePos();
     }
 
     fun void showOptionsBox() {
@@ -130,40 +158,83 @@ public class Node extends GGen {
 
         this.nodeOptionsBox --> this;
         1 => this.nodeOptionsBox.active;
-
-        // Order goes nodeNameBox --> nodeOptionsBox --> jackModifierBox --> nodeContentBox --> nodeVisibilityBox
+        this.updatePos();
     }
 
-    fun void updatePos() {
-        // If Node has all 5 boxes positions go in the following order:
-        // nodeNameBox --> nodeOptionsBox --> nodeInputsModifierBox --> nodeInputsBox --> nodeOutputsModifierBox --> nodeOutputsBox --> nodeVisibilityBox
-        // The only non-optional box is nodeNameBox
+    fun vec2 inputJackPos(int jackIdx) {
+        if (this.nodeInputsBox == null) <<< "Gonna have a nullpointer issue in inputJackPos..." >>>;
 
+        this.posX() + (this.nodeInputsBox.posX() * this.scaX()) + (this.nodeInputsBox.jacks[jackIdx].posX() * this.scaX()) => float posX;
+
+        if (!this.nodeInputsBox.active) {
+            // Return the midpoint of the Node
+            return @(posX, this.nodeMidpoint());
+        }
+
+        this.posY() + (this.nodeInputsBox.posY() * this.scaY()) + (this.nodeInputsBox.jacks[jackIdx].posY() * this.scaY()) => float posY;
+        return @(posX, posY);
+    }
+
+    fun vec2 outputJackPos(int jackIdx) {
+        if (this.nodeOutputsBox == null) <<< "Gonna have a nullpointer issue in outputJackPos..." >>>;
+
+        this.posX() + (this.nodeOutputsBox.posX() * this.scaX()) + (this.nodeOutputsBox.jacks[jackIdx].posX() * this.scaX()) => float posX;
+
+        if (!this.nodeOutputsBox.active) {
+            // Return the midpoint of the Node
+            return @(posX, this.nodeMidpoint());
+        }
+
+        this.posY() + (this.nodeOutputsBox.posY() * this.scaY()) + (this.nodeOutputsBox.jacks[jackIdx].posY() * this.scaY()) => float posY;
+
+        return @(posX, posY);
+    }
+
+    fun ContentBox[] getContentBoxes() {
         [this.nodeNameBox] @=> ContentBox boxes[];
 
-        if (this.nodeOptionsBox != null) {
+        if (this.nodeOptionsBox != null && this.nodeOptionsBox.active) {
             boxes << this.nodeOptionsBox;
         }
 
-        if (this.nodeInputsModifierBox != null) {
+        if (this.nodeInputsModifierBox != null && this.nodeInputsModifierBox.active) {
             boxes << this.nodeInputsModifierBox;
         }
 
-        if (this.nodeInputsBox != null) {
+        if (this.nodeInputsBox != null && this.nodeInputsBox.active) {
             boxes << this.nodeInputsBox;
         }
 
-        if (this.nodeOutputsModifierBox != null) {
+        if (this.nodeOutputsModifierBox != null && this.nodeOutputsModifierBox.active) {
             boxes << this.nodeOutputsModifierBox;
         }
 
-        if (this.nodeOutputsBox != null) {
+        if (this.nodeOutputsBox != null && this.nodeOutputsBox.active) {
             boxes << this.nodeOutputsBox;
         }
 
-        if (this.nodeVisibilityBox != null) {
+        if (this.nodeVisibilityBox != null && this.nodeVisibilityBox.active) {
             boxes << this.nodeVisibilityBox;
         }
+
+        return boxes;
+    }
+
+    fun float nodeMidpoint() {
+        this.getContentBoxes() @=> ContentBox boxes[];
+
+        if (boxes.size() == 0) return this.posY();
+
+        float sum;
+        for (ContentBox box : boxes) {
+            sum + this.posY() + box.posY() * this.scaY() => sum;
+        }
+
+        return sum / boxes.size();
+    }
+
+    fun void updatePos() {
+        this.getContentBoxes() @=> ContentBox boxes[];
 
         0 => int prevBoxIdx;
         1 => int currBoxIdx;
@@ -389,6 +460,7 @@ public class Jack extends GGen {
 
 public class ContentBox extends GGen {
     GCube contentBox;
+    1 => int active;
 }
 
 public class NameBox extends ContentBox {
@@ -619,7 +691,6 @@ public class IOBox extends ContentBox {
 public class IOModifierBox extends ContentBox {
     BorderedBox @ addBox;
     BorderedBox @ removeBox;
-    1 => int active;
 
     1 => static int ADD;
     -1 => static int REMOVE;
@@ -667,10 +738,12 @@ public class OptionsBox extends ContentBox {
     GText optionNames[0];
     int numOptions;
     int menuOpen;
-    1 => int active;
 
     fun @construct(string optionNames[], float xScale) {
         optionNames.size() => this.numOptions;
+
+        // Start Position
+        (this.numOptions - 1) / 2. => float startPosY;
 
         for (int idx; idx < optionNames.size(); idx++) {
             GText text;
@@ -678,7 +751,7 @@ public class OptionsBox extends ContentBox {
             @(3., 3., 3., 1.) => text.color;
             @(0., 0.5) => text.controlPoints;
 
-            @(-1 * ((xScale - (xScale * 0.2)) / 2.), -1 * idx, 0.201) => text.pos;
+            @(-1 * ((xScale - (xScale * 0.2)) / 2.), startPosY + (idx * -1), 0.201) => text.pos;
             @(0.25, 0.25, 0.25) => text.sca;
             this.optionNames << text;
 
@@ -698,12 +771,6 @@ public class OptionsBox extends ContentBox {
 
         // Connections
         this.contentBox --> this;
-    }
-
-    fun void updatePos() {
-        for (int idx; idx < this.optionNames.size(); idx++) {
-            Math.fabs(this.contentBox.posY()) - idx => this.optionNames[idx].posY;
-        }
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {

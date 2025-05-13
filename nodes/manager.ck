@@ -256,7 +256,7 @@ public class NodeManager {
                     // Check if mouse is over this node's options box
                     int nodeOptionsBoxIteractedWith;
                     node.mouseOverOptionsBox(mouseWorldPos) => int nodeOptionsHover;
-                    if (nodeOptionsHover || (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen)) {
+                    if (nodeOptionsHover && node.nodeOptionsBox.active || (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen)) {
                         <<< "Clicked on node option's box" >>>;
                         node.nodeOptionsBox.handleMouseLeftDown(mouseWorldPos) => nodeOptionsBoxIteractedWith;
 
@@ -270,15 +270,12 @@ public class NodeManager {
                     // Check if mouse is over this node's nodeInputsBox
                     // This would be for completing a connection
                     node.mouseOverInputsBox(mouseWorldPos) => int nodeInputsBoxHover;
-                    if (nodeInputsBoxHover == 1 && !nodeOptionsBoxIteractedWith) {
+                    if (nodeInputsBoxHover && node.nodeInputsBox.active && !nodeOptionsBoxIteractedWith) {
                         // Check if clicking on an Input jack
                         node.nodeInputsBox.mouseOverJack(mouseWorldPos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.nodeInputsBox.jacks[jackIdx] @=> Jack jack;
-                            @(
-                                node.posX() + (node.nodeInputsBox.posX() * node.scaX()) + (jack.posX() * node.scaX()),
-                                node.posY() + (node.nodeInputsBox.posY() * node.scaY()) + (jack.posY() * node.scaY())
-                            ) => vec2 jackPos;
+                            node.inputJackPos(jackIdx) => vec2 jackPos;
 
                             // If clicking on an Input jack, must be completing a connection
                             // Otherwise, ignore the click
@@ -286,16 +283,10 @@ public class NodeManager {
                                 // Jacks from an nodeInputsBox are always Input jacks
                                 this.currOpenConnection.completeWire(node, jackIdx, jackPos);
 
-                                <<< "Complete physical connection, start connecting UGens" >>>;
-                                <<< "Prior to getting UGen" >>>;
                                 // Connect output data to input data
                                 this.currOpenConnection.outputNode.nodeOutputsBox.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                                <<< "After getting UGen" >>>;
-
                                 this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
-                                <<< "After connecting UGen" >>>;
                                 this.currOpenConnection.inputNode.nodeInputsBox.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
-                                <<< "After setting UGen" >>>;
                                 // Add connection to connections list
                                 this.nodeConnections << this.currOpenConnection;
 
@@ -311,7 +302,7 @@ public class NodeManager {
 
                     // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
                     node.mouseOverOutputsModifierBox(mouseWorldPos) => int nodeIOModifierHover;
-                    if (nodeIOModifierHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                    if (nodeIOModifierHover && node.nodeOutputsModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                         node.nodeOutputsModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
                         if (jackModifier == IOModifierBox.ADD) {
                             node.addJack();  // Call on the Node directly
@@ -356,16 +347,12 @@ public class NodeManager {
                     // Check if mouse is over this node's nodeOutputsBox
                     // This would be for starting a new connection
                     node.mouseOverOutputsBox(mouseWorldPos) => int nodeOutputsBoxHover;
-                    if (nodeOutputsBoxHover == 1 && !nodeOptionsBoxIteractedWith) {
+                    if (nodeOutputsBoxHover && node.nodeOutputsBox.active && !nodeOptionsBoxIteractedWith) {
                         <<< "Clicked on node outputs box", node.nodeID >>>;
                         // Check if clicking on an Output jack
                         node.nodeOutputsBox.mouseOverJack(mouseWorldPos) => int jackIdx;
                         if (jackIdx != -1) {
-                            node.nodeOutputsBox.jacks[jackIdx] @=> Jack jack;
-                            @(
-                                node.posX() + (node.nodeOutputsBox.posX() * node.scaX()) + (jack.posX() * node.scaX()),
-                                node.posY() + (node.nodeOutputsBox.posY() * node.scaY()) + (jack.posY() * node.scaY())
-                            ) => vec2 jackPos;
+                            node.outputJackPos(jackIdx) => vec2 jackPos;
 
                             // Check if starting a new connection
                             // Jack's from an nodeOutputsBox are always Output jacks
@@ -406,26 +393,51 @@ public class NodeManager {
                         break;
                     }
 
-
                     // Check if clicking on a node's visibility box
+                    int nodeVisibilityBoxIteractedWith;
                     node.mouseOverVisibilityBox(mouseWorldPos) => int nodeVisibilityBoxHover;
                     if (nodeVisibilityBoxHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        // TODO: Implement visibility box handling for each content box section
+                        node.nodeVisibilityBox.mouseHoverModifiers(mouseWorldPos) => int visibilityModifier;
+                        if (visibilityModifier == VisibilityBox.OPTIONS_BOX && node.nodeOptionsBox != null) {
+                            if (node.nodeOptionsBox.active) {
+                                node.hideOptionsBox();
+                            } else {
+                                node.showOptionsBox();
+                            }
+                            1 => nodeVisibilityBoxIteractedWith;
+                        } else if (visibilityModifier == VisibilityBox.INPUTS_BOX && node.nodeInputsBox != null) {
+                            if (node.nodeInputsBox.active) {
+                                node.hideInputsBox();
+                            } else {
+                                node.showInputsBox();
+                            }
+                        } else if (visibilityModifier == VisibilityBox.OUTPUTS_BOX && node.nodeOutputsBox != null) {
+                            if (node.nodeOutputsBox.active) {
+                                node.hideOutputsBox();
+                            } else {
+                                node.showOutputsBox();
+                            }
+                            1 => nodeVisibilityBoxIteractedWith;
+                        }
+                    }
 
-                        // node.nodeVisibilityBox.mouseHoverModifiers(mouseWorldPos) => int visibilityModifier;
-                        // if (visibilityModifier == VisibilityBox.OPTIONS_BOX) {
-                        //     if (node.nodeOptionsBox.active) {
-                        //         node.hideOptionsBox();
-                        //     } else {
-                        //         node.showOptionsBox();
-                        //     }
-                        // } else if (visibilityModifier == VisibilityBox.IO_BOX) {
-                        //     if (node.jackModifierBox.active) {
-                        //         node.hideIOBox();
-                        //     } else {
-                        //         node.showIOBox();
-                        //     }
-                        // }
+                    // Update this node's connection positions
+                    if (nodeVisibilityBoxIteractedWith) {
+                        // Update the position of all wires connected to this node
+                        for (Connection conn : this.nodeConnections) {
+                            if (node.nodeID == conn.outputNode.nodeID) {
+                                // Update Connection start (i.e. Output Jack position)
+                                node.outputJackPos(conn.outputNodeJackIdx) => vec2 jackPos;
+                                conn.updateWireStartPos(jackPos);
+                            } else if (node.nodeID == conn.inputNode.nodeID) {
+                                // Update Connection end (i.e. Input Jack position)
+                                node.inputJackPos(conn.inputNodeJackIdx) => vec2 jackPos;
+                                conn.updateWireEndPos(jackPos);
+                            }
+                        }
+
+                        nodeIdx => clickedNodeIdx;
+                        break;
                     }
                 }
 
@@ -495,19 +507,11 @@ public class NodeManager {
                     for (Connection conn : this.nodeConnections) {
                         if (this.currHeldNode.nodeID == conn.outputNode.nodeID) {
                             // Update Connection start (i.e. Output Jack position)
-                            this.currHeldNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx] @=> Jack jack;
-                            @(
-                                this.currHeldNode.posX() + (this.currHeldNode.nodeOutputsBox.posX() * this.currHeldNode.scaX()) + (jack.posX() * this.currHeldNode.scaX()),
-                                this.currHeldNode.posY() + (this.currHeldNode.nodeOutputsBox.posY() * this.currHeldNode.scaY()) + (jack.posY() * this.currHeldNode.scaY())
-                            ) => vec2 jackPos;
+                            this.currHeldNode.outputJackPos(conn.outputNodeJackIdx) => vec2 jackPos;
                             conn.updateWireStartPos(jackPos);
                         } else if (this.currHeldNode.nodeID == conn.inputNode.nodeID) {
                             // Update Connection end (i.e. Input Jack position)
-                            this.currHeldNode.nodeInputsBox.jacks[conn.inputNodeJackIdx] @=> Jack jack;
-                            @(
-                                this.currHeldNode.posX() + (this.currHeldNode.nodeInputsBox.posX() * this.currHeldNode.scaX()) + (jack.posX() * this.currHeldNode.scaX()),
-                                this.currHeldNode.posY() + (this.currHeldNode.nodeInputsBox.posY() * this.currHeldNode.scaY()) + (jack.posY() * this.currHeldNode.scaY())
-                            ) => vec2 jackPos;
+                            this.currHeldNode.inputJackPos(conn.inputNodeJackIdx) => vec2 jackPos;
                             conn.updateWireEndPos(jackPos);
                         }
                     }
@@ -569,7 +573,7 @@ public class NodeManager {
 
             // Handle mouse over each node's options box, if applicable
             for (Node node : this.nodesOnScreen) {
-                if (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen) {
+                if (node.nodeOptionsBox != null) {
                     node.nodeOptionsBox.handleMouseOver(mouseWorldPos);
                 }
             }
