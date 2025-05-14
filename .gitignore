@@ -5,3 +5,9 @@
 
 # Scratch workspace for testing
 scratch/
+
+# Midi devices output
+.midiDevices.txt
+
+# saves directory
+saves/
