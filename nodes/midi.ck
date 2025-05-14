@@ -14,6 +14,7 @@
 @import "../utils.ck"
 @import "../ui/menu.ck"
 @import "base.ck"
+@import "HashMap"
 
 
 public class MidiMessage {
@@ -441,5 +442,32 @@ public class MidiInNode extends MidiNode {
                 }
             }
         }
+    }
+
+    fun HashMap serialize() {
+        HashMap data;
+        data.set("nodeClass", Type.of(this).name());
+        data.set("nodeID", this.nodeID);
+        data.set("channel", this.channel);
+        data.set("synthMode", this.synthMode());
+        data.set("midiName", this.m.name());
+        data.set("midiID", this.m.num());
+        data.set("optionsActive", this.nodeOptionsBox.active);
+        data.set("outputsActive", this.nodeOutputsBox.active);
+        data.set("numOutputs", this.nodeOutputsBox.numJacks);
+        data.set("posX", this.posX());
+        data.set("posY", this.posY());
+        data.set("posZ", this.posZ());
+
+        // Get menu data
+        HashMap outputMenuData;
+        for (int idx; idx < this.nodeOutputsBox.menus.size(); idx++) {
+            this.nodeOutputsBox.menus[idx] @=> DropdownMenu menu;
+            outputMenuData.set(idx, menu.getSelectedEntry().id);
+        }
+
+        data.set("outputMenuData", outputMenuData);
+
+        return data;
     }
 }

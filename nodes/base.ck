@@ -1,5 +1,6 @@
 @import "../ui/base.ck"
 @import "../ui/menu.ck"
+@import "HashMap"
 
 
 public class NodeType {
@@ -20,6 +21,10 @@ public class Node extends GGen {
     IOModifierBox @ nodeOutputsModifierBox;
     IOBox @ nodeOutputsBox;
     VisibilityBox @ nodeVisibilityBox;
+
+    fun void setNodeID(string nodeID) {
+        nodeID => this.nodeID;
+    }
 
     fun int mouseOverBox(vec3 mouseWorldPos, GGen box) {
         this.posX() + box.posX() * this.scaX() => float centerX;
@@ -270,6 +275,11 @@ public class Node extends GGen {
     fun void removeJack() {
         <<< "ERROR: Override the removeJack function for Child Nodes" >>>;
     }
+
+    fun HashMap serialize() {
+        <<< "ERROR: Override the serialize function for Child Nodes" >>>;
+        return null;
+    }
 }
 
 
@@ -376,6 +386,21 @@ public class Connection extends GGen {
 
     fun void unselectWire() {
         Color.BLACK => this.wire.color;
+    }
+
+    fun HashMap serialize() {
+        HashMap data;
+        data.set("outputNodeID", this.outputNode.nodeID);
+        data.set("outputNodeJackIdx", this.outputNodeJackIdx);
+        data.set("outputJackPosX", this.outputJackPos.x);
+        data.set("outputJackPosY", this.outputJackPos.y);
+
+        data.set("inputNodeID", this.inputNode.nodeID);
+        data.set("inputNodeJackIdx", this.inputNodeJackIdx);
+        data.set("inputJackPosX", this.inputJackPos.x);
+        data.set("inputJackPosY", this.inputJackPos.y);
+
+        return data;
     }
 }
 

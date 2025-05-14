@@ -1,9 +1,10 @@
 // Imports
+@import "../saveHandler.ck"
 @import "../events.ck"
 @import "../ui/menu.ck"
+@import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
-
 
 public class NodeManager {
     // All Nodes
@@ -172,6 +173,137 @@ public class NodeManager {
                     if (token == "output" || token == "outputs") 1 => processOutputs;
                 }
             }
+        }
+    }
+
+    fun void loadSave(string filename) {
+        SaveHandler.load(filename) @=> HashMap data;
+
+        // Load nodes and connections
+        data.get("nodes") @=> HashMap nodes;
+        data.get("connections") @=> HashMap connections;
+
+        // Create and add nodes
+        nodes.intKeys() @=> int nodeKeys[];
+        nodeKeys.sort();
+        for (int idx; idx < nodeKeys.size(); idx++) {
+            nodes.get(idx) @=> HashMap nodeData;
+            nodeData.getStr("nodeClass") => string nodeClassName;
+
+            // Handle based on node class
+            if (nodeClassName == MidiInNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getInt("midiID") => int midiID;
+                nodeData.getInt("channel") => int channel;
+                nodeData.getInt("synthMode") => int synthMode;
+                nodeData.getInt("numOutputs") => int numOutputs;
+                nodeData.getInt("optionsActive") => int optionsActive;
+                nodeData.getInt("outputsActive") => int outputsActive;
+
+                // Position
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+
+                // Create and add node
+                MidiInNode midiIn(midiID, channel, numOutputs);
+                midiIn.setNodeID(nodeID);
+                midiIn.setChannel(channel);
+                midiIn.synthMode(synthMode);
+                @(posX, posY, posZ) => midiIn.pos;
+                this.addNode(midiIn);
+                spork ~ midiIn.run();
+
+                // Handle options menu selections
+                (midiIn.nodeOptionsBox$MidiOptionsBox).channelSelectMenu.updateSelectedEntry(channel + 1);  // +1 because 0th entry is "All"
+                (midiIn.nodeOptionsBox$MidiOptionsBox).synthModeSelectMenu.updateSelectedEntry(synthMode);
+
+                // Handle output data type mappings and menu selections
+                nodeData.get("outputMenuData")$HashMap @=> HashMap outputMenuData;
+                outputMenuData.intKeys() @=> int outputMenuDataKeys[];
+                outputMenuDataKeys.sort();
+                for (int idx; idx < outputMenuDataKeys.size(); idx++) {
+                    outputMenuData.getInt(idx) @=> int midiDataTypeIdx;
+                    MidiDataType.allTypes[midiDataTypeIdx] @=> Enum midiDataType;
+
+                    // Update menu selection
+                    midiIn.nodeOutputsBox.menus[idx].updateSelectedEntry(midiDataTypeIdx);
+
+                    // Update output data type mapping
+                    midiIn.outputDataTypeIdx(midiDataType, 0, idx);
+                }
+
+                // Handle visibility
+                if (!optionsActive) midiIn.hideOptionsBox();
+                if (!outputsActive) midiIn.hideOutputsBox();
+
+            } else if (nodeClassName == AudioInNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+
+                for (Node node : this.nodesOnScreen) {
+                    if (Type.of(node).name() == nodeClassName) {
+                        node.setNodeID(nodeID);
+                        @(posX, posY, posZ) => node.pos;
+                        break;
+                    }
+                }
+
+            } else if (nodeClassName == AudioOutNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+
+                for (Node node : this.nodesOnScreen) {
+                    if (Type.of(node).name() == nodeClassName) {
+                        node.setNodeID(nodeID);
+                        @(posX, posY, posZ) => node.pos;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Create and add connections
+        connections.intKeys() @=> int connectionKeys[];
+        connectionKeys.sort();
+        for (int idx; idx < connectionKeys.size(); idx++) {
+            connections.get(idx) @=> HashMap connectionData;
+
+            // Input Node
+            connectionData.getStr("inputNodeID") => string inputNodeID;
+            connectionData.getInt("inputNodeJackIdx") => int inputNodeJackIdx;
+            connectionData.getFloat("inputJackPosX") => float inputJackPosX;
+            connectionData.getFloat("inputJackPosY") => float inputJackPosY;
+
+            // Output Node
+            connectionData.getStr("outputNodeID") => string outputNodeID;
+            connectionData.getInt("outputNodeJackIdx") => int outputNodeJackIdx;
+            connectionData.getFloat("outputJackPosX") => float outputJackPosX;
+            connectionData.getFloat("outputJackPosY") => float outputJackPosY;
+
+            // Get nodes from node IDs
+            Node @ inputNode;
+            Node @ outputNode;
+            for (Node node : this.nodesOnScreen) {
+                if (node.nodeID == inputNodeID) node @=> inputNode;
+                if (node.nodeID == outputNodeID) node @=> outputNode;
+            }
+
+            // Create and add connection
+            Connection connection(outputNode, outputNodeJackIdx, @(outputJackPosX, outputJackPosY), @(0., 0., 0.));
+            connection.completeWire(inputNode, inputNodeJackIdx, @(inputJackPosX, inputJackPosY));
+
+            // Connect output data to input data
+            outputNode.nodeOutputsBox.jacks[outputNodeJackIdx].ugen @=> UGen ugen;
+            inputNode.connect(ugen, inputNodeJackIdx);
+            inputNode.nodeInputsBox.jacks[inputNodeJackIdx].setUgen(ugen);
+
+            // Add connection to connections list
+            this.nodeConnections << connection;
         }
     }
 
@@ -556,6 +688,30 @@ public class NodeManager {
                     -1 => this.currSelectedNodeIdx;
                     null => this.currSelectedNode;
                 }
+            }
+
+            // Check if CMD+S is pressed
+            if (GWindow.key(GWindow.Key_LeftSuper) && GWindow.keyDown(GWindow.Key_S)) {
+                <<< "Saving Data" >>>;
+                // Serialize the current state of the nodes
+                HashMap nodes;
+                HashMap connections;
+
+                for (int idx; idx < this.nodesOnScreen.size(); idx++) {
+                    this.nodesOnScreen[idx] @=> Node node;
+                    nodes.set(idx, node.serialize());
+                }
+
+                for (int idx; idx < this.nodeConnections.size(); idx++) {
+                    this.nodeConnections[idx] @=> Connection conn;
+                    connections.set(idx, conn.serialize());
+                }
+
+                HashMap data;
+                data.set("nodes", nodes);
+                data.set("connections", connections);
+
+                SaveHandler.save("autosave.json", data);
             }
 
             // Handle moving wire for open connection

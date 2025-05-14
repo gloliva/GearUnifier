@@ -23,6 +23,27 @@ public class AudioNode extends Node {
         // Connections
         this.nodeNameBox --> this;
     }
+
+    fun HashMap serialize() {
+        HashMap data;
+
+        data.set("nodeClass", Type.of(this).name());
+        data.set("nodeID", this.nodeID);
+        data.set("ioType", this.ioType);
+        data.set("posX", this.posX());
+        data.set("posY", this.posY());
+        data.set("posZ", this.posZ());
+
+        if (this.nodeInputsBox != null) {
+            data.set("numJacks", this.nodeInputsBox.numJacks);
+        }
+
+        if (this.nodeOutputsBox != null) {
+            data.set("numJacks", this.nodeOutputsBox.numJacks);
+        }
+
+        return data;
+    }
 }
 
 

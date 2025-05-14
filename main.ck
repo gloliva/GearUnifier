@@ -47,6 +47,10 @@ audioIn --> GG.scene();
 nodeManager.addNode(audioOut);
 nodeManager.addNode(audioIn);
 
+// Load autosave on startup
+nodeManager.loadSave("autosave.json");
+
+
 // Main loop
 while (true) {
     GG.nextFrame() => now;
