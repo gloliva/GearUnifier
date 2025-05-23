@@ -79,6 +79,7 @@ public class AudioOutNode extends AudioNode {
 
 
 public class AudioInNode extends AudioNode {
+
     fun @construct(int numIns) {
         AudioNode(IOType.INPUT);
 
@@ -87,7 +88,14 @@ public class AudioInNode extends AudioNode {
         new IOBox(numIns, IOType.OUTPUT, this.nodeID, 2.) @=> this.nodeOutputsBox;
         this.nodeOutputsBox --> this;
 
+        for (int i; i < numIns; i++) {
+            <<< "adc channel", i >>>;
+            // Set the gain as the UGen for the jack
+            this.nodeOutputsBox.jacks[i].setUgen(adc.chan(i));
+        }
+
         // Update box positions
         this.updatePos();
+
     }
 }

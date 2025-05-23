@@ -39,13 +39,15 @@ public class DropdownMenu extends GGen {
             0.1 => box.posZ;
 
             // Handle borders
-            if (idx == 0 && this.menuItems.size() > 1) {
-                box.bottomBorder --< box;
-            } else if (idx == this.menuItems.size() - 1) {
-                box.topBorder --< box;
-            } else {
-                box.bottomBorder --< box;
-                box.topBorder --< box;
+            if (this.menuItems.size() > 1) {
+                if (idx == 0) {
+                    box.bottomBorder --< box;
+                } else if (idx == this.menuItems.size() - 1) {
+                    box.topBorder --< box;
+                } else {
+                    box.bottomBorder --< box;
+                    box.topBorder --< box;
+                }
             }
 
             // Names

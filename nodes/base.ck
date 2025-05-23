@@ -4,10 +4,16 @@
 
 
 public class NodeType {
+    // MIDI
     0 => static int MIDI_IN;
     1 => static int MIDI_OUT;
+
+    // Audio
     2 => static int AUDIO_IN;
     3 => static int AUDIO_OUT;
+
+    // Effects
+    4 => static int WAVEFOLDER;
 }
 
 
@@ -107,9 +113,12 @@ public class Node extends GGen {
     fun void hideInputsBox() {
         if (this.nodeInputsBox == null) return;
 
-        this.nodeInputsModifierBox --< this;
+        if (this.nodeInputsModifierBox != null) {
+            this.nodeInputsModifierBox --< this;
+            0 => this.nodeInputsModifierBox.active;
+        }
+
         this.nodeInputsBox --< this;
-        0 => this.nodeInputsModifierBox.active;
         0 => this.nodeInputsBox.active;
         this.updatePos();
     }
@@ -117,9 +126,12 @@ public class Node extends GGen {
     fun void showInputsBox() {
         if (this.nodeInputsBox == null) return;
 
-        this.nodeInputsModifierBox --> this;
+        if (this.nodeInputsModifierBox != null) {
+            this.nodeInputsModifierBox --> this;
+            1 => this.nodeInputsModifierBox.active;
+        }
+
         this.nodeInputsBox --> this;
-        1 => this.nodeInputsModifierBox.active;
         1 => this.nodeInputsBox.active;
         this.updatePos();
     }
@@ -127,9 +139,12 @@ public class Node extends GGen {
     fun void hideOutputsBox() {
         if (this.nodeOutputsBox == null) return;
 
-        this.nodeOutputsModifierBox --< this;
+        if (this.nodeOutputsModifierBox != null) {
+            this.nodeOutputsModifierBox --< this;
+            0 => this.nodeOutputsModifierBox.active;
+        }
+
         this.nodeOutputsBox --< this;
-        0 => this.nodeOutputsModifierBox.active;
         0 => this.nodeOutputsBox.active;
         this.updatePos();
     }
@@ -137,16 +152,14 @@ public class Node extends GGen {
     fun void showOutputsBox() {
         if (this.nodeOutputsBox == null) return;
 
-        <<< "Showing Outputs Box" >>>;
-
-        this.nodeOutputsModifierBox --> this;
-        <<< "Outputs Modifier Box Connected" >>>;
+        if (this.nodeOutputsModifierBox != null) {
+            this.nodeOutputsModifierBox --> this;
+            1 => this.nodeOutputsModifierBox.active;
+        }
 
         this.nodeOutputsBox --> this;
-        <<< "Outputs Box Connected" >>>;
-
-        1 => this.nodeOutputsModifierBox.active;
         1 => this.nodeOutputsBox.active;
+
         this.updatePos();
     }
 
@@ -268,11 +281,11 @@ public class Node extends GGen {
         <<< "ERROR: Override the Disconnect function for Child Nodes." >>>;
     }
 
-    fun void addJack() {
+    fun void addJack(int ioType) {
         <<< "ERROR: Override the addJack function for Child Nodes" >>>;
     }
 
-    fun void removeJack() {
+    fun void removeJack(int ioType) {
         <<< "ERROR: Override the removeJack function for Child Nodes" >>>;
     }
 
@@ -444,6 +457,7 @@ public class Jack extends GGen {
     }
 
     fun void setUgen(UGen ugen) {
+        <<< "Parent node:", ((this.parent()$IOBox).parent()$Node).nodeID >>>;
         1 => this.isConnected;
         ugen @=> this.ugen;
     }
@@ -533,6 +547,7 @@ public class IOBox extends ContentBox {
     int numJacks;
 
     // Menus
+    int hasMenus;
     DropdownMenu @ openMenu;
 
     fun @construct(int numJacks, int ioType, string parentNodeID, float xScale) {
@@ -545,7 +560,7 @@ public class IOBox extends ContentBox {
         // Member variables
         ioType => this.ioType;
         numStartJacks => this.numJacks;
-
+        ioMenuEntries != null => this.hasMenus;
         // Scale
         @(xScale, numStartJacks, 0.2) => this.contentBox.sca;
 
@@ -554,7 +569,7 @@ public class IOBox extends ContentBox {
 
         // Position handling for Jacks Only vs. Jacks and Menus
         int xPosModifier;
-        if (ioMenuEntries != null) {
+        if (this.hasMenus) {
             1 => xPosModifier;
             if (ioType == IOType.INPUT) {
                 -1 => xPosModifier;
@@ -578,7 +593,7 @@ public class IOBox extends ContentBox {
             // Connect jack to IO box
             jack --> this;
 
-            if (ioMenuEntries != null) {
+            if (this.hasMenus) {
                 DropdownMenu menu(ioMenuEntries, parentNodeID, idx);
 
                 // Menus position
@@ -605,31 +620,47 @@ public class IOBox extends ContentBox {
     fun void addJack(Enum menuSelections[]) {
         this.numJacks => int jackIdx;
         Jack jack(jackIdx, IOType.OUTPUT);
-        DropdownMenu jackMenu(menuSelections, jackIdx);
         Step out(0.);
 
         // Update numJacks
         this.numJacks++;
 
+        // Position handling for Jacks Only vs. Jacks and Menus
+        int xPosModifier;
+        if (this.hasMenus) {
+            1 => xPosModifier;
+            if (this.ioType == IOType.INPUT) {
+                -1 => xPosModifier;
+            }
+        }
+
         // Update contentBox scale
         this.numJacks => this.contentBox.scaY;
-        (this.contentBox.scaY() - 1) / 2. => float startPosY;
 
         // Jack position
-        1.25 => jack.posX;
-
-        // Menu position
-        -0.75 => jackMenu.posX;
-        0.1 => jackMenu.posZ;
+        1.25 * xPosModifier => jack.posX;
 
         // Add objects to lists
         this.jacks << jack;
-        this.menus << jackMenu;
         this.outs << out;
 
         // Jack Connection
         jack --> this;
-        jackMenu --> this;
+
+        // Handle Menus
+        if (this.hasMenus) {
+            DropdownMenu jackMenu(menuSelections, jackIdx);
+
+            // Menu position
+            -0.75 * xPosModifier => jackMenu.posX;
+            0.1 => jackMenu.posZ;
+
+            // Add menu to list
+            this.menus << jackMenu;
+
+            // Connect menu to IO box
+            jackMenu --> this;
+        }
 
         // Update Jack and Menu Y Pos
         this.updateJackandMenuYPos();
@@ -828,9 +859,9 @@ public class VisibilityBox extends ContentBox {
         new BorderedBox("Outs", 1., 0.5) @=> this.outputsBox;
 
         // Position
-        1.2 => this.optionsBox.posX;
-        0. => this.outputsBox.posX;
-        -1.2 => this.inputsBox.posX;
+        @(1.2, 0., 0.1) => this.optionsBox.pos;
+        @(0., 0., 0.1) => this.outputsBox.pos;
+        @(-1.2, 0., 0.1) => this.inputsBox.pos;
 
         // Scale
         @(xScale, 1.0, 0.2) => this.contentBox.sca;

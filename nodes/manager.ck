@@ -5,6 +5,7 @@
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
+@import "effects/wavefolder.ck"
 
 public class NodeManager {
     // All Nodes
@@ -108,6 +109,15 @@ public class NodeManager {
                 MidiInNode midiIn(midiDeviceID, 0, 3);
                 this.addNode(midiIn);
                 spork ~ midiIn.run();
+            } else if (addNodeEvent.nodeType == NodeType.AUDIO_IN) {
+                AudioInNode audioIn(adc.channels());
+                this.addNode(audioIn);
+            } else if (addNodeEvent.nodeType == NodeType.AUDIO_OUT) {
+                AudioOutNode audioOut(dac.channels());
+                this.addNode(audioOut);
+            } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
+                WavefolderNode wavefolder();
+                this.addNode(wavefolder);
             }
         }
     }
@@ -198,6 +208,7 @@ public class NodeManager {
                 nodeData.getInt("synthMode") => int synthMode;
                 nodeData.getInt("numOutputs") => int numOutputs;
                 nodeData.getInt("optionsActive") => int optionsActive;
+                nodeData.getInt("inputsActive") => int inputsActive;
                 nodeData.getInt("outputsActive") => int outputsActive;
 
                 // Position
@@ -235,6 +246,7 @@ public class NodeManager {
 
                 // Handle visibility
                 if (!optionsActive) midiIn.hideOptionsBox();
+                if (!inputsActive) midiIn.hideInputsBox();
                 if (!outputsActive) midiIn.hideOutputsBox();
 
             } else if (nodeClassName == AudioInNode.typeOf().name()) {
@@ -418,6 +430,7 @@ public class NodeManager {
                                 // Connect output data to input data
                                 this.currOpenConnection.outputNode.nodeOutputsBox.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
                                 this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
+                                <<< "Input Node", this.currOpenConnection.inputNode.nodeID >>>;
                                 this.currOpenConnection.inputNode.nodeInputsBox.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
                                 // Add connection to connections list
                                 this.nodeConnections << this.currOpenConnection;
@@ -430,14 +443,55 @@ public class NodeManager {
                                 1 => connectionCompletedThisFrame;
                             }
                         }
+
+                        // Check if clicking on a menu
+                        node.nodeInputsBox.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
+                        if (dropdownMenuIdx != -1 && jackIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                            <<< "Clicked on", node.nodeInputsBox.menus[dropdownMenuIdx].menuID >>>;
+
+                            // No existing menu opened
+                            if (!this.menuOpen) {
+                                node.nodeInputsBox.menus[dropdownMenuIdx] @=> this.currMenu;
+                                this.currMenu.expand();
+                                1 => this.menuOpen;
+                            }
+                        // Close active menu if Menu is open and click outside of menu
+                        } else if (dropdownMenuIdx == -1 && dropdownMenuEntryIdx == -1 && this.menuOpen) {
+                            this.currMenu.collapse();
+                            0 => this.menuOpen;
+                            null => this.currMenu;
+                        }
+
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
+                    }
+
+                    // Check if 1) the mouse is over this node's IO modifier box for an nodeInputsBox and 2) not in an open menu
+                    int nodeInputsModifierInteractedWith;
+                    node.mouseOverInputsModifierBox(mouseWorldPos) => int nodeInputsModifierHover;
+                    if (nodeInputsModifierHover && node.nodeInputsModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                        node.nodeInputsModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
+                        if (jackModifier == IOModifierBox.ADD) {
+                            node.addJack(IOType.INPUT);
+                            1 => nodeInputsModifierInteractedWith;
+                        } else if (jackModifier == IOModifierBox.REMOVE && node.nodeInputsBox.numJacks > 1) {
+                            node.nodeInputsBox.numJacks - 1 => int removedJackIdx;
+
+                            // TODO: Remove the connection
+
+                            node.removeJack(IOType.INPUT);
+                            1 => nodeInputsModifierInteractedWith;
+
+                        }
                     }
 
                     // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
-                    node.mouseOverOutputsModifierBox(mouseWorldPos) => int nodeIOModifierHover;
-                    if (nodeIOModifierHover && node.nodeOutputsModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                    node.mouseOverOutputsModifierBox(mouseWorldPos) => int nodeOutputsModifierHover;
+                    if (nodeOutputsModifierHover && node.nodeOutputsModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                         node.nodeOutputsModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
                         if (jackModifier == IOModifierBox.ADD) {
-                            node.addJack();  // Call on the Node directly
+                            node.addJack(IOType.OUTPUT);  // Call on the Node directly
                         } else if (jackModifier == IOModifierBox.REMOVE && node.nodeOutputsBox.numJacks > 1) {
                             // If removed jack has a connection, remove it
                             node.nodeOutputsBox.numJacks - 1 => int removedJackIdx;
@@ -468,7 +522,7 @@ public class NodeManager {
                                 // Remove connection from connection list
                                 this.nodeConnections.erase(removedConnectionIdx);
                             }
-                            node.removeJack();  // Call on the Node directly
+                            node.removeJack(IOType.OUTPUT);  // Call on the Node directly
                         }
 
                         // Found the node that was clicked on, can exit early
@@ -543,6 +597,7 @@ public class NodeManager {
                             } else {
                                 node.showInputsBox();
                             }
+                            1 => nodeVisibilityBoxIteractedWith;
                         } else if (visibilityModifier == VisibilityBox.OUTPUTS_BOX && node.nodeOutputsBox != null) {
                             if (node.nodeOutputsBox.active) {
                                 node.hideOutputsBox();
@@ -554,7 +609,7 @@ public class NodeManager {
                     }
 
                     // Update this node's connection positions
-                    if (nodeVisibilityBoxIteractedWith) {
+                    if (nodeVisibilityBoxIteractedWith || nodeInputsModifierInteractedWith) {
                         // Update the position of all wires connected to this node
                         for (Connection conn : this.nodeConnections) {
                             if (node.nodeID == conn.outputNode.nodeID) {

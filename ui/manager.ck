@@ -7,7 +7,9 @@
 
 public class UIManager {
     GCube topMenuBar;
+    DropdownMenu @ audioMenu;
     DropdownMenu @ midiInMenu;
+    DropdownMenu @ effectsMenu;
 
     vec2 windowSize;
 
@@ -37,6 +39,30 @@ public class UIManager {
         @(0.3, 0.3, 1.) => this.midiInMenu.sca;
         0.201 => this.midiInMenu.posZ;
         this.midiInMenu --> GG.scene();
+    }
+
+    fun void setAudioUI() {
+        new DropdownMenu([new Enum(0, "Audio In"), new Enum(1, "Audio Out")]) @=> this.audioMenu;
+
+        // Set name and scale
+        this.audioMenu.setSelectedName("Audio");
+        this.audioMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.audioMenu.sca;
+        0.201 => this.audioMenu.posZ;
+        this.audioMenu --> GG.scene();
+    }
+
+    fun void setEffectsUI() {
+        new DropdownMenu([new Enum(0, "Wavefolder")]) @=> this.effectsMenu;
+
+        // Set name and scale
+        this.effectsMenu.setSelectedName("Effects");
+        this.effectsMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.effectsMenu.sca;
+        0.201 => this.effectsMenu.posZ;
+        this.effectsMenu --> GG.scene();
     }
 
     fun int mouseOverDropdownMenu(vec3 mouseWorldPos, DropdownMenu menu) {
@@ -95,10 +121,24 @@ public class UIManager {
             // Rescale X
             worldBottomRight.x - worldTopLeft.x => this.topMenuBar.scaX;
 
+            // Buffer between menus
+            0.05 => float menuBuffer;
+
             // Reposition UI items
             if (this.midiInMenu != null) {
-
                 this.topMenuBar.posY() => this.midiInMenu.posY;
+            }
+
+            if (this.audioMenu != null) {
+                this.audioMenu.selectedBox.box.scaWorld().x => float audioMenuWidth;
+                -audioMenuWidth - menuBuffer => this.audioMenu.posX;
+                this.topMenuBar.posY() => this.audioMenu.posY;
+            }
+
+            if (this.effectsMenu != null) {
+                this.effectsMenu.selectedBox.box.scaWorld().x => float effectsMenuWidth;
+                effectsMenuWidth + menuBuffer => this.effectsMenu.posX;
+                this.topMenuBar.posY() => this.effectsMenu.posY;
             }
         }
     }
@@ -113,12 +153,31 @@ public class UIManager {
 
             // Mouse Click Down on this frame
             if (GWindow.mouseLeftDown() == 1) {
+                // If Audio Menu is open, check if clicking on a menu entry
+                if (this.audioMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.audioMenu) => int dropdownMenuEntryIdx;
+                    if (dropdownMenuEntryIdx != -1) {
+                        this.audioMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+
+                        // Handle Node type for Audio In and Out
+                        NodeType.AUDIO_IN => int nodeType;
+                        if (menuEntry.id == 1) NodeType.AUDIO_OUT => nodeType;
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.signal();
+                    }
+
+                    // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
+                    this.audioMenu.collapse();
+                // Otherwise, check if clicking on the Midi In Menu, then open it
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.audioMenu) && !this.audioMenu.expanded) {
+                    this.audioMenu.expand();
+                }
+
                 // If MidiIn Menu is open, check if clicking on a menu entry
                 if (this.midiInMenu.expanded) {
                     this.mouseOverMenuEntry(mouseWorldPos, this.midiInMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
                         this.midiInMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
-                        <<< "Selected entry:", menuEntry.id, menuEntry.name >>>;
                         this.addNodeEvent.set(NodeType.MIDI_IN, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
@@ -129,12 +188,41 @@ public class UIManager {
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.midiInMenu) && !this.midiInMenu.expanded) {
                     this.midiInMenu.expand();
                 }
+
+                // If Effects Menu is open, check if clicking on a menu entry
+                if (this.effectsMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.effectsMenu) => int dropdownMenuEntryIdx;
+                    if (dropdownMenuEntryIdx != -1) {
+                        this.effectsMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+
+                        // Handle Node type for Effects
+                        NodeType.WAVEFOLDER => int nodeType;
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.signal();
+                    }
+
+                    // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
+                    this.effectsMenu.collapse();
+                // Otherwise, check if clicking on the Effects Menu, then open it
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.effectsMenu) && !this.effectsMenu.expanded) {
+                    this.effectsMenu.expand();
+                }
             }
 
             // Highlight menu items if mouse is over an open menu
+            if (this.audioMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.audioMenu) => int dropdownMenuEntryIdx;
+                this.audioMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            }
+
             if (this.midiInMenu.expanded) {
                 this.mouseOverMenuEntry(mouseWorldPos, this.midiInMenu) => int dropdownMenuEntryIdx;
                 this.midiInMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            }
+
+            if (this.effectsMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.effectsMenu) => int dropdownMenuEntryIdx;
+                this.effectsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             GG.nextFrame() => now;

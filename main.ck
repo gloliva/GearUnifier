@@ -28,7 +28,9 @@ spork ~ nodeManager.addNodeHandler(addNodeEvent);
 
 // UI
 UIManager uiManager(addNodeEvent);
+uiManager.setAudioUI();
 uiManager.setMidiInUI(nodeManager.midiInDevices);
+uiManager.setEffectsUI();
 spork ~ uiManager.resize();
 spork ~ uiManager.run();
 

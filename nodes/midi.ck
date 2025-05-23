@@ -47,6 +47,15 @@ public class MidiDataType {
 }
 
 
+public class MidiInputType {
+    new Enum(0, "Sequencer") @=> static Enum SEQUENCER;
+
+    [
+        MidiInputType.SEQUENCER
+    ] @=> static Enum allTypes[];
+}
+
+
 public class SynthMode {
     new Enum(0, "Mono") @=> static Enum MONO;
     new Enum(1, "Arp") @=> static Enum ARP;
@@ -63,6 +72,7 @@ public class SynthMode {
 public class MidiOptionsBox extends OptionsBox {
     DropdownMenu @ channelSelectMenu;
     DropdownMenu @ synthModeSelectMenu;
+    DropdownMenu @ latchSelectMenu;
 
     fun @construct(string optionNames[], float xScale) {
         OptionsBox(optionNames, xScale);
@@ -82,18 +92,24 @@ public class MidiOptionsBox extends OptionsBox {
         new DropdownMenu(SynthMode.allModes) @=> this.synthModeSelectMenu;
         this.synthModeSelectMenu.updateSelectedEntry(0);
 
+        // Latch Select Menu
+        new DropdownMenu([new Enum(0, "Off"), new Enum(1, "On")]) @=> this.latchSelectMenu;
+        this.latchSelectMenu.updateSelectedEntry(0);
+
         // Position
         @(0.75, this.optionNames[0].posY(), 0.201) => this.channelSelectMenu.pos;
         @(0.75, this.optionNames[1].posY(), 0.201) => this.synthModeSelectMenu.pos;
-
+        @(0.75, this.optionNames[2].posY(), 0.201) => this.latchSelectMenu.pos;
         // Name
         "ChannelSelectMenu Dropdown Menu" => this.channelSelectMenu.name;
         "SynthModeSelectMenu Dropdown Menu" => this.synthModeSelectMenu.name;
+        "LatchSelectMenu Dropdown Menu" => this.latchSelectMenu.name;
         "Midi Options Box" => this.name;
 
         // Connections
         this.channelSelectMenu --> this;
         this.synthModeSelectMenu --> this;
+        this.latchSelectMenu --> this;
     }
 
     fun int mouseOverMenuEntry(vec3 mouseWorldPos, Node parentNode, DropdownMenu menu) {
@@ -123,6 +139,12 @@ public class MidiOptionsBox extends OptionsBox {
             this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.synthModeSelectMenu) => int hoveredMenuEntryIdx;
             this.synthModeSelectMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
         }
+
+        if (this.latchSelectMenu.expanded) {
+            this.parent()$Node @=> Node parentNode;
+            this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.latchSelectMenu) => int hoveredMenuEntryIdx;
+            this.latchSelectMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
+        }
     }
 
     fun int handleMouseLeftDown(vec3 mouseWorldPos) {
@@ -132,7 +154,7 @@ public class MidiOptionsBox extends OptionsBox {
         if (parentName == MidiInNode.typeOf().name()) {
             this.parent()$MidiInNode @=> MidiInNode parentNode;
 
-            // Check if menu is open and clicking on an option
+            // Check if channel menu is open and clicking on an option
             -1 => int channelMenuEntryIdx;
             if (this.channelSelectMenu.expanded) {
                 this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.channelSelectMenu) => channelMenuEntryIdx;
@@ -184,7 +206,11 @@ public class MidiOptionsBox extends OptionsBox {
                 this.synthModeSelectMenu.collapse();
             }
 
-            if (!this.channelSelectMenu.expanded && !this.synthModeSelectMenu.expanded) {
+            // Check if no menus are open
+            if (!this.channelSelectMenu.expanded
+                && !this.synthModeSelectMenu.expanded
+                && !this.latchSelectMenu.expanded)
+            {
                 0 => this.menuOpen;
             }
         }
@@ -211,7 +237,7 @@ public class MidiNode extends Node {
         new NameBox(name + " " + this.ioType, xScale) @=> this.nodeNameBox;
 
         // Create options box with this node's scale
-        new MidiOptionsBox(["Channel", "Mode"], xScale) @=> this.nodeOptionsBox;
+        new MidiOptionsBox(["Channel", "Mode", "Latch"], xScale) @=> this.nodeOptionsBox;
 
         // Create visibility box with this node's scale
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -269,6 +295,10 @@ public class MidiInNode extends MidiNode {
         // Set Default tuning
         new EDO(12, -48) @=> this.tuning;
 
+        // Create Inputs IO box
+        new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
+        new IOBox(1, MidiInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+
         // Create Outputs IO box
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(numStartJacks, MidiDataType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
@@ -277,6 +307,8 @@ public class MidiInNode extends MidiNode {
         MidiNode(channel, this.m.name(), IOType.INPUT, xScale);
 
         // Connect IO box to node
+        this.nodeInputsModifierBox --> this;
+        this.nodeInputsBox --> this;
         this.nodeOutputsModifierBox --> this;
         this.nodeOutputsBox --> this;
 
@@ -317,17 +349,26 @@ public class MidiInNode extends MidiNode {
         this.midiDataTypeToOut.erase(key);
     }
 
-    fun void addJack() {
-        this.nodeOutputsBox.addJack(MidiDataType.allTypes);
+    fun void addJack(int ioType) {
+        if (ioType == IOType.OUTPUT) {
+            this.nodeOutputsBox.addJack(MidiDataType.allTypes);
+        } else if (ioType == IOType.INPUT) {
+            this.nodeInputsBox.addJack(MidiInputType.allTypes);
+        }
         this.updatePos();
     }
 
-    fun void removeJack() {
-        this.nodeOutputsBox.removeJack() @=> Enum removedMenuSelection;
+    fun void removeJack(int ioType) {
+        if (ioType == IOType.OUTPUT) {
+            this.nodeOutputsBox.removeJack() @=> Enum removedMenuSelection;
+
+            // Remove OutputDataType mapping
+            this.removeOutputDataTypeMapping(removedMenuSelection, 0);
+        } else if (ioType == IOType.INPUT) {
+            this.nodeInputsBox.removeJack() @=> Enum removedMenuSelection;
+        }
         this.updatePos();
 
-        // Remove OutputDataType mapping
-        this.removeOutputDataTypeMapping(removedMenuSelection, 0);
     }
 
     fun void sendTrigger(int triggerOutIdx) {
