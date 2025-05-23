@@ -457,7 +457,6 @@ public class Jack extends GGen {
     }
 
     fun void setUgen(UGen ugen) {
-        <<< "Parent node:", ((this.parent()$IOBox).parent()$Node).nodeID >>>;
         1 => this.isConnected;
         ugen @=> this.ugen;
     }

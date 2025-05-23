@@ -89,7 +89,6 @@ public class AudioInNode extends AudioNode {
         this.nodeOutputsBox --> this;
 
         for (int i; i < numIns; i++) {
-            <<< "adc channel", i >>>;
             // Set the gain as the UGen for the jack
             this.nodeOutputsBox.jacks[i].setUgen(adc.chan(i));
         }

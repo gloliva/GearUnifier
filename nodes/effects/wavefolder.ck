@@ -1,6 +1,7 @@
 // Imports
 @import "../../utils.ck"
 @import "../base.ck"
+@import "HashMap"
 
 public class WavefolderInputType {
     new Enum(0, "Wave In") @=> static Enum WAVE_IN;
@@ -17,7 +18,52 @@ public class WavefolderInputType {
 }
 
 
+public class Wavefolder extends Chugen {
+    0.7 => float threshold;
+    10.0 => float scale;
+    0.5 => float mix;
+
+    fun void setThreshold(float threshold) {
+        threshold => this.threshold;
+    }
+
+    fun void setScale(float scale) {
+        scale => this.scale;
+    }
+
+    fun void setMix(float mix) {
+        mix => this.mix;
+    }
+
+    fun float tick(float in) {
+        return this.shapeOne(in) * this.mix + this.shapeTwo(in) * (1 - this.mix);
+    }
+
+    fun float shapeOne(float in) {
+        in * scale => float x;
+
+        4 * threshold => float period;
+        (x + threshold) % period => x;
+        if (x < 2 * threshold) {
+            return x - threshold;
+        } else {
+            return 3 * threshold - x;
+        }
+    }
+
+    fun float shapeTwo(float in) {
+        in * scale => float x;
+        return Math.tanh(x);
+    }
+}
+
+
 public class WavefolderNode extends Node {
+    Wavefolder wavefolder;
+
+    // Data handling
+    int inputDataMap[0];
+
     fun @construct() {
         WavefolderNode(4.);
     }
@@ -35,9 +81,14 @@ public class WavefolderNode extends Node {
         // Create inputs box
         new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
         new IOBox(1, WavefolderInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        for (0 => int i; i < WavefolderInputType.allTypes.size(); i++) {
+            this.inputDataMap << -1;
+        }
 
         // Create outputs box
         new IOBox(1, [new Enum(0, "Wave Out")], IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+        this.nodeOutputsBox.menus[0].updateSelectedEntry(0);
+        this.nodeOutputsBox.jacks[0].setUgen(this.wavefolder);
 
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -54,5 +105,68 @@ public class WavefolderNode extends Node {
 
         // Update position
         this.updatePos();
+    }
+
+    fun void setInputDataTypeMapping(Enum wavefolderInputType, int jackIdx) {
+        wavefolderInputType.id => this.inputDataMap[jackIdx];
+    }
+
+    fun int getInputDataTypeMapping(int jackIdx) {
+        return this.inputDataMap[jackIdx];
+    }
+
+    fun void removeInputDataTypeMapping(int jackIdx) {
+        -1 => this.inputDataMap[jackIdx];
+    }
+
+    fun void connect(UGen ugen, int inputJackIdx) {
+        this.inputDataMap[inputJackIdx] => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
+
+        if (dataType == WavefolderInputType.WAVE_IN.id) {
+            ugen => this.wavefolder;
+        }
+
+    }
+
+    fun void disconnect(UGen ugen, int inputJackIdx) {
+
+    }
+
+    fun void addJack(int ioType) {
+
+    }
+
+    fun void removeJack(int ioType) {
+
+    }
+
+    fun HashMap serialize() {
+        HashMap data;
+
+        // Node data
+        data.set("nodeClass", Type.of(this).name());
+        data.set("nodeID", this.nodeID);
+        data.set("posX", this.posX());
+        data.set("posY", this.posY());
+        data.set("posZ", this.posZ());
+
+        // Input menu data
+        HashMap inputMenuData;
+        for (int idx; idx < this.nodeInputsBox.menus.size(); idx++) {
+            this.nodeInputsBox.menus[idx] @=> DropdownMenu menu;
+            inputMenuData.set(idx, menu.getSelectedEntry().id);
+        }
+        data.set("inputMenuData", inputMenuData);
+
+        // Wavefolder parameters
+        data.set("threshold", this.wavefolder.threshold);
+        data.set("scale", this.wavefolder.scale);
+        data.set("mix", this.wavefolder.mix);
+
+        return data;
     }
 }

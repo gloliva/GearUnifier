@@ -276,6 +276,38 @@ public class NodeManager {
                         break;
                     }
                 }
+            } else if (nodeClassName == WavefolderNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+
+                WavefolderNode wavefolder();
+                wavefolder.setNodeID(nodeID);
+                @(posX, posY, posZ) => wavefolder.pos;
+
+                // Handle input data type mappings and menu selections
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+                for (int idx; idx < inputMenuDataKeys.size(); idx++) {
+                    inputMenuData.getInt(idx) @=> int wavefolderInputTypeIdx;
+
+                    // Skip if no mapping
+                    if (wavefolderInputTypeIdx == -1) continue;
+
+                    // Get wavefolder input type
+                    WavefolderInputType.allTypes[wavefolderInputTypeIdx] @=> Enum wavefolderInputType;
+
+                    // Update menu selection
+                    wavefolder.nodeInputsBox.menus[idx].updateSelectedEntry(wavefolderInputTypeIdx);
+
+                    // Update input data type mapping
+                    wavefolder.setInputDataTypeMapping(wavefolderInputType, idx);
+                }
+
+                // Add node to screen
+                this.addNode(wavefolder);
             }
         }
 
@@ -361,6 +393,16 @@ public class NodeManager {
                         this.currMenu.parent()$IOBox @=> IOBox ioBox;
                         ioBox.parent()$Node @=> Node node;
 
+                        if (ioBox.ioType == IOType.INPUT) {
+                            // Effect nodes
+                            if (Type.of(node).name() == WavefolderNode.typeOf().name()) {
+                                node$WavefolderNode @=> WavefolderNode wavefolder;
+
+                                // Add new mapping
+                                wavefolder.setInputDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+                        }
+
                         if (Type.of(node).name() == MidiInNode.typeOf().name()) {
                             node$MidiInNode @=> MidiInNode midiIn;
                             // Remove old mapping
@@ -430,7 +472,6 @@ public class NodeManager {
                                 // Connect output data to input data
                                 this.currOpenConnection.outputNode.nodeOutputsBox.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
                                 this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
-                                <<< "Input Node", this.currOpenConnection.inputNode.nodeID >>>;
                                 this.currOpenConnection.inputNode.nodeInputsBox.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
                                 // Add connection to connections list
                                 this.nodeConnections << this.currOpenConnection;
