@@ -480,6 +480,11 @@ public class MidiInNode extends MidiNode {
                 if (midiStatus == MidiMessage.CONTROL_CHANGE + this.channel) {
                     this.msg.data2 => int controllerNumber;
                     this.msg.data3 => int controllerData;
+
+                    this.outputDataTypeIdx(MidiDataType.CC, 0) => int ccOutIdx;
+                    if (ccOutIdx != -1) {
+                        if (controllerNumber == 1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
+                    }
                 }
             }
         }

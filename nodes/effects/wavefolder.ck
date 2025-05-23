@@ -65,10 +65,10 @@ public class WavefolderNode extends Node {
     int inputDataMap[0];
 
     fun @construct() {
-        WavefolderNode(4.);
+        WavefolderNode(1, 4.);
     }
 
-    fun @construct(float xScale) {
+    fun @construct(int numInputs, float xScale) {
         // Set node ID and name
         "Wavefolder Node" => this.name;
         this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
@@ -80,7 +80,7 @@ public class WavefolderNode extends Node {
 
         // Create inputs box
         new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
-        new IOBox(1, WavefolderInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        new IOBox(numInputs, WavefolderInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
         for (0 => int i; i < WavefolderInputType.allTypes.size(); i++) {
             this.inputDataMap << -1;
         }
@@ -133,15 +133,61 @@ public class WavefolderNode extends Node {
     }
 
     fun void disconnect(UGen ugen, int inputJackIdx) {
+        this.inputDataMap[inputJackIdx] => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
 
+        if (dataType == WavefolderInputType.WAVE_IN.id) {
+            ugen =< this.wavefolder;
+        }
     }
 
     fun void addJack(int ioType) {
-
+         if (ioType == IOType.INPUT) {
+            this.nodeInputsBox.addJack(WavefolderInputType.allTypes);
+        }
+        this.updatePos();
     }
 
     fun void removeJack(int ioType) {
+        if (ioType == IOType.INPUT) {
+            this.nodeInputsBox.removeJack() @=> Enum removedMenuSelection;
+        }
+        this.updatePos();
+    }
 
+    fun void run() {
+        while (true) {
+            for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
+                if (this.inputDataMap[idx] == -1) {
+                    continue;
+                }
+
+                // Value can be from a audio rate UGen (which uses last()) or a control rate UGen (which uses next())
+                this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
+                if (ugen == null) {
+                    continue;
+                }
+
+                float value;
+                if (Type.of(ugen).name() == Step.typeOf().name()) {
+                    (ugen$Step).next() => value;
+                } else {
+                    ugen.last() => value;
+                }
+
+                if (this.inputDataMap[idx] == WavefolderInputType.THRESHOLD.id) {
+                    Std.scalef(value, -0.5, 0.5, 0.1, 0.9) => this.wavefolder.setThreshold;
+                } else if (this.inputDataMap[idx] == WavefolderInputType.GAIN.id) {
+                    Std.scalef(value, -0.5, 0.5, 1., 20.) => this.wavefolder.setScale;
+                } else if (this.inputDataMap[idx] == WavefolderInputType.MIX.id) {
+                    Std.scalef(value, -0.5, 0.5, 0., 1.) => this.wavefolder.setMix;
+                }
+            }
+            10::ms => now;
+        }
     }
 
     fun HashMap serialize() {
@@ -153,6 +199,7 @@ public class WavefolderNode extends Node {
         data.set("posX", this.posX());
         data.set("posY", this.posY());
         data.set("posZ", this.posZ());
+        data.set("numInputs", this.nodeInputsBox.numJacks);
 
         // Input menu data
         HashMap inputMenuData;

@@ -118,6 +118,7 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder);
+                spork ~ wavefolder.run();
             }
         }
     }
@@ -281,8 +282,9 @@ public class NodeManager {
                 nodeData.getFloat("posX") => float posX;
                 nodeData.getFloat("posY") => float posY;
                 nodeData.getFloat("posZ") => float posZ;
+                nodeData.getInt("numInputs") => int numInputs;
 
-                WavefolderNode wavefolder();
+                WavefolderNode wavefolder(numInputs, 4.);
                 wavefolder.setNodeID(nodeID);
                 @(posX, posY, posZ) => wavefolder.pos;
 
@@ -305,6 +307,9 @@ public class NodeManager {
                     // Update input data type mapping
                     wavefolder.setInputDataTypeMapping(wavefolderInputType, idx);
                 }
+
+                // Run wavefolder
+                spork ~ wavefolder.run();
 
                 // Add node to screen
                 this.addNode(wavefolder);
