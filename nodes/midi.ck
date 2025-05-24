@@ -49,9 +49,11 @@ public class MidiDataType {
 
 public class MidiInputType {
     new Enum(0, "Sequencer") @=> static Enum SEQUENCER;
+    new Enum(1, "Latch") @=> static Enum LATCH;
 
     [
-        MidiInputType.SEQUENCER
+        MidiInputType.SEQUENCER,
+        MidiInputType.LATCH,
     ] @=> static Enum allTypes[];
 }
 
@@ -436,7 +438,44 @@ public class MidiInNode extends MidiNode {
         }
     }
 
-    fun void run() {
+    fun void connect(UGen ugen, int inputJackIdx) {
+
+    }
+
+    fun void disconnect(UGen ugen, int inputJackIdx) {
+
+    }
+
+    fun void processInputs() {
+        while (true) {
+            for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
+                // Check if DataType is set in a Menu
+                this.nodeInputsBox.getDataTypeMapping(idx) => int dataType;
+                if (dataType == -1) continue;
+
+                // Get UGen
+                this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
+                if (ugen == null) continue;
+
+                // UGen can either be Audio Rate (which uses last()) or Control Rate (which uses next())
+                float value;
+                if (Type.of(ugen).name() == Step.typeOf().name()) {
+                    (ugen$Step).next() => value;
+                } else {
+                    ugen.last() => value;
+                }
+
+                // Update based on inputs
+                if (dataType == MidiInputType.LATCH.id) {
+                    if (value <= 0) 0 => this.latch;
+                    else 1 => this.latch;
+                }
+            }
+            10::ms => now;
+        }
+    }
+
+    fun void processMidi() {
         while (true) {
             // Wait for Midi event
             this.m => now;

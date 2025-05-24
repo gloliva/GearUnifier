@@ -538,6 +538,7 @@ public class IOBox extends ContentBox {
 
     // Data handling
     Step outs[0];
+    int dataMap[0];
 
     // IO Type
     int ioType;
@@ -565,6 +566,13 @@ public class IOBox extends ContentBox {
 
         // Color
         Color.GRAY => this.contentBox.color;
+
+        // Initialize data map
+        if (ioMenuEntries != null) {
+            for (int idx; idx < ioMenuEntries.size(); idx++) {
+                this.dataMap << -1;
+            }
+        }
 
         // Position handling for Jacks Only vs. Jacks and Menus
         int xPosModifier;
@@ -614,6 +622,33 @@ public class IOBox extends ContentBox {
 
         // Connect boxes to IO box
         this.contentBox --> this;
+    }
+
+    fun void setDataTypeMapping(Enum dataType, int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index out of bounds" >>>;
+            return;
+        }
+
+        dataType.id => this.dataMap[jackIdx];
+    }
+
+    fun int getDataTypeMapping(int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index out of bounds" >>>;
+            return -1;
+        }
+
+        return this.dataMap[jackIdx];
+    }
+
+    fun void removeDataTypeMapping(int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index out of bounds" >>>;
+            return;
+        }
+
+        -1 => this.dataMap[jackIdx];
     }
 
     fun void addJack(Enum menuSelections[]) {

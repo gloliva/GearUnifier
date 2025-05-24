@@ -108,7 +108,8 @@ public class NodeManager {
                 addNodeEvent.menuIdx => int midiDeviceID;
                 MidiInNode midiIn(midiDeviceID, 0, 3);
                 this.addNode(midiIn);
-                spork ~ midiIn.run();
+                spork ~ midiIn.processMidi();
+                spork ~ midiIn.processInputs();
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_IN) {
                 AudioInNode audioIn(adc.channels());
                 this.addNode(audioIn);
@@ -118,7 +119,7 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder);
-                spork ~ wavefolder.run();
+                spork ~ wavefolder.processInputs();
             }
         }
     }
@@ -224,7 +225,8 @@ public class NodeManager {
                 midiIn.synthMode(synthMode);
                 @(posX, posY, posZ) => midiIn.pos;
                 this.addNode(midiIn);
-                spork ~ midiIn.run();
+                spork ~ midiIn.processMidi();
+                spork ~ midiIn.processInputs();
 
                 // Handle options menu selections
                 (midiIn.nodeOptionsBox$MidiOptionsBox).channelSelectMenu.updateSelectedEntry(channel + 1);  // +1 because 0th entry is "All"
@@ -309,7 +311,7 @@ public class NodeManager {
                 }
 
                 // Run wavefolder
-                spork ~ wavefolder.run();
+                spork ~ wavefolder.processInputs();
 
                 // Add node to screen
                 this.addNode(wavefolder);
@@ -399,22 +401,30 @@ public class NodeManager {
                         ioBox.parent()$Node @=> Node node;
 
                         if (ioBox.ioType == IOType.INPUT) {
+                            // MIDI nodes
+                            if (Type.of(node).name() == MidiInNode.typeOf().name()) {
+                                node$MidiInNode @=> MidiInNode midiIn;
+
+                                // Set input data type mapping for MIDI node
+                                midiIn.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+
                             // Effect nodes
                             if (Type.of(node).name() == WavefolderNode.typeOf().name()) {
                                 node$WavefolderNode @=> WavefolderNode wavefolder;
 
-                                // Add new mapping
+                                // Set input data type mapping for Wavefolder node
                                 wavefolder.setInputDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
                             }
-                        }
+                        } else if (ioBox.ioType == IOType.OUTPUT) {
+                            if (Type.of(node).name() == MidiInNode.typeOf().name()) {
+                                node$MidiInNode @=> MidiInNode midiIn;
+                                // Remove old mapping
+                                midiIn.removeOutputDataTypeMapping(previousSelection, 0);
 
-                        if (Type.of(node).name() == MidiInNode.typeOf().name()) {
-                            node$MidiInNode @=> MidiInNode midiIn;
-                            // Remove old mapping
-                            midiIn.removeOutputDataTypeMapping(previousSelection, 0);
-
-                            // Add new mapping
-                            midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
+                                // Add new mapping
+                                midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
+                            }
                         }
                     }
 

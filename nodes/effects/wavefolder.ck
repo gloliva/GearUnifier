@@ -158,7 +158,7 @@ public class WavefolderNode extends Node {
         this.updatePos();
     }
 
-    fun void run() {
+    fun void processInputs() {
         while (true) {
             for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
                 if (this.inputDataMap[idx] == -1) {
