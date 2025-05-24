@@ -8,6 +8,9 @@ public class NumberEntryBox extends GGen {
     string numberChars;
     int charLimit;
 
+    // Visibility
+    int active;
+
     fun @construct() {
         NumberEntryBox(3);
     }

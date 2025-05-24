@@ -69,6 +69,10 @@ public class DropdownMenu extends GGen {
         this.selectedBox.setName(name);
     }
 
+    fun void setSelectedScale(float xScale, float yScale) {
+        this.selectedBox.setScale(xScale, yScale);
+    }
+
     fun void setScale(float xScale, float yScale) {
         this.selectedBox.setScale(xScale, yScale);
         for (BorderedBox box : this.menuItemBoxes) {

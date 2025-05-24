@@ -1,5 +1,6 @@
 @import "../ui/base.ck"
 @import "../ui/menu.ck"
+@import "../ui/textBox.ck"
 @import "HashMap"
 
 
@@ -535,6 +536,7 @@ public class IOBox extends ContentBox {
     // Contents
     Jack jacks[0];
     DropdownMenu menus[0];
+    NumberEntryBox numberBoxes[0];
 
     // Data handling
     Step outs[0];
@@ -542,6 +544,7 @@ public class IOBox extends ContentBox {
 
     // IO Type
     int ioType;
+    int xPosModifier;
 
     // Jacks
     int numJacks;
@@ -549,18 +552,33 @@ public class IOBox extends ContentBox {
     // Menus
     int hasMenus;
     DropdownMenu @ openMenu;
+    int includeNumberEntry[];
 
     fun @construct(int numJacks, int ioType, string parentNodeID, float xScale) {
         // Create an IO box without menus
         IOBox(numJacks, null, ioType, parentNodeID, xScale);
     }
 
-
     fun @construct(int numStartJacks, Enum ioMenuEntries[], int ioType, string parentNodeID, float xScale) {
+        // Create an IO box with menus and without a number entry box
+        int includeNumberEntry[0];
+        if (ioMenuEntries != null) {
+            for (int idx; idx < ioMenuEntries.size(); idx++) {
+                includeNumberEntry << 0;
+            }
+        }
+
+        IOBox(numStartJacks, ioMenuEntries, includeNumberEntry, ioType, parentNodeID, xScale);
+    }
+
+
+    fun @construct(int numStartJacks, Enum ioMenuEntries[], int includeNumberEntry[], int ioType, string parentNodeID, float xScale) {
         // Member variables
         ioType => this.ioType;
         numStartJacks => this.numJacks;
         ioMenuEntries != null => this.hasMenus;
+        includeNumberEntry @=> this.includeNumberEntry;
+
         // Scale
         @(xScale, numStartJacks, 0.2) => this.contentBox.sca;
 
@@ -575,11 +593,11 @@ public class IOBox extends ContentBox {
         }
 
         // Position handling for Jacks Only vs. Jacks and Menus
-        int xPosModifier;
+        0 => this.xPosModifier;
         if (this.hasMenus) {
-            1 => xPosModifier;
+            1 => this.xPosModifier;
             if (ioType == IOType.INPUT) {
-                -1 => xPosModifier;
+                -1 => this.xPosModifier;
             }
         }
 
@@ -590,7 +608,7 @@ public class IOBox extends ContentBox {
             Step out(0.);
 
             // Jack Position
-            1.25 * xPosModifier => jack.posX;
+            1.25 * this.xPosModifier => jack.posX;
             startPosY + (idx * -1) => jack.posY;
 
             // Add jack to list
@@ -604,7 +622,7 @@ public class IOBox extends ContentBox {
                 DropdownMenu menu(ioMenuEntries, parentNodeID, idx);
 
                 // Menus position
-                -0.75 * xPosModifier => menu.posX;
+                -0.75 * this.xPosModifier => menu.posX;
                 startPosY + (idx * -1) => menu.posY;
                 0.1 => menu.posZ;
 
@@ -613,6 +631,13 @@ public class IOBox extends ContentBox {
 
                 // Connect menu to IO box
                 menu --> this;
+
+                // Add number entry box for each menu
+                NumberEntryBox numberBox(3);
+                -0.27 * this.xPosModifier => numberBox.posX;
+                startPosY + (idx * -1) => numberBox.posY;
+                0.1 => numberBox.posZ;
+                this.numberBoxes << numberBox;
             }
         }
 
@@ -651,6 +676,49 @@ public class IOBox extends ContentBox {
         -1 => this.dataMap[jackIdx];
     }
 
+    fun int hasNumberBox(int ioEntryIdx) {
+        if (ioEntryIdx >= this.dataMap.size() || ioEntryIdx < 0) {
+            <<< "ERROR: IO entry index out of bounds" >>>;
+            return false;
+        }
+
+        return this.includeNumberEntry[ioEntryIdx];
+    }
+
+    fun void showNumberBox(int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index out of bounds" >>>;
+            return;
+        }
+
+        // Check if already active
+        if (this.numberBoxes[jackIdx].active) return;
+
+        // Update menu scale and position
+        this.menus[jackIdx].setSelectedScale(1., 0.5);
+        -1.23 * this.xPosModifier => this.menus[jackIdx].posX;
+
+        this.numberBoxes[jackIdx] --> this;
+        1 => this.numberBoxes[jackIdx].active;
+    }
+
+    fun void hideNumberBox(int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index out of bounds" >>>;
+            return;
+        }
+
+        // Check if already inactive
+        if (!this.numberBoxes[jackIdx].active) return;
+
+        // Update menu scale and position
+        this.menus[jackIdx].setSelectedScale(2., 0.5);
+        -0.75 * this.xPosModifier => this.menus[jackIdx].posX;
+
+        this.numberBoxes[jackIdx] --< this;
+        0 => this.numberBoxes[jackIdx].active;
+    }
+
     fun void addJack(Enum menuSelections[]) {
         this.numJacks => int jackIdx;
         Jack jack(jackIdx, IOType.OUTPUT);
@@ -660,19 +728,19 @@ public class IOBox extends ContentBox {
         this.numJacks++;
 
         // Position handling for Jacks Only vs. Jacks and Menus
-        int xPosModifier;
-        if (this.hasMenus) {
-            1 => xPosModifier;
-            if (this.ioType == IOType.INPUT) {
-                -1 => xPosModifier;
-            }
-        }
+        // int xPosModifier;
+        // if (this.hasMenus) {
+        //     1 => xPosModifier;
+        //     if (this.ioType == IOType.INPUT) {
+        //         -1 => xPosModifier;
+        //     }
+        // }
 
         // Update contentBox scale
         this.numJacks => this.contentBox.scaY;
 
         // Jack position
-        1.25 * xPosModifier => jack.posX;
+        1.25 * this.xPosModifier => jack.posX;
 
         // Add objects to lists
         this.jacks << jack;
@@ -686,7 +754,7 @@ public class IOBox extends ContentBox {
             DropdownMenu jackMenu(menuSelections, jackIdx);
 
             // Menu position
-            -0.75 * xPosModifier => jackMenu.posX;
+            -0.75 * this.xPosModifier => jackMenu.posX;
             0.1 => jackMenu.posZ;
 
             // Add menu to list
@@ -741,6 +809,11 @@ public class IOBox extends ContentBox {
         for (int idx; idx < this.menus.size(); idx++) {
             this.menus[idx] @=> DropdownMenu menu;
             startPosY + (idx * -1) => menu.posY;
+        }
+
+        for (int idx; idx < this.numberBoxes.size(); idx++) {
+            this.numberBoxes[idx] @=> NumberEntryBox numberBox;
+            startPosY + (idx * -1) => numberBox.posY;
         }
     }
 

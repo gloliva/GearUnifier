@@ -44,6 +44,10 @@ public class MidiDataType {
         MidiDataType.AFTERTOUCH,
         MidiDataType.CC,
     ] @=> static Enum allTypes[];
+
+    [
+        0, 0, 0, 0, 0, 1,
+    ] @=> static int includeNumberEntry[];
 }
 
 
@@ -332,7 +336,7 @@ public class MidiInNode extends MidiNode {
 
         // Create Outputs IO box
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
-        new IOBox(numStartJacks, MidiDataType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+        new IOBox(numStartJacks, MidiDataType.allTypes, MidiDataType.includeNumberEntry, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
 
         // Parent class constructor
         MidiNode(channel, this.m.name(), IOType.INPUT, xScale);
@@ -566,10 +570,8 @@ public class MidiInNode extends MidiNode {
                     this.msg.data2 => int controllerNumber;
                     this.msg.data3 => int controllerData;
 
-                    this.outputDataTypeIdx(MidiDataType.CC, 0) => int ccOutIdx;
-                    if (ccOutIdx != -1) {
-                        if (controllerNumber == 1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
-                    }
+                    this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
+                    if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
                 }
             }
         }

@@ -392,6 +392,7 @@ public class NodeManager {
                 if (dropdownMenuEntryIdx != -1) {
                     this.currMenu.getSelectedEntry() @=> Enum previousSelection;
                     this.currMenu.updateSelectedEntry(dropdownMenuEntryIdx);
+                    this.currMenu.getSelectedEntry() @=> Enum newSelection;
 
                     // Make updates based on menu selection
                     Type.of(this.currMenu.parent()).name() => string menuParentName;
@@ -422,8 +423,16 @@ public class NodeManager {
                                 // Remove old mapping
                                 midiIn.removeOutputDataTypeMapping(previousSelection, 0);
 
+                                // Check if number entry box is needed
+                                0 => int voiceIdx;
+                                if (midiIn.nodeOutputsBox.hasNumberBox(newSelection.id)) {
+                                    midiIn.nodeOutputsBox.showNumberBox(this.currMenu.menuIdx);
+                                } else {
+                                    midiIn.nodeOutputsBox.hideNumberBox(this.currMenu.menuIdx);
+                                }
+
                                 // Add new mapping
-                                midiIn.outputDataTypeIdx(this.currMenu.getSelectedEntry(), 0, this.currMenu.menuIdx);
+                                midiIn.outputDataTypeIdx(newSelection, voiceIdx, this.currMenu.menuIdx);
                             }
                         }
                     }
