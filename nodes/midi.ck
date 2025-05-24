@@ -169,8 +169,8 @@ public class MidiOptionsBox extends OptionsBox {
                 }
             }
 
-            // Check if clicking on Channel menu options
-            if (!this.synthModeSelectMenu.expanded && parentNode.mouseOverBox(mouseWorldPos, [this, this.channelSelectMenu, this.channelSelectMenu.selectedBox.box])) {
+            // Check if clicking on channel menu && other menus are closed
+            if (!this.synthModeSelectMenu.expanded && !this.latchSelectMenu.expanded && parentNode.mouseOverBox(mouseWorldPos, [this, this.channelSelectMenu, this.channelSelectMenu.selectedBox.box])) {
                 if (!this.channelSelectMenu.expanded) {
                     this.channelSelectMenu.expand();
                     1 => this.menuOpen;
@@ -195,8 +195,8 @@ public class MidiOptionsBox extends OptionsBox {
                 }
             }
 
-            // Check if clicking on mode menu options && channel menu is closed
-            if (channelMenuEntryIdx == -1 && !this.channelSelectMenu.expanded && parentNode.mouseOverBox(mouseWorldPos, [this, this.synthModeSelectMenu, this.synthModeSelectMenu.selectedBox.box])) {
+            // Check if clicking on mode menu && other menus are closed
+            if (channelMenuEntryIdx == -1 && !this.channelSelectMenu.expanded && !this.latchSelectMenu.expanded && parentNode.mouseOverBox(mouseWorldPos, [this, this.synthModeSelectMenu, this.synthModeSelectMenu.selectedBox.box])) {
                 if (!this.synthModeSelectMenu.expanded) {
                     this.synthModeSelectMenu.expand();
                     1 => this.menuOpen;
@@ -205,6 +205,32 @@ public class MidiOptionsBox extends OptionsBox {
             } else {
                 this.synthModeSelectMenu.collapse();
             }
+
+            -1 => int latchMenuEntryIdx;
+            if (this.latchSelectMenu.expanded && channelMenuEntryIdx == -1 && synthModeMenuEntryIdx == -1) {
+                this.mouseOverMenuEntry(mouseWorldPos, parentNode, this.latchSelectMenu) => latchMenuEntryIdx;
+
+                if (latchMenuEntryIdx != -1) {
+                    this.latchSelectMenu.updateSelectedEntry(latchMenuEntryIdx);
+                    this.latchSelectMenu.getSelectedEntry() @=> Enum selectedLatch;
+                    selectedLatch.id => parentNode.latch;
+                    this.latchSelectMenu.collapse();
+                    0 => this.menuOpen;
+                    return true;
+                }
+            }
+
+            // Check if clicking on latch menu && other menus are closed
+            if (latchMenuEntryIdx == -1 && !this.channelSelectMenu.expanded && !this.synthModeSelectMenu.expanded && parentNode.mouseOverBox(mouseWorldPos, [this, this.latchSelectMenu, this.latchSelectMenu.selectedBox.box])) {
+                if (!this.latchSelectMenu.expanded) {
+                    this.latchSelectMenu.expand();
+                    1 => this.menuOpen;
+                    return true;
+                }
+            } else {
+                this.synthModeSelectMenu.collapse();
+            }
+
 
             // Check if no menus are open
             if (!this.channelSelectMenu.expanded
@@ -278,6 +304,9 @@ public class MidiInNode extends MidiNode {
     // Midi mode
     int _synthMode;
 
+    // Latch
+    int _latch;
+
     // Data handling
     int midiDataTypeToOut[0];
 
@@ -323,6 +352,20 @@ public class MidiInNode extends MidiNode {
 
     fun int synthMode() {
         return this._synthMode;
+    }
+
+    fun void latch(int latchSetting) {
+        latchSetting => this._latch;
+
+        // if latch is turned off, and there are no held notes, turn off gate
+        if (latchSetting == 0 && this.heldNotes.size() == 0) {
+            this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
+            if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+        }
+    }
+
+    fun int latch() {
+        return this._latch;
     }
 
     fun void outputDataTypeIdx(Enum midiDataType, int voiceIdx, int outIdx) {
@@ -446,17 +489,20 @@ public class MidiInNode extends MidiNode {
 
                     // Turn off gate if no held notes
                     if (this.heldNotes.size() == 0) {
-                        // Turn off gate
-                        this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-                        if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+                        // Only turn off gate if latch is off
+                        if (this.latch() == 0) {
+                            // Turn off gate
+                            this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
+                            if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
 
-                        // Turn off aftertouch
-                        this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
-                        if (aftertouchOutIdx != -1) 0. => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+                            // Turn off aftertouch
+                            this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
+                            if (aftertouchOutIdx != -1) 0. => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
 
-                        // Turn off velocity
-                        this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-                        if (velocityOutIdx != -1) 0. => this.nodeOutputsBox.outs[velocityOutIdx].next;
+                            // Turn off velocity
+                            this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
+                            if (velocityOutIdx != -1) 0. => this.nodeOutputsBox.outs[velocityOutIdx].next;
+                        }
 
                     // Otherwise go back to previously held note
                     } else {
@@ -496,6 +542,7 @@ public class MidiInNode extends MidiNode {
         data.set("nodeID", this.nodeID);
         data.set("channel", this.channel);
         data.set("synthMode", this.synthMode());
+        data.set("latch", this.latch);
         data.set("midiName", this.m.name());
         data.set("midiID", this.m.num());
         data.set("optionsActive", this.nodeOptionsBox.active);
