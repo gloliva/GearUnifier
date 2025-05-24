@@ -36,7 +36,7 @@ public class DropdownMenu extends GGen {
 
             // Position
             idx * -0.5 => box.posY;
-            0.1 => box.posZ;
+            0.2 => box.posZ;
 
             // Handle borders
             if (this.menuItems.size() > 1) {
