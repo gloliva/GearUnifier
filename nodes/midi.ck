@@ -13,6 +13,7 @@
 @import "../tuning.ck"
 @import "../utils.ck"
 @import "../ui/menu.ck"
+@import "../events.ck"
 @import "base.ck"
 @import "HashMap"
 
@@ -316,6 +317,9 @@ public class MidiInNode extends MidiNode {
     // Data handling
     int midiDataTypeToOut[0];
 
+    // Events
+    UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
+
     fun @construct(int deviceID, int channel, int numStartJacks) {
         MidiInNode(deviceID, channel, numStartJacks, 4.);
     }
@@ -337,6 +341,7 @@ public class MidiInNode extends MidiNode {
         // Create Outputs IO box
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(numStartJacks, MidiDataType.allTypes, MidiDataType.includeNumberEntry, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+        this.nodeOutputsBox.setNumberBoxUpdateEvent(this.updateNumberEntryBoxEvent);
 
         // Parent class constructor
         MidiNode(channel, this.m.name(), IOType.INPUT, xScale);
@@ -398,9 +403,23 @@ public class MidiInNode extends MidiNode {
         this.midiDataTypeToOut.erase(key);
     }
 
+    fun void removeOutputDataTypeMappingByOutIdx(Enum midiDataType, int outIdx) {
+        for (int idx; idx < this.midiDataTypeToOut.size(); idx++) {
+            Std.itoa(midiDataType.id) + Std.itoa(idx) => string key;
+            if (this.midiDataTypeToOut.isInMap(key) && this.midiDataTypeToOut[key] == outIdx) {
+                this.midiDataTypeToOut.erase(key);
+                break;
+            }
+        }
+    }
+
     fun void addJack(int ioType) {
         if (ioType == IOType.OUTPUT) {
             this.nodeOutputsBox.addJack(MidiDataType.allTypes);
+
+            // Update new menu with Event
+            this.nodeOutputsBox.numberBoxes[-1].setUpdateEvent(this.updateNumberEntryBoxEvent);
+
         } else if (ioType == IOType.INPUT) {
             this.nodeInputsBox.addJack(MidiInputType.allTypes);
         }
@@ -476,6 +495,26 @@ public class MidiInNode extends MidiNode {
                 }
             }
             10::ms => now;
+        }
+    }
+
+    fun void processNumberBoxUpdates() {
+        while (true) {
+            this.updateNumberEntryBoxEvent => now;
+
+            this.updateNumberEntryBoxEvent.numberBoxIdx => int numberBoxIdx;
+            this.updateNumberEntryBoxEvent.numberBoxValue => int numberBoxValue;
+
+            // Get menu associated with number box
+            this.nodeOutputsBox.menus[numberBoxIdx] @=> DropdownMenu menu;
+            menu.getSelectedEntry() @=> Enum selectedEntry;
+
+            // Remove old mapping
+            this.removeOutputDataTypeMappingByOutIdx(selectedEntry, numberBoxIdx);
+
+            // Update output data type mapping
+            <<< "Updating output data type mapping ", selectedEntry.name, numberBoxValue, numberBoxIdx >>>;
+            this.outputDataTypeIdx(selectedEntry, numberBoxValue, numberBoxIdx);
         }
     }
 
@@ -571,6 +610,7 @@ public class MidiInNode extends MidiNode {
                     this.msg.data3 => int controllerData;
 
                     this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
+                    <<< "CC", controllerNumber, controllerData, "ccOutIdx", ccOutIdx >>>;
                     if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
                 }
             }

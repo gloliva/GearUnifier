@@ -21,6 +21,11 @@ public class NodeManager {
     int menuOpen;
     DropdownMenu @ currMenu;
 
+    // Number Entry Box
+    int numberBoxSelected;
+    int currNumberBoxIdx;
+    NumberEntryBox @ currNumberBox;
+
     // Selected Node
     int nodeSelected;
     int currSelectedNodeIdx;
@@ -110,6 +115,7 @@ public class NodeManager {
                 this.addNode(midiIn);
                 spork ~ midiIn.processMidi();
                 spork ~ midiIn.processInputs();
+                spork ~ midiIn.processNumberBoxUpdates();
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_IN) {
                 AudioInNode audioIn(adc.channels());
                 this.addNode(audioIn);
@@ -229,6 +235,7 @@ public class NodeManager {
                 this.addNode(midiIn);
                 spork ~ midiIn.processMidi();
                 spork ~ midiIn.processInputs();
+                spork ~ midiIn.processNumberBoxUpdates();
 
                 // Handle options menu selections
                 (midiIn.nodeOptionsBox$MidiOptionsBox).channelSelectMenu.updateSelectedEntry(channel + 1);  // +1 because 0th entry is "All"
@@ -240,7 +247,9 @@ public class NodeManager {
                 outputMenuData.intKeys() @=> int outputMenuDataKeys[];
                 outputMenuDataKeys.sort();
                 for (int idx; idx < outputMenuDataKeys.size(); idx++) {
-                    outputMenuData.getInt(idx) @=> int midiDataTypeIdx;
+                    outputMenuData.getInt(idx) => int midiDataTypeIdx;
+                    if (midiDataTypeIdx == -1) continue;
+
                     MidiDataType.allTypes[midiDataTypeIdx] @=> Enum midiDataType;
 
                     // Update menu selection
@@ -642,6 +651,14 @@ public class NodeManager {
                             null => this.currMenu;
                         }
 
+                        // Check if clicking on a number box
+                        node.nodeOutputsBox.mouseOverNumberBox(mouseWorldPos) => int numberBoxIdx;
+                        if (numberBoxIdx != -1) {
+                            node.nodeOutputsBox.numberBoxes[numberBoxIdx] @=> this.currNumberBox;
+                            1 => this.numberBoxSelected;
+                            numberBoxIdx => this.currNumberBoxIdx;
+                        }
+
                         // Found the node that was clicked on, can exit early
                         nodeIdx => clickedNodeIdx;
                         break;
@@ -732,6 +749,15 @@ public class NodeManager {
                     0 => this.nodeSelected;
                     -1 => this.currSelectedNodeIdx;
                     null => this.currSelectedNode;
+                // If clicked outside of a node and a number box is selected, remove the selection
+                } else if (clickedNodeIdx == -1 && this.numberBoxSelected) {
+                    // Signal the update event
+                    this.currNumberBox.signalUpdate();
+
+                    // Remove the selection
+                    0 => this.numberBoxSelected;
+                    -1 => this.currNumberBoxIdx;
+                    null => this.currNumberBox;
                 }
             }
 
@@ -804,12 +830,26 @@ public class NodeManager {
                     -1 => this.currSelectedConnectionIdx;
                     null => this.currSelectedConnection;
                 // If a node is selected, delete the node
-                } else if (this.nodeSelected) {
+                } else if (this.nodeSelected && !this.numberBoxSelected) {
                     this.removeNode(this.currSelectedNode);
 
                     0 => this.nodeSelected;
                     -1 => this.currSelectedNodeIdx;
                     null => this.currSelectedNode;
+                } else if (this.numberBoxSelected) {
+                    this.currNumberBox.removeNumberChar();
+                }
+            }
+
+            // Check if ENTER key is pressed
+            if (GWindow.keyDown(GWindow.Key_Enter)) {
+                if (this.numberBoxSelected) {
+                    // Update the node's output data type mapping
+                    this.currNumberBox.signalUpdate();
+
+                    0 => this.numberBoxSelected;
+                    -1 => this.currNumberBoxIdx;
+                    null => this.currNumberBox;
                 }
             }
 
@@ -835,6 +875,18 @@ public class NodeManager {
                 data.set("connections", connections);
 
                 SaveHandler.save("autosave.json", data);
+            }
+
+            // All Keys pressed this frame
+            GWindow.keysDown() @=> int keysPressed[];
+            for (int key : keysPressed) {
+
+                // If a number box is selected and a number key is pressed, add the number to the number box
+                if (key >= GWindow.Key_0 && key <= GWindow.Key_9) {
+                    if (this.numberBoxSelected) {
+                        this.currNumberBox.addNumberChar(key - GWindow.Key_0);
+                    }
+                }
             }
 
             // Handle moving wire for open connection

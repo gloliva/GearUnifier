@@ -9,3 +9,13 @@ public class AddNodeEvent extends Event {
         idx => this.menuIdx;
     }
 }
+
+public class UpdateNumberEntryBoxEvent extends Event {
+    int numberBoxIdx;
+    int numberBoxValue;
+
+    fun void set(int numberBoxIdx, int numberBoxValue) {
+        numberBoxIdx => this.numberBoxIdx;
+        numberBoxValue => this.numberBoxValue;
+    }
+}

@@ -1,6 +1,7 @@
 @import "../ui/base.ck"
 @import "../ui/menu.ck"
 @import "../ui/textBox.ck"
+@import "../events.ck"
 @import "HashMap"
 
 
@@ -633,7 +634,7 @@ public class IOBox extends ContentBox {
                 menu --> this;
 
                 // Add number entry box for each menu
-                NumberEntryBox numberBox(3);
+                NumberEntryBox numberBox(3, idx);
                 -0.27 * this.xPosModifier => numberBox.posX;
                 startPosY + (idx * -1) => numberBox.posY;
                 0.1 => numberBox.posZ;
@@ -719,6 +720,13 @@ public class IOBox extends ContentBox {
         0 => this.numberBoxes[jackIdx].active;
     }
 
+    fun void setNumberBoxUpdateEvent(UpdateNumberEntryBoxEvent updateEvent) {
+        for (int idx; idx < this.numberBoxes.size(); idx++) {
+            this.numberBoxes[idx] @=> NumberEntryBox numberBox;
+            numberBox.setUpdateEvent(updateEvent);
+        }
+    }
+
     fun void addJack(Enum menuSelections[]) {
         this.numJacks => int jackIdx;
         Jack jack(jackIdx, IOType.OUTPUT);
@@ -755,7 +763,7 @@ public class IOBox extends ContentBox {
             jackMenu --> this;
 
             // Add number entry box for each menu
-            NumberEntryBox numberBox(3);
+            NumberEntryBox numberBox(3, jackIdx);
             -0.27 * this.xPosModifier => numberBox.posX;
             0.1 => numberBox.posZ;
             this.numberBoxes << numberBox;
