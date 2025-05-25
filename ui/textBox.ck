@@ -55,7 +55,6 @@ public class NumberEntryBox extends GGen {
         }
 
         this.numberChars + Std.itoa(number) => this.numberChars;
-        <<< "Number chars length", this.numberChars.length() >>>;
 
         // Update box
         this.box.setName(this.numberChars);

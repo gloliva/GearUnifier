@@ -610,7 +610,6 @@ public class MidiInNode extends MidiNode {
                     this.msg.data3 => int controllerData;
 
                     this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
-                    <<< "CC", controllerNumber, controllerData, "ccOutIdx", ccOutIdx >>>;
                     if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
                 }
             }
