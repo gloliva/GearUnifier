@@ -208,6 +208,7 @@ public class NodeManager {
                 nodeData.getInt("midiID") => int midiID;
                 nodeData.getInt("channel") => int channel;
                 nodeData.getInt("synthMode") => int synthMode;
+                nodeData.getInt("latch") => int latch;
                 nodeData.getInt("numOutputs") => int numOutputs;
                 nodeData.getInt("optionsActive") => int optionsActive;
                 nodeData.getInt("inputsActive") => int inputsActive;
@@ -223,6 +224,7 @@ public class NodeManager {
                 midiIn.setNodeID(nodeID);
                 midiIn.setChannel(channel);
                 midiIn.synthMode(synthMode);
+                midiIn.latch(latch);
                 @(posX, posY, posZ) => midiIn.pos;
                 this.addNode(midiIn);
                 spork ~ midiIn.processMidi();
@@ -231,6 +233,7 @@ public class NodeManager {
                 // Handle options menu selections
                 (midiIn.nodeOptionsBox$MidiOptionsBox).channelSelectMenu.updateSelectedEntry(channel + 1);  // +1 because 0th entry is "All"
                 (midiIn.nodeOptionsBox$MidiOptionsBox).synthModeSelectMenu.updateSelectedEntry(synthMode);
+                (midiIn.nodeOptionsBox$MidiOptionsBox).latchSelectMenu.updateSelectedEntry(latch);
 
                 // Handle output data type mappings and menu selections
                 nodeData.get("outputMenuData")$HashMap @=> HashMap outputMenuData;

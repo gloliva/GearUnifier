@@ -727,15 +727,6 @@ public class IOBox extends ContentBox {
         // Update numJacks
         this.numJacks++;
 
-        // Position handling for Jacks Only vs. Jacks and Menus
-        // int xPosModifier;
-        // if (this.hasMenus) {
-        //     1 => xPosModifier;
-        //     if (this.ioType == IOType.INPUT) {
-        //         -1 => xPosModifier;
-        //     }
-        // }
-
         // Update contentBox scale
         this.numJacks => this.contentBox.scaY;
 
@@ -762,6 +753,12 @@ public class IOBox extends ContentBox {
 
             // Connect menu to IO box
             jackMenu --> this;
+
+            // Add number entry box for each menu
+            NumberEntryBox numberBox(3);
+            -0.27 * this.xPosModifier => numberBox.posX;
+            0.1 => numberBox.posZ;
+            this.numberBoxes << numberBox;
         }
 
         // Update Jack and Menu Y Pos
@@ -784,10 +781,14 @@ public class IOBox extends ContentBox {
         jack --< this;
         jackMenu --< this;
 
+        // Remove number box
+        this.hideNumberBox(this.numJacks);
+
         // Remove objects from lists
         this.jacks.popBack();
         this.menus.popBack();
         this.outs.popBack();
+        this.numberBoxes.popBack();
 
         // Update Jack and Menu Y Pos
         this.updateJackandMenuYPos();
@@ -847,6 +848,24 @@ public class IOBox extends ContentBox {
         }
 
         return dropdownMenuIdx;
+    }
+
+    fun int mouseOverNumberBox(vec3 mouseWorldPos) {
+        this.parent()$Node @=> Node parentNode;
+        -1 => int numberBoxIdx;
+
+        for (int idx; idx < this.numberBoxes.size(); idx++) {
+            this.numberBoxes[idx] @=> NumberEntryBox numberBox;
+
+            if (parentNode.mouseOverBox(mouseWorldPos, [this, numberBox, numberBox.box])) {
+                // Only return Idx if number box is active
+                // Still break because it would be a click on an inactive number box, just return -1
+                if (numberBox.active) idx => numberBoxIdx;
+                break;
+            }
+        }
+
+        return numberBoxIdx;
     }
 }
 

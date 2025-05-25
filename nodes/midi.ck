@@ -583,7 +583,7 @@ public class MidiInNode extends MidiNode {
         data.set("nodeID", this.nodeID);
         data.set("channel", this.channel);
         data.set("synthMode", this.synthMode());
-        data.set("latch", this.latch);
+        data.set("latch", this.latch());
         data.set("midiName", this.m.name());
         data.set("midiID", this.m.num());
         data.set("optionsActive", this.nodeOptionsBox.active);
