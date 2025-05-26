@@ -938,6 +938,10 @@ public class OptionsBox extends ContentBox {
     GText optionNames[0];
     int numOptions;
     int menuOpen;
+    int entryBoxSelected;
+
+    DropdownMenu @ selectedMenu;
+    NumberEntryBox @ selectedEntryBox;
 
     fun @construct(string optionNames[], float xScale) {
         optionNames.size() => this.numOptions;

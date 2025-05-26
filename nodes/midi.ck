@@ -55,10 +55,12 @@ public class MidiDataType {
 public class MidiInputType {
     new Enum(0, "Sequencer") @=> static Enum SEQUENCER;
     new Enum(1, "Latch") @=> static Enum LATCH;
+    new Enum(2, "Transport") @=> static Enum TRANSPORT;
 
     [
         MidiInputType.SEQUENCER,
         MidiInputType.LATCH,
+        MidiInputType.TRANSPORT,
     ] @=> static Enum allTypes[];
 }
 
@@ -107,6 +109,7 @@ public class MidiOptionsBox extends OptionsBox {
         @(0.75, this.optionNames[0].posY(), 0.201) => this.channelSelectMenu.pos;
         @(0.75, this.optionNames[1].posY(), 0.201) => this.synthModeSelectMenu.pos;
         @(0.75, this.optionNames[2].posY(), 0.201) => this.latchSelectMenu.pos;
+
         // Name
         "ChannelSelectMenu Dropdown Menu" => this.channelSelectMenu.name;
         "SynthModeSelectMenu Dropdown Menu" => this.synthModeSelectMenu.name;

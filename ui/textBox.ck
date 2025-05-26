@@ -37,10 +37,14 @@ public class NumberEntryBox extends GGen {
     }
 
     fun @construct(int charLimit, int numberBoxIdx, int numberType) {
+        NumberEntryBox(charLimit, numberBoxIdx, numberType, 1.);
+    }
+
+    fun @construct(int charLimit, int numberBoxIdx, int numberType, float xScale) {
         charLimit => this.charLimit;
         numberBoxIdx => this.numberBoxIdx;
 
-        BorderedBox box("0", 1., 0.5);
+        BorderedBox box("0", xScale, 0.5);
         box @=> this.box;
 
         // Names
@@ -53,7 +57,7 @@ public class NumberEntryBox extends GGen {
 
     fun int getInt() {
         if (this.numberChars.length() == 0) {
-            return -1;
+            return 0;
         }
 
         if (this.numberChars.length() == 0 && (this.numberChars == "-" || this.numberChars == ".")) return 0;
@@ -63,7 +67,7 @@ public class NumberEntryBox extends GGen {
 
     fun float getFloat() {
         if (this.numberChars.length() == 0) {
-            return -1.;
+            return 0.;
         }
 
         if (this.numberChars.length() == 0 && (this.numberChars == "-" || this.numberChars == ".")) return 0.;
@@ -75,7 +79,7 @@ public class NumberEntryBox extends GGen {
         if (this.numberChars.length() >= this.charLimit) return;
 
         if ((this.numberChars.length() == 0 && char == "-") || char == ".") {
-            char => this.numberChars;
+            this.numberChars + char => this.numberChars;
             this.box.setName(this.numberChars);
         }
     }

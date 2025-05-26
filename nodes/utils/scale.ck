@@ -1,3 +1,4 @@
+@import "../../events.ck"
 @import "../../utils.ck"
 @import "../../ui/textBox.ck"
 @import "../base.ck"
@@ -51,15 +52,86 @@ public class Scale extends Chugen {
 
 
 public class ScaleOptionsBox extends OptionsBox {
+    // Number Entry Boxes
+    NumberEntryBox @ inLowEntryBox;
+    NumberEntryBox @ inHighEntryBox;
+    NumberEntryBox @ outLowEntryBox;
+    NumberEntryBox @ outHighEntryBox;
+
+    // Events
+    UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
+
+
     fun @construct(string optionNames[], float xScale) {
         OptionsBox(optionNames, xScale);
+
+        // Handle Number Entry Boxes
+        new NumberEntryBox(6, 0, NumberBoxType.FLOAT, 2.) @=> this.inLowEntryBox;
+        new NumberEntryBox(6, 1, NumberBoxType.FLOAT, 2.) @=> this.inHighEntryBox;
+        new NumberEntryBox(6, 2, NumberBoxType.FLOAT, 2.) @=> this.outLowEntryBox;
+        new NumberEntryBox(6, 3, NumberBoxType.FLOAT, 2.) @=> this.outHighEntryBox;
+
+        // Set Events
+        this.inLowEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
+        this.inHighEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
+        this.outLowEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
+        this.outHighEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
+
+        // Position
+        @(0.75, this.optionNames[0].posY(), 0.201) => this.inLowEntryBox.pos;
+        @(0.75, this.optionNames[1].posY(), 0.201) => this.inHighEntryBox.pos;
+        @(0.75, this.optionNames[2].posY(), 0.201) => this.outLowEntryBox.pos;
+        @(0.75, this.optionNames[3].posY(), 0.201) => this.outHighEntryBox.pos;
+
+        // Name
+        "In Low NumberEntryBox" => this.inLowEntryBox.name;
+        "In High NumberEntryBox" => this.inHighEntryBox.name;
+        "Out Low NumberEntryBox" => this.outLowEntryBox.name;
+        "Out High NumberEntryBox" => this.outHighEntryBox.name;
+
+        // Connections
+        this.inLowEntryBox --> this;
+        this.inHighEntryBox --> this;
+        this.outLowEntryBox --> this;
+        this.outHighEntryBox --> this;
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {
-
+        // Nothing to do here
+        return;
     }
 
     fun int handleMouseLeftDown(vec3 mouseWorldPos) {
+        this.parent()$ScaleNode @=> ScaleNode parentNode;
+
+        // Check if In Low clicked on
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inLowEntryBox, this.inLowEntryBox.box])) {
+            1 => entryBoxSelected;
+            this.inLowEntryBox @=> this.selectedEntryBox;
+            return true;
+        }
+
+        // Check if In High clicked on
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inHighEntryBox, this.inHighEntryBox.box])) {
+            1 => entryBoxSelected;
+            this.inHighEntryBox @=> this.selectedEntryBox;
+            return true;
+        }
+
+        // Check if Out Low clicked on
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outLowEntryBox, this.outLowEntryBox.box])) {
+            1 => entryBoxSelected;
+            this.outLowEntryBox @=> this.selectedEntryBox;
+            return true;
+        }
+
+        // Check if Out High clicked on
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outHighEntryBox, this.outHighEntryBox.box])) {
+            1 => entryBoxSelected;
+            this.outHighEntryBox @=> this.selectedEntryBox;
+            return true;
+        }
+
         return false;
     }
 }
@@ -131,6 +203,28 @@ public class ScaleNode extends Node {
 
         if (dataType == ScaleInputType.WAVE_IN.id) {
             ugen =< this.scale;
+        }
+    }
+
+    fun void processOptions() {
+        this.nodeOptionsBox$ScaleOptionsBox @=> ScaleOptionsBox optionsBox;
+
+        while (true) {
+            optionsBox.updateNumberEntryBoxEvent => now;
+
+            optionsBox.updateNumberEntryBoxEvent.numberBoxIdx => int numberBoxIdx ;
+            optionsBox.updateNumberEntryBoxEvent.numberBoxFloatValue => float numberBoxFloatValue ;
+
+            if (numberBoxIdx == 0) {
+                numberBoxFloatValue => this.scale.setInLow;
+            } else if (numberBoxIdx == 1) {
+                numberBoxFloatValue => this.scale.setInHigh;
+            } else if (numberBoxIdx == 2) {
+                numberBoxFloatValue => this.scale.setOutLow;
+            } else if (numberBoxIdx == 3) {
+                numberBoxFloatValue => this.scale.setOutHigh;
+            }
+
         }
     }
 }

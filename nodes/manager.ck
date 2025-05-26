@@ -134,6 +134,7 @@ public class NodeManager {
                 this.addNode(sequencer);
             } else if (addNodeEvent.nodeType == NodeType.SCALE) {
                 ScaleNode scale();
+                spork ~ scale.processOptions();
                 this.addNode(scale);
             }
         }
@@ -498,6 +499,15 @@ public class NodeManager {
                     if (nodeOptionsHover && node.nodeOptionsBox.active || (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen)) {
                         <<< "Clicked on node option's box" >>>;
                         node.nodeOptionsBox.handleMouseLeftDown(mouseWorldPos) => nodeOptionsBoxIteractedWith;
+
+                        if (node.nodeOptionsBox.entryBoxSelected) {
+                            node.nodeOptionsBox.selectedEntryBox @=> this.currNumberBox;
+                            1 => this.numberBoxSelected;
+                            node.nodeOptionsBox.selectedEntryBox.numberBoxIdx => this.currNumberBoxIdx;
+
+                            // Reset selection in OptionsBox, NodeManager takes care of the rest
+                            0 => node.nodeOptionsBox.entryBoxSelected;
+                        }
 
                         // Found the node that was clicked on, can exit early
                         if (nodeOptionsBoxIteractedWith) {
@@ -903,6 +913,14 @@ public class NodeManager {
                     if (this.numberBoxSelected) {
                         this.currNumberBox.addNumberChar(key - GWindow.Key_0);
                     }
+                }
+
+                if (key == GWindow.Key_Minus) {
+                    if (this.numberBoxSelected) this.currNumberBox.addSpecialChar("-");
+                }
+
+                if (key == GWindow.Key_Period) {
+                    if (this.numberBoxSelected) this.currNumberBox.addSpecialChar(".");
                 }
             }
 
