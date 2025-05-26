@@ -7,9 +7,12 @@
 
 public class UIManager {
     GCube topMenuBar;
+    GCube bottomMenuBar;
     DropdownMenu @ audioMenu;
     DropdownMenu @ midiInMenu;
     DropdownMenu @ effectsMenu;
+    DropdownMenu @ sequencerMenu;
+    DropdownMenu @ utilsMenu;
 
     vec2 windowSize;
 
@@ -23,14 +26,19 @@ public class UIManager {
         0.25 => this.topMenuBar.scaY;
         0.2 => this.topMenuBar.scaZ;
 
+        0.25 => this.bottomMenuBar.scaY;
+        0.2 => this.bottomMenuBar.scaZ;
+
         // Color
         Color.DARKGRAY => this.topMenuBar.color;
+        Color.DARKGRAY => this.bottomMenuBar.color;
 
         this.topMenuBar --> GG.scene();
+        this.bottomMenuBar --> GG.scene();
     }
 
-    fun void setMidiInUI(Enum midiDeviceNames[]) {
-        new DropdownMenu(midiDeviceNames) @=> this.midiInMenu;
+    fun void setMidiInUI(Enum midiInDeviceNames[]) {
+        new DropdownMenu(midiInDeviceNames) @=> this.midiInMenu;
 
         // Set name and scale
         this.midiInMenu.setSelectedName("Midi In");
@@ -63,6 +71,30 @@ public class UIManager {
         @(0.3, 0.3, 1.) => this.effectsMenu.sca;
         0.201 => this.effectsMenu.posZ;
         this.effectsMenu --> GG.scene();
+    }
+
+    fun void setSequencerUI() {
+        new DropdownMenu([new Enum(0, "Sequencer")]) @=> this.sequencerMenu;
+
+        // Set name and scale
+        this.sequencerMenu.setSelectedName("Sequencer");
+        this.sequencerMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.sequencerMenu.sca;
+        0.201 => this.sequencerMenu.posZ;
+        this.sequencerMenu --> GG.scene();
+    }
+
+    fun void setUtilsUI() {
+        new DropdownMenu([new Enum(0, "Scale")]) @=> this.utilsMenu;
+
+        // Set name and scale
+        this.utilsMenu.setSelectedName("Utilities");
+        this.utilsMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.utilsMenu.sca;
+        0.201 => this.utilsMenu.posZ;
+        this.utilsMenu --> GG.scene();
     }
 
     fun int mouseOverDropdownMenu(vec3 mouseWorldPos, DropdownMenu menu) {
@@ -117,28 +149,44 @@ public class UIManager {
 
             // Move Y position
             worldTopLeft.y - (this.topMenuBar.scaY() / 2.0) => this.topMenuBar.posY;
+            worldBottomRight.y + (this.bottomMenuBar.scaY() / 2.0) => this.bottomMenuBar.posY;
 
             // Rescale X
             worldBottomRight.x - worldTopLeft.x => this.topMenuBar.scaX;
+            worldBottomRight.x - worldTopLeft.x => this.bottomMenuBar.scaX;
 
             // Buffer between menus
             0.05 => float menuBuffer;
 
             // Reposition UI items
+            if (this.audioMenu != null) {
+                this.audioMenu.selectedBox.box.scaWorld().x => float audioMenuWidth;
+                2 * (-audioMenuWidth - menuBuffer) => this.audioMenu.posX;
+                this.topMenuBar.posY() => this.audioMenu.posY;
+            }
+
             if (this.midiInMenu != null) {
+                this.midiInMenu.selectedBox.box.scaWorld().x => float midiInMenuWidth;
+                -midiInMenuWidth - menuBuffer => this.midiInMenu.posX;
                 this.topMenuBar.posY() => this.midiInMenu.posY;
             }
 
-            if (this.audioMenu != null) {
-                this.audioMenu.selectedBox.box.scaWorld().x => float audioMenuWidth;
-                -audioMenuWidth - menuBuffer => this.audioMenu.posX;
-                this.topMenuBar.posY() => this.audioMenu.posY;
+            if (this.sequencerMenu != null) {
+                // this.sequencerMenu.selectedBox.box.scaWorld().x => float sequencerMenuWidth;
+                // 2 * (sequencerMenuWidth + menuBuffer) => this.sequencerMenu.posX;
+                this.topMenuBar.posY() => this.sequencerMenu.posY;
             }
 
             if (this.effectsMenu != null) {
                 this.effectsMenu.selectedBox.box.scaWorld().x => float effectsMenuWidth;
                 effectsMenuWidth + menuBuffer => this.effectsMenu.posX;
                 this.topMenuBar.posY() => this.effectsMenu.posY;
+            }
+
+            if (this.utilsMenu != null) {
+                this.utilsMenu.selectedBox.box.scaWorld().x => float utilsMenuWidth;
+                2 * (utilsMenuWidth + menuBuffer) => this.utilsMenu.posX;
+                this.topMenuBar.posY() => this.utilsMenu.posY;
             }
         }
     }
@@ -207,6 +255,25 @@ public class UIManager {
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.effectsMenu) && !this.effectsMenu.expanded) {
                     this.effectsMenu.expand();
                 }
+
+                // If Effects Menu is open, check if clicking on a menu entry
+                if (this.sequencerMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.sequencerMenu) => int dropdownMenuEntryIdx;
+                    if (dropdownMenuEntryIdx != -1) {
+                        this.sequencerMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+
+                        // Handle Node type for Effects
+                        NodeType.SEQUENCER => int nodeType;
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.signal();
+                    }
+
+                    // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
+                    this.sequencerMenu.collapse();
+                // Otherwise, check if clicking on the Effects Menu, then open it
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.sequencerMenu) && !this.sequencerMenu.expanded) {
+                    this.sequencerMenu.expand();
+                }
             }
 
             // Highlight menu items if mouse is over an open menu
@@ -223,6 +290,11 @@ public class UIManager {
             if (this.effectsMenu.expanded) {
                 this.mouseOverMenuEntry(mouseWorldPos, this.effectsMenu) => int dropdownMenuEntryIdx;
                 this.effectsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            }
+
+            if (this.sequencerMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.sequencerMenu) => int dropdownMenuEntryIdx;
+                this.sequencerMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             GG.nextFrame() => now;

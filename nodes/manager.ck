@@ -5,6 +5,7 @@
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
+@import "sequencer.ck"
 @import "effects/wavefolder.ck"
 
 public class NodeManager {
@@ -126,6 +127,9 @@ public class NodeManager {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder);
                 spork ~ wavefolder.processInputs();
+            } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
+                Sequencer sequencer();
+                this.addNode(sequencer);
             }
         }
     }

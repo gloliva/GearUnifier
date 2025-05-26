@@ -31,6 +31,8 @@ UIManager uiManager(addNodeEvent);
 uiManager.setAudioUI();
 uiManager.setMidiInUI(nodeManager.midiInDevices);
 uiManager.setEffectsUI();
+uiManager.setSequencerUI();
+uiManager.setUtilsUI();
 spork ~ uiManager.resize();
 spork ~ uiManager.run();
 

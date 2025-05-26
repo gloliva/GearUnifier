@@ -16,6 +16,9 @@ public class NodeType {
 
     // Effects
     4 => static int WAVEFOLDER;
+
+    // Sequencing
+    5 => static int SEQUENCER;
 }
 
 
