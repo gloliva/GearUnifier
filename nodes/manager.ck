@@ -7,6 +7,8 @@
 @import "midi.ck"
 @import "sequencer.ck"
 @import "effects/wavefolder.ck"
+@import "utils/scale.ck"
+
 
 public class NodeManager {
     // All Nodes
@@ -130,6 +132,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 Sequencer sequencer();
                 this.addNode(sequencer);
+            } else if (addNodeEvent.nodeType == NodeType.SCALE) {
+                ScaleNode scale();
+                this.addNode(scale);
             }
         }
     }
@@ -432,6 +437,14 @@ public class NodeManager {
 
                                 // Set input data type mapping for Wavefolder node
                                 wavefolder.setInputDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+
+                            // Utility nodes
+                            if (Type.of(node).name() == ScaleNode.typeOf().name()) {
+                                node$ScaleNode @=> ScaleNode scale;
+
+                                // Set input data type
+                                scale.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
                             }
                         } else if (ioBox.ioType == IOType.OUTPUT) {
                             if (Type.of(node).name() == MidiInNode.typeOf().name()) {
