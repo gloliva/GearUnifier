@@ -13,9 +13,11 @@ public class AddNodeEvent extends Event {
 public class UpdateNumberEntryBoxEvent extends Event {
     int numberBoxIdx;
     int numberBoxValue;
+    float numberBoxFloatValue;
 
-    fun void set(int numberBoxIdx, int numberBoxValue) {
+    fun void set(int numberBoxIdx, int numberBoxValue, float numberBoxFloatValue) {
         numberBoxIdx => this.numberBoxIdx;
         numberBoxValue => this.numberBoxValue;
+        numberBoxFloatValue => this.numberBoxFloatValue;
     }
 }

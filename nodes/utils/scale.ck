@@ -1,6 +1,8 @@
 @import "../../utils.ck"
+@import "../../ui/textBox.ck"
 @import "../base.ck"
 @import "HashMap"
+
 
 public class ScaleInputType {
     new Enum(0, "Wave In") @=> static Enum WAVE_IN;
@@ -22,8 +24,8 @@ public class ScaleOutputType {
 public class Scale extends Chugen {
     -0.5 => float inLow;
     0.5 => float inHigh;
-    float outLow;
-    float outHigh;
+    -0.5 => float outLow;
+    0.5 => float outHigh;
 
     fun void setInLow(float low) {
         low => this.inLow;
@@ -43,8 +45,22 @@ public class Scale extends Chugen {
 
     fun float tick(float in) {
         Std.scalef(in, this.inLow, this.inHigh, this.outLow, this.outHigh) => float out;
-        // <<< "In ", in, "Out ", out >>>;
         return out;
+    }
+}
+
+
+public class ScaleOptionsBox extends OptionsBox {
+    fun @construct(string optionNames[], float xScale) {
+        OptionsBox(optionNames, xScale);
+    }
+
+    fun void handleMouseOver(vec3 mouseWorldPos) {
+
+    }
+
+    fun int handleMouseLeftDown(vec3 mouseWorldPos) {
+        return false;
     }
 }
 
@@ -65,6 +81,7 @@ public class ScaleNode extends Node {
         new NameBox("Scale", xScale) @=> this.nodeNameBox;
 
         // Create options box
+        new ScaleOptionsBox(["In Low", "In High", "Out Low", "Out High"], xScale) @=> this.nodeOptionsBox;
 
         // Create inputs box
         new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
@@ -83,6 +100,7 @@ public class ScaleNode extends Node {
 
         // Connections
         this.nodeNameBox --> this;
+        this.nodeOptionsBox --> this;
         this.nodeInputsModifierBox --> this;
         this.nodeInputsBox --> this;
         this.nodeOutputsBox --> this;
@@ -90,10 +108,6 @@ public class ScaleNode extends Node {
 
         // Update position
         this.updatePos();
-
-        // TODO: remove after testing
-        0. => this.scale.setOutLow;
-        1. => this.scale.setOutHigh;
     }
 
     fun void connect(UGen ugen, int inputJackIdx) {

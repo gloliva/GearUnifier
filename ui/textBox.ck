@@ -1,6 +1,13 @@
 @import "base.ck"
 @import "../events.ck"
 
+
+public class NumberBoxType {
+    0 => static int INT;
+    1 => static int FLOAT;
+}
+
+
 public class NumberEntryBox extends GGen {
     // Contents
     BorderedBox @ box;
@@ -11,6 +18,7 @@ public class NumberEntryBox extends GGen {
     // Number
     string numberChars;
     int charLimit;
+    int numberType;
 
     // Event
     UpdateNumberEntryBoxEvent @ updateEvent;
@@ -20,10 +28,15 @@ public class NumberEntryBox extends GGen {
 
     fun @construct(int numberBoxIdx) {
         numberBoxIdx => this.numberBoxIdx;
-        NumberEntryBox(3, numberBoxIdx);
+        NumberEntryBox(3, numberBoxIdx, NumberBoxType.INT);
     }
 
     fun @construct(int charLimit, int numberBoxIdx) {
+        numberBoxIdx => this.numberBoxIdx;
+        NumberEntryBox(charLimit, numberBoxIdx, NumberBoxType.INT);
+    }
+
+    fun @construct(int charLimit, int numberBoxIdx, int numberType) {
         charLimit => this.charLimit;
         numberBoxIdx => this.numberBoxIdx;
 
@@ -38,12 +51,33 @@ public class NumberEntryBox extends GGen {
         this.box --> this;
     }
 
-    fun int getNumber() {
+    fun int getInt() {
         if (this.numberChars.length() == 0) {
             return -1;
         }
 
+        if (this.numberChars.length() == 0 && (this.numberChars == "-" || this.numberChars == ".")) return 0;
+
         return Std.atoi(this.numberChars);
+    }
+
+    fun float getFloat() {
+        if (this.numberChars.length() == 0) {
+            return -1.;
+        }
+
+        if (this.numberChars.length() == 0 && (this.numberChars == "-" || this.numberChars == ".")) return 0.;
+
+        return Std.atof(this.numberChars);
+    }
+
+    fun void addSpecialChar(string char) {
+        if (this.numberChars.length() >= this.charLimit) return;
+
+        if ((this.numberChars.length() == 0 && char == "-") || char == ".") {
+            char => this.numberChars;
+            this.box.setName(this.numberChars);
+        }
     }
 
     fun void addNumberChar(int number) {
@@ -79,7 +113,7 @@ public class NumberEntryBox extends GGen {
 
     fun void signalUpdate() {
         if (this.updateEvent != null) {
-            this.updateEvent.set(this.numberBoxIdx, this.getNumber());
+            this.updateEvent.set(this.numberBoxIdx, this.getInt(), this.getFloat());
             this.updateEvent.broadcast();
         }
     }
