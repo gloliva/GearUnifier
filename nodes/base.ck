@@ -11,14 +11,21 @@ public class NodeType {
     1 => static int MIDI_OUT;
 
     // Audio
-    2 => static int AUDIO_IN;
-    3 => static int AUDIO_OUT;
+    10 => static int AUDIO_IN;
+    11 => static int AUDIO_OUT;
 
-    // Effects
-    4 => static int WAVEFOLDER;
+    // OSC
+    20 => static int OSC_IN;
+    21 => static int OSC_OUT;
 
     // Sequencing
-    5 => static int SEQUENCER;
+    40 => static int SEQUENCER;
+
+    // Effects
+    50 => static int WAVEFOLDER;
+
+    // Utilities
+    60 => static int SCALE;
 }
 
 

@@ -10,6 +10,8 @@ public class UIManager {
     GCube bottomMenuBar;
     DropdownMenu @ audioMenu;
     DropdownMenu @ midiInMenu;
+    DropdownMenu @ midiOutMenu;
+    DropdownMenu @ oscMenu;
     DropdownMenu @ effectsMenu;
     DropdownMenu @ sequencerMenu;
     DropdownMenu @ utilsMenu;
@@ -37,18 +39,6 @@ public class UIManager {
         this.bottomMenuBar --> GG.scene();
     }
 
-    fun void setMidiInUI(Enum midiInDeviceNames[]) {
-        new DropdownMenu(midiInDeviceNames) @=> this.midiInMenu;
-
-        // Set name and scale
-        this.midiInMenu.setSelectedName("Midi In");
-        this.midiInMenu.setScale(4., 0.5);
-
-        @(0.3, 0.3, 1.) => this.midiInMenu.sca;
-        0.201 => this.midiInMenu.posZ;
-        this.midiInMenu --> GG.scene();
-    }
-
     fun void setAudioUI() {
         new DropdownMenu([new Enum(0, "Audio In"), new Enum(1, "Audio Out")]) @=> this.audioMenu;
 
@@ -61,16 +51,40 @@ public class UIManager {
         this.audioMenu --> GG.scene();
     }
 
-    fun void setEffectsUI() {
-        new DropdownMenu([new Enum(0, "Wavefolder")]) @=> this.effectsMenu;
+    fun void setMidiInUI(Enum midiInDeviceNames[]) {
+        new DropdownMenu(midiInDeviceNames) @=> this.midiInMenu;
 
         // Set name and scale
-        this.effectsMenu.setSelectedName("Effects");
-        this.effectsMenu.setScale(4., 0.5);
+        this.midiInMenu.setSelectedName("Midi In");
+        this.midiInMenu.setScale(4., 0.5);
 
-        @(0.3, 0.3, 1.) => this.effectsMenu.sca;
-        0.201 => this.effectsMenu.posZ;
-        this.effectsMenu --> GG.scene();
+        @(0.3, 0.3, 1.) => this.midiInMenu.sca;
+        0.201 => this.midiInMenu.posZ;
+        this.midiInMenu --> GG.scene();
+    }
+
+    fun void setMidiOutUI(Enum midiOutDeviceNames[]) {
+        new DropdownMenu(midiOutDeviceNames) @=> this.midiOutMenu;
+
+        // Set name and scale
+        this.midiOutMenu.setSelectedName("Midi Out");
+        this.midiOutMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.midiOutMenu.sca;
+        0.201 => this.midiOutMenu.posZ;
+        this.midiOutMenu --> GG.scene();
+    }
+
+    fun void setOscUI() {
+        new DropdownMenu([new Enum(0, "OSC In"), new Enum(1, "OSC Out")]) @=> this.oscMenu;
+
+        // Set name and scale
+        this.oscMenu.setSelectedName("OSC");
+        this.oscMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.oscMenu.sca;
+        0.201 => this.oscMenu.posZ;
+        this.oscMenu --> GG.scene();
     }
 
     fun void setSequencerUI() {
@@ -83,6 +97,18 @@ public class UIManager {
         @(0.3, 0.3, 1.) => this.sequencerMenu.sca;
         0.201 => this.sequencerMenu.posZ;
         this.sequencerMenu --> GG.scene();
+    }
+
+    fun void setEffectsUI() {
+        new DropdownMenu([new Enum(0, "Wavefolder")]) @=> this.effectsMenu;
+
+        // Set name and scale
+        this.effectsMenu.setSelectedName("Effects");
+        this.effectsMenu.setScale(4., 0.5);
+
+        @(0.3, 0.3, 1.) => this.effectsMenu.sca;
+        0.201 => this.effectsMenu.posZ;
+        this.effectsMenu --> GG.scene();
     }
 
     fun void setUtilsUI() {
@@ -161,31 +187,42 @@ public class UIManager {
             // Reposition UI items
             if (this.audioMenu != null) {
                 this.audioMenu.selectedBox.box.scaWorld().x => float audioMenuWidth;
-                2 * (-audioMenuWidth - menuBuffer) => this.audioMenu.posX;
+                3 * (-audioMenuWidth - menuBuffer) => this.audioMenu.posX;
                 this.topMenuBar.posY() => this.audioMenu.posY;
             }
 
             if (this.midiInMenu != null) {
                 this.midiInMenu.selectedBox.box.scaWorld().x => float midiInMenuWidth;
-                -midiInMenuWidth - menuBuffer => this.midiInMenu.posX;
+                2 * (-midiInMenuWidth - menuBuffer) => this.midiInMenu.posX;
                 this.topMenuBar.posY() => this.midiInMenu.posY;
             }
 
+            if (this.midiOutMenu != null) {
+                this.midiOutMenu.selectedBox.box.scaWorld().x => float midiOutMenuWidth;
+                -midiOutMenuWidth - menuBuffer => this.midiOutMenu.posX;
+                this.topMenuBar.posY() => this.midiOutMenu.posY;
+            }
+
+            if (this.oscMenu != null) {
+                this.topMenuBar.posY() => this.oscMenu.posY;
+            }
+
+
             if (this.sequencerMenu != null) {
-                // this.sequencerMenu.selectedBox.box.scaWorld().x => float sequencerMenuWidth;
-                // 2 * (sequencerMenuWidth + menuBuffer) => this.sequencerMenu.posX;
+                this.sequencerMenu.selectedBox.box.scaWorld().x => float sequencerMenuWidth;
+                sequencerMenuWidth + menuBuffer => this.sequencerMenu.posX;
                 this.topMenuBar.posY() => this.sequencerMenu.posY;
             }
 
             if (this.effectsMenu != null) {
                 this.effectsMenu.selectedBox.box.scaWorld().x => float effectsMenuWidth;
-                effectsMenuWidth + menuBuffer => this.effectsMenu.posX;
+                2 * (effectsMenuWidth + menuBuffer) => this.effectsMenu.posX;
                 this.topMenuBar.posY() => this.effectsMenu.posY;
             }
 
             if (this.utilsMenu != null) {
                 this.utilsMenu.selectedBox.box.scaWorld().x => float utilsMenuWidth;
-                2 * (utilsMenuWidth + menuBuffer) => this.utilsMenu.posX;
+                3 * (utilsMenuWidth + menuBuffer) => this.utilsMenu.posX;
                 this.topMenuBar.posY() => this.utilsMenu.posY;
             }
         }
@@ -237,6 +274,40 @@ public class UIManager {
                     this.midiInMenu.expand();
                 }
 
+                // If MidiOut Menu is open, check if clicking on a menu entry
+                if (this.midiOutMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.midiOutMenu) => int dropdownMenuEntryIdx;
+                    if (dropdownMenuEntryIdx != -1) {
+                        this.midiOutMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        this.addNodeEvent.set(NodeType.MIDI_OUT, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.signal();
+                    }
+
+                    // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
+                    this.midiOutMenu.collapse();
+                // Otherwise, check if clicking on the MidiOut Menu, then open it
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.midiOutMenu) && !this.midiOutMenu.expanded) {
+                    this.midiOutMenu.expand();
+                }
+
+                // If OSC Menu is open, check if clicking on a menu entry
+                if (this.oscMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.oscMenu) => int dropdownMenuEntryIdx;
+                    if (dropdownMenuEntryIdx != -1) {
+                        this.oscMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        NodeType.OSC_IN => int nodeType;
+                        if (menuEntry.id == 1) NodeType.OSC_OUT => nodeType;
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.signal();
+                    }
+
+                    // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
+                    this.oscMenu.collapse();
+                // Otherwise, check if clicking on the OSC Menu, then open it
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.oscMenu) && !this.oscMenu.expanded) {
+                    this.oscMenu.expand();
+                }
+
                 // If Effects Menu is open, check if clicking on a menu entry
                 if (this.effectsMenu.expanded) {
                     this.mouseOverMenuEntry(mouseWorldPos, this.effectsMenu) => int dropdownMenuEntryIdx;
@@ -256,13 +327,13 @@ public class UIManager {
                     this.effectsMenu.expand();
                 }
 
-                // If Effects Menu is open, check if clicking on a menu entry
+                // If Sequencer Menu is open, check if clicking on a menu entry
                 if (this.sequencerMenu.expanded) {
                     this.mouseOverMenuEntry(mouseWorldPos, this.sequencerMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
                         this.sequencerMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
 
-                        // Handle Node type for Effects
+                        // Handle Node type for Sequencer
                         NodeType.SEQUENCER => int nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
@@ -270,9 +341,26 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.sequencerMenu.collapse();
-                // Otherwise, check if clicking on the Effects Menu, then open it
+                // Otherwise, check if clicking on the Sequencer Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.sequencerMenu) && !this.sequencerMenu.expanded) {
                     this.sequencerMenu.expand();
+                }
+
+                // If Utilities Menu is open, check if clicking on a menu entry
+                if (this.utilsMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.utilsMenu) => int dropdownMenuEntryIdx;
+                    if (dropdownMenuEntryIdx != -1) {
+                        this.utilsMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        NodeType.SCALE => int nodeType;
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.signal();
+                    }
+
+                    // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
+                    this.utilsMenu.collapse();
+                // Otherwise, check if clicking on the Utilities Menu, then open it
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.utilsMenu) && !this.utilsMenu.expanded) {
+                    this.utilsMenu.expand();
                 }
             }
 
@@ -287,14 +375,29 @@ public class UIManager {
                 this.midiInMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
-            if (this.effectsMenu.expanded) {
-                this.mouseOverMenuEntry(mouseWorldPos, this.effectsMenu) => int dropdownMenuEntryIdx;
-                this.effectsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            if (this.midiOutMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.midiOutMenu) => int dropdownMenuEntryIdx;
+                this.midiOutMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            }
+
+            if (this.oscMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.oscMenu) => int dropdownMenuEntryIdx;
+                this.oscMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             if (this.sequencerMenu.expanded) {
                 this.mouseOverMenuEntry(mouseWorldPos, this.sequencerMenu) => int dropdownMenuEntryIdx;
                 this.sequencerMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            }
+
+            if (this.effectsMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.effectsMenu) => int dropdownMenuEntryIdx;
+                this.effectsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            }
+
+            if (this.utilsMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.utilsMenu) => int dropdownMenuEntryIdx;
+                this.utilsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             GG.nextFrame() => now;
