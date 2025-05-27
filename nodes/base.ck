@@ -20,6 +20,7 @@ public class NodeType {
 
     // Sequencing
     40 => static int SEQUENCER;
+    41 => static int TRANSPORT;
 
     // Effects
     50 => static int WAVEFOLDER;

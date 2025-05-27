@@ -6,6 +6,7 @@
 @import "base.ck"
 @import "midi.ck"
 @import "sequencer.ck"
+@import "transport.ck"
 @import "effects/wavefolder.ck"
 @import "utils/scale.ck"
 
@@ -132,6 +133,10 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 Sequencer sequencer();
                 this.addNode(sequencer);
+            } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
+                TransportNode transport();
+                spork ~ transport.processOptions();
+                this.addNode(transport);
             } else if (addNodeEvent.nodeType == NodeType.SCALE) {
                 ScaleNode scale();
                 spork ~ scale.processOptions();

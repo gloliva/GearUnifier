@@ -317,6 +317,9 @@ public class MidiInNode extends MidiNode {
     // Latch
     int _latch;
 
+    // Beat
+    float _beat;
+
     // Data handling
     int midiDataTypeToOut[0];
 
@@ -336,6 +339,9 @@ public class MidiInNode extends MidiNode {
 
         // Set Default tuning
         new EDO(12, -48) @=> this.tuning;
+
+        // Set default beat
+        (60 / 120.) => this.beat;
 
         // Create Inputs IO box
         new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
@@ -380,6 +386,14 @@ public class MidiInNode extends MidiNode {
 
     fun int latch() {
         return this._latch;
+    }
+
+    fun void beat(float b) {
+        b => this._beat;
+    }
+
+    fun float beat() {
+        return this._beat;
     }
 
     fun void outputDataTypeIdx(Enum midiDataType, int voiceIdx, int outIdx) {
@@ -450,16 +464,13 @@ public class MidiInNode extends MidiNode {
     }
 
     fun void arpeggiate() {
-        // TODO: handle tempo
-        100. => float tempo;
-        2. => float divider;
         while (this.heldNotes.size()) {
             0 => int idx;
             for (int idx; idx < this.heldNotes.size(); idx++) {
                 this.heldNotes[idx] => int note;
                 this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
                 if (pitchOutIdx != -1) this.tuning.cv(note) => this.nodeOutputsBox.outs[pitchOutIdx].next;
-                ((60. / tempo) / divider)::second => now;
+                this.beat()::second => now;
             }
         }
     }
@@ -495,6 +506,8 @@ public class MidiInNode extends MidiNode {
                 if (dataType == MidiInputType.LATCH.id) {
                     if (value <= 0) 0 => this.latch;
                     else 1 => this.latch;
+                } else if (dataType == MidiInputType.TRANSPORT.id) {
+                    value => this.beat;
                 }
             }
             10::ms => now;
