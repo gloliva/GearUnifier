@@ -486,10 +486,25 @@ public class MidiInNode extends MidiNode {
             <<< "No data type mapping for jack", inputJackIdx >>>;
             return;
         }
+
+        if (dataType == MidiInputType.SEQUENCER.id) {
+            if (Type.of(outputNode).name() == SequencerNode.typeOf().name()) {
+                outputNode$SequencerNode @=> SequencerNode sequencer;
+                sequencer.recorder @=> this.recorder;
+            }
+        }
     }
 
     fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
 
+        if (dataType == MidiInputType.SEQUENCER.id) {
+            null => this.recorder;
+        }
     }
 
     fun void processInputs() {

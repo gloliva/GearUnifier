@@ -23,4 +23,10 @@ public class Sequence {
     fun MidiRecord[] getRecords() {
         return this.records;
     }
+
+    fun void print() {
+        for (MidiRecord record : this.records) {
+            chout <= record.data1 <= " " <= record.data2 <= " " <= record.data3 <= " " <= record.timeSinceLast / 1::samp <= IO.nl();
+        }
+    }
 }
