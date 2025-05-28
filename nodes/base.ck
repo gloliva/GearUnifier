@@ -286,11 +286,11 @@ public class Node extends GGen {
         }
     }
 
-    fun void connect(UGen ugen, int inputJackIdx) {
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
         <<< "ERROR: Override the Connect function for Child Nodes." >>>;
     }
 
-    fun void disconnect(UGen ugen, int inputJackIdx) {
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
         <<< "ERROR: Override the Disconnect function for Child Nodes." >>>;
     }
 

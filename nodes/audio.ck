@@ -60,7 +60,7 @@ public class AudioOutNode extends AudioNode {
         this.updatePos();
     }
 
-    fun void connect(UGen ugen, int inputJackIdx) {
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
         if (inputJackIdx >= this.nodeInputsBox.numJacks) {
             return;
         }
@@ -68,7 +68,7 @@ public class AudioOutNode extends AudioNode {
         ugen => dac.chan(inputJackIdx);
     }
 
-    fun void disconnect(UGen ugen, int inputJackIdx) {
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
         if (inputJackIdx >= this.nodeInputsBox.numJacks) {
             return;
         }

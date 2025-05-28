@@ -182,7 +182,7 @@ public class ScaleNode extends Node {
         this.updatePos();
     }
 
-    fun void connect(UGen ugen, int inputJackIdx) {
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
         this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
         if (dataType == -1) {
             <<< "Scale Connect: No data type mapping for jack", inputJackIdx >>>;
@@ -194,7 +194,7 @@ public class ScaleNode extends Node {
         }
     }
 
-    fun void disconnect(UGen ugen, int inputJackIdx) {
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
         this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
         if (dataType == -1) {
             <<< "Scale Disconnect: No data type mapping for jack", inputJackIdx >>>;

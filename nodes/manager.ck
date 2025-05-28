@@ -89,7 +89,7 @@ public class NodeManager {
 
                 // Remove the connection UGen mapping
                 conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
-                conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                conn.inputNode.disconnect(conn.outputNode, ugen, conn.inputNodeJackIdx);
                 conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
 
                 // Delete the wire
@@ -131,7 +131,8 @@ public class NodeManager {
                 this.addNode(wavefolder);
                 spork ~ wavefolder.processInputs();
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
-                Sequencer sequencer();
+                SequencerNode sequencer();
+                spork ~ sequencer.processInputs();
                 this.addNode(sequencer);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
@@ -377,7 +378,7 @@ public class NodeManager {
 
             // Connect output data to input data
             outputNode.nodeOutputsBox.jacks[outputNodeJackIdx].ugen @=> UGen ugen;
-            inputNode.connect(ugen, inputNodeJackIdx);
+            inputNode.connect(outputNode, ugen, inputNodeJackIdx);
             inputNode.nodeInputsBox.jacks[inputNodeJackIdx].setUgen(ugen);
 
             // Add connection to connections list
@@ -443,6 +444,14 @@ public class NodeManager {
 
                                 // Set input data type mapping for Wavefolder node
                                 wavefolder.setInputDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+
+                            // Sequencer nodes
+                            if (Type.of(node).name() == SequencerNode.typeOf().name()) {
+                                node$SequencerNode @=> SequencerNode sequencer;
+
+                                // Set input data type mapping for Wavefolder node
+                                sequencer.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
                             }
 
                             // Utility nodes
@@ -539,7 +548,7 @@ public class NodeManager {
 
                                 // Connect output data to input data
                                 this.currOpenConnection.outputNode.nodeOutputsBox.jacks[this.currOpenConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                                this.currOpenConnection.inputNode.connect(ugen, this.currOpenConnection.inputNodeJackIdx);
+                                this.currOpenConnection.inputNode.connect(this.currOpenConnection.outputNode, ugen, this.currOpenConnection.inputNodeJackIdx);
                                 this.currOpenConnection.inputNode.nodeInputsBox.jacks[this.currOpenConnection.inputNodeJackIdx].setUgen(ugen);
                                 // Add connection to connections list
                                 this.nodeConnections << this.currOpenConnection;
@@ -622,7 +631,7 @@ public class NodeManager {
 
                                 // Remove the connection UGen mapping
                                 conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
-                                conn.inputNode.disconnect(ugen, conn.inputNodeJackIdx);
+                                conn.inputNode.disconnect(conn.outputNode, ugen, conn.inputNodeJackIdx);
                                 conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
 
                                 // Delete the wire
@@ -848,7 +857,7 @@ public class NodeManager {
                 if (this.connectionSelected) {
                     // Remove the connection UGen mapping
                     this.currSelectedConnection.outputNode.nodeOutputsBox.jacks[this.currSelectedConnection.outputNodeJackIdx].ugen @=> UGen ugen;
-                    this.currSelectedConnection.inputNode.disconnect(ugen, this.currSelectedConnection.inputNodeJackIdx);
+                    this.currSelectedConnection.inputNode.disconnect(this.currSelectedConnection.outputNode, ugen, this.currSelectedConnection.inputNodeJackIdx);
                     this.currSelectedConnection.inputNode.nodeInputsBox.jacks[this.currSelectedConnection.inputNodeJackIdx].removeUgen();
 
                     // Delete the wire

@@ -12,9 +12,11 @@
 // Imports
 @import "../tuning.ck"
 @import "../utils.ck"
+@import "../sequencer/recorder.ck"
 @import "../ui/menu.ck"
 @import "../events.ck"
 @import "base.ck"
+@import "sequencer.ck"
 @import "HashMap"
 
 
@@ -323,6 +325,9 @@ public class MidiInNode extends MidiNode {
     // Data handling
     int midiDataTypeToOut[0];
 
+    // Sequencing
+    MidiRecorder @ recorder;
+
     // Events
     UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
 
@@ -475,11 +480,15 @@ public class MidiInNode extends MidiNode {
         }
     }
 
-    fun void connect(UGen ugen, int inputJackIdx) {
-
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
     }
 
-    fun void disconnect(UGen ugen, int inputJackIdx) {
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
 
     }
 
@@ -541,6 +550,9 @@ public class MidiInNode extends MidiNode {
 
             // Process Midi event
             while (this.m.recv(this.msg)) {
+
+                // Check if recording in progress, and record incoming MidiMsg
+                if (this.recorder != null && this.recorder.isRecording()) this.recorder.recordMsg(this.msg);
 
                 // Get message status
                 this.msg.data1 => int midiStatus;
@@ -616,7 +628,7 @@ public class MidiInNode extends MidiNode {
                 } else if (midiStatus == MidiMessage.POLYPHONIC_AFTERTOUCH + this.channel) {
                     this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
                     if (aftertouchOutIdx != -1 && this.msg.data2 == this.heldNotes[-1]) {
-                        Std.scalef(this.msg.data3, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+                        Std.scalef(this.msg.data3, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
                     }
                 }
 

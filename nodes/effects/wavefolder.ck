@@ -119,7 +119,7 @@ public class WavefolderNode extends Node {
         -1 => this.inputDataMap[jackIdx];
     }
 
-    fun void connect(UGen ugen, int inputJackIdx) {
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
         this.inputDataMap[inputJackIdx] => int dataType;
         if (dataType == -1) {
             <<< "No data type mapping for jack", inputJackIdx >>>;
@@ -132,7 +132,7 @@ public class WavefolderNode extends Node {
 
     }
 
-    fun void disconnect(UGen ugen, int inputJackIdx) {
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
         this.inputDataMap[inputJackIdx] => int dataType;
         if (dataType == -1) {
             <<< "No data type mapping for jack", inputJackIdx >>>;
