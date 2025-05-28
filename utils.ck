@@ -7,3 +7,12 @@ public class Enum {
         name => this.name;
     }
 }
+
+
+public class Gate {
+    int on;
+
+    fun @construct(int startOn) {
+        startOn => this.on;
+    }
+}
