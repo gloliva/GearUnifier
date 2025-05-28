@@ -1,4 +1,5 @@
 @import "../utils.ck"
+@import {"../sequencer/base.ck", "../sequencer/recorder.ck"}
 @import "base.ck"
 @import "HashMap"
 @import "smuck"
@@ -6,9 +7,11 @@
 
 public class SequencerInputType {
     new Enum(0, "Run") @=> static Enum RUN;
+    new Enum(1, "Record") @=> static Enum RECORD;
 
     [
         SequencerInputType.RUN,
+        SequencerInputType.RECORD,
     ] @=> static Enum allTypes[];
 }
 
@@ -22,11 +25,12 @@ public class SequencerOutputType {
 }
 
 
-public class Sequencer extends Node {
-    ezScorePlayer scorePlayer;
+public class SequencerNode extends Node {
+    MidiRecorder recorder;
+    Sequence sequences[0];
 
     fun @construct() {
-        Sequencer(1, 4.);
+        SequencerNode(1, 4.);
     }
 
     fun @construct(int numInputs, float xScale) {
@@ -76,6 +80,40 @@ public class Sequencer extends Node {
             this.nodeInputsBox.removeJack();
         }
         this.updatePos();
+    }
+
+    fun void processInputs() {
+        while (true) {
+            for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
+                if (this.nodeInputsBox.getDataTypeMapping(idx) == -1) continue;
+
+                // Value can be from a audio rate UGen (which uses last()) or a control rate UGen (which uses next())
+                this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
+                if (ugen == null) continue;
+
+                float value;
+                if (Type.of(ugen).name() == Step.typeOf().name()) {
+                    (ugen$Step).next() => value;
+                } else {
+                    ugen.last() => value;
+                }
+
+                if (this.nodeInputsBox.getDataTypeMapping(idx) == SequencerInputType.RUN.id) {
+
+                } else if (this.nodeInputsBox.getDataTypeMapping(idx) == SequencerInputType.RECORD.id) {
+                    // Check if turning recording on and not already recording
+                    if (value > 0 && !this.recorder.isRecording()) {
+                        this.recorder.on();
+                        <<< "Start recording" >>>;
+                    // Check if turning recording off and is currently recording
+                    } else if (value <= 0 && this.recorder.isRecording()) {
+                        this.sequences << this.recorder.off();
+                        <<< "End recording" >>>;
+                    }
+                }
+            }
+            10::ms => now;
+        }
     }
 
     fun HashMap serialize() {
