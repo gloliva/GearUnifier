@@ -141,10 +141,20 @@ public class ScaleNode extends Node {
     Scale scale;
 
     fun @construct() {
-        ScaleNode(1, 4.);
+        ScaleNode(-0.5, 0.5, -0.5, 0.5, 1, 4.);
     }
 
     fun @construct(int numInputs, float xScale) {
+        ScaleNode(-0.5, 0.5, -0.5, 0.5, numInputs, xScale);
+    }
+
+    fun @construct(float inLow, float inHigh, float outLow, float outHigh, int numInputs, float xScale) {
+        // Set scale
+        inLow => this.scale.setInLow;
+        inHigh => this.scale.setInHigh;
+        outLow => this.scale.setOutLow;
+        outHigh => this.scale.setOutHigh;
+
         // Set node ID and name
         "Scale Node" => this.name;
         this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
@@ -154,10 +164,15 @@ public class ScaleNode extends Node {
 
         // Create options box
         new ScaleOptionsBox(["In Low", "In High", "Out Low", "Out High"], xScale) @=> this.nodeOptionsBox;
+        (this.nodeOptionsBox$ScaleOptionsBox).inLowEntryBox.set(inLow);
+        (this.nodeOptionsBox$ScaleOptionsBox).inHighEntryBox.set(inHigh);
+        (this.nodeOptionsBox$ScaleOptionsBox).outLowEntryBox.set(outLow);
+        (this.nodeOptionsBox$ScaleOptionsBox).outHighEntryBox.set(outHigh);
 
         // Create inputs box
-        new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
         new IOBox(numInputs, ScaleInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        this.nodeInputsBox.menus[0].updateSelectedEntry(ScaleInputType.WAVE_IN.id);
+        this.nodeInputsBox.setDataTypeMapping(ScaleInputType.WAVE_IN, 0);
 
         // Create outputs box
         new IOBox(1, ScaleOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
@@ -173,7 +188,6 @@ public class ScaleNode extends Node {
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
-        this.nodeInputsModifierBox --> this;
         this.nodeInputsBox --> this;
         this.nodeOutputsBox --> this;
         this.nodeVisibilityBox --> this;
@@ -226,5 +240,20 @@ public class ScaleNode extends Node {
             }
 
         }
+    }
+
+    fun HashMap serialize() {
+        HashMap data;
+        data.set("nodeClass", Type.of(this).name());
+        data.set("nodeID", this.nodeID);
+        data.set("inLow", this.scale.inLow);
+        data.set("inHigh", this.scale.inHigh);
+        data.set("outLow", this.scale.outLow);
+        data.set("outHigh", this.scale.outHigh);
+        data.set("posX", this.posX());
+        data.set("posY", this.posY());
+        data.set("posZ", this.posZ());
+
+        return data;
     }
 }

@@ -377,6 +377,25 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(transport);
+            } else if (nodeClassName == ScaleNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getFloat("inLow") => float inLow;
+                nodeData.getFloat("inHigh") => float inHigh;
+                nodeData.getFloat("outLow") => float outLow;
+                nodeData.getFloat("outHigh") => float outHigh;
+
+                ScaleNode scale(inLow, inHigh, outLow, outHigh, 1, 4.);
+                scale.setNodeID(nodeID);
+                @(posX, posY, posZ) => scale.pos;
+
+                // Run scale
+                spork ~ scale.processOptions();
+
+                // Add node to screen
+                this.addNode(scale);
             }
         }
 
