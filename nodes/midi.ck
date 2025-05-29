@@ -80,6 +80,12 @@ public class SynthMode {
 }
 
 
+public class PlaybackMode {
+    0 => static int INSTRUMENT_MODE;
+    1 => static int SEQUENCE_MODE;
+}
+
+
 public class MidiOptionsBox extends OptionsBox {
     DropdownMenu @ channelSelectMenu;
     DropdownMenu @ synthModeSelectMenu;
@@ -316,6 +322,9 @@ public class MidiInNode extends MidiNode {
     // Midi mode
     int _synthMode;
 
+    // Playback mode
+    int _playbackMode;
+
     // Latch
     int _latch;
 
@@ -326,6 +335,7 @@ public class MidiInNode extends MidiNode {
     int midiDataTypeToOut[0];
 
     // Sequencing
+    SequencerNode @ sequencer;
     MidiRecorder @ recorder;
 
     // Events
@@ -377,6 +387,14 @@ public class MidiInNode extends MidiNode {
 
     fun int synthMode() {
         return this._synthMode;
+    }
+
+    fun void playbackMode(int mode) {
+        mode => this._playbackMode;
+    }
+
+    fun int playbackMode() {
+        return this._playbackMode;
     }
 
     fun void latch(int latchSetting) {
@@ -489,8 +507,8 @@ public class MidiInNode extends MidiNode {
 
         if (dataType == MidiInputType.SEQUENCER.id) {
             if (Type.of(outputNode).name() == SequencerNode.typeOf().name()) {
-                outputNode$SequencerNode @=> SequencerNode sequencer;
-                sequencer.recorder @=> this.recorder;
+                <<< "CONNECTING A SEQUENCER" >>>;
+                outputNode$SequencerNode @=> this.sequencer;
             }
         }
     }
@@ -502,8 +520,12 @@ public class MidiInNode extends MidiNode {
             return;
         }
 
+        // Remove dataType mapping
+        this.nodeInputsBox.removeDataTypeMapping(inputJackIdx);
+
+        // Remove any additional mappings
         if (dataType == MidiInputType.SEQUENCER.id) {
-            null => this.recorder;
+            null => this.sequencer;
         }
     }
 
@@ -513,6 +535,18 @@ public class MidiInNode extends MidiNode {
                 // Check if DataType is set in a Menu
                 this.nodeInputsBox.getDataTypeMapping(idx) => int dataType;
                 if (dataType == -1) continue;
+
+                // Inputs that don't use "UGen", just the Node
+                if (dataType == MidiInputType.SEQUENCER.id) {
+                    if (this.sequencer != null) {
+                        if (this.sequencer.isRunning() && this.playbackMode() != PlaybackMode.SEQUENCE_MODE) {
+                            PlaybackMode.SEQUENCE_MODE => this.playbackMode;
+                            spork ~ this.playSequence();
+                        } else if (!this.sequencer.isRunning()) {
+                            PlaybackMode.INSTRUMENT_MODE => this.playbackMode;
+                        }
+                    }
+                }
 
                 // Get UGen
                 this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
@@ -526,7 +560,7 @@ public class MidiInNode extends MidiNode {
                     ugen.last() => value;
                 }
 
-                // Update based on inputs
+                // Update based on inputs that use a UGen
                 if (dataType == MidiInputType.LATCH.id) {
                     if (value <= 0) 0 => this.latch;
                     else 1 => this.latch;
@@ -558,104 +592,134 @@ public class MidiInNode extends MidiNode {
         }
     }
 
+    fun void playSequence() {
+        if (this.sequencer == null) return;
+
+        MidiMsg msg;
+        for (int idx; idx < this.sequencer.sequences.size(); idx++) {
+            this.sequencer.sequences[idx] @=> Sequence sequence;
+
+            // Check if we are still sequencing
+            if (this.playbackMode() != PlaybackMode.SEQUENCE_MODE) return;
+
+            for (MidiRecord record : sequence.getRecords()) {
+                record.timeSinceLast => now;
+                record.data1 => msg.data1;
+                record.data2 => msg.data2;
+                record.data3 => msg.data3;
+
+                this.processMidiMsg(msg);
+            }
+        }
+    }
+
     fun void processMidi() {
         while (true) {
+            // Check if in sequence mode, then wait
+            if (this.playbackMode() != PlaybackMode.INSTRUMENT_MODE) {
+                10::ms => now;
+                continue;
+            }
+
             // Wait for Midi event
             this.m => now;
 
             // Process Midi event
             while (this.m.recv(this.msg)) {
-
                 // Check if recording in progress, and record incoming MidiMsg
-                if (this.recorder != null && this.recorder.isRecording()) this.recorder.recordMsg(this.msg);
+                if (this.sequencer != null && this.sequencer.recorder.isRecording()) this.sequencer.recorder.recordMsg(this.msg);
 
-                // Get message status
-                this.msg.data1 => int midiStatus;
+                this.processMidiMsg(this.msg);
+            }
+        }
+    }
 
-                // Note On
-                if (midiStatus == MidiMessage.NOTE_ON + this.channel) {
-                    this.msg.data2 => int noteNumber;
-                    this.heldNotes << noteNumber;
-                    this.msg.data3 => int velocity;
+    fun void processMidiMsg(MidiMsg msg) {
+        // Get message status
+        msg.data1 => int midiStatus;
 
-                    // Pitch out
-                    this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                    if (pitchOutIdx != -1) {
-                        if (this.synthMode() == SynthMode.MONO.id) {
-                            this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs[pitchOutIdx].next;
-                        } else if (this.synthMode() == SynthMode.ARP.id) {
-                            if (this.heldNotes.size() == 1) spork ~ this.arpeggiate();
-                        }
-                    }
+        // Note On
+        if (midiStatus == MidiMessage.NOTE_ON + this.channel) {
+            msg.data2 => int noteNumber;
+            this.heldNotes << noteNumber;
+            msg.data3 => int velocity;
 
-                    // Gate out
-                    this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-                    if (gateOutIdx != -1) 1. => this.nodeOutputsBox.outs[gateOutIdx].next;
-
-                    // Trigger out
-                    this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-                    if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
-
-                    // Velocity out
-                    this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-                    if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[velocityOutIdx].next;
-                // Note off
-                } else if (midiStatus == MidiMessage.NOTE_OFF + this.channel) {
-                    this.msg.data2 => int noteNumber;
-                    this.msg.data3 => int velocity;
-
-                    // Remove note from held notes
-                    for (this.heldNotes.size() - 1 => int idx; idx >= 0; idx-- ) {
-                        if (this.heldNotes[idx] == noteNumber) {
-                            this.heldNotes.popOut(idx);
-                            break;
-                        }
-                    }
-
-                    // Turn off gate if no held notes
-                    if (this.heldNotes.size() == 0) {
-                        // Only turn off gate if latch is off
-                        if (this.latch() == 0) {
-                            // Turn off gate
-                            this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-                            if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
-
-                            // Turn off aftertouch
-                            this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
-                            if (aftertouchOutIdx != -1) 0. => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
-
-                            // Turn off velocity
-                            this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-                            if (velocityOutIdx != -1) 0. => this.nodeOutputsBox.outs[velocityOutIdx].next;
-                        }
-
-                    // Otherwise go back to previously held note
-                    } else {
-                        this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                        if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(this.heldNotes[-1]) => this.nodeOutputsBox.outs[pitchOutIdx].next;
-
-                        // Resend Trigger for previously held note
-                        this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-                        if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
-                    }
-
-                // Polyphonic aftertouch
-                } else if (midiStatus == MidiMessage.POLYPHONIC_AFTERTOUCH + this.channel) {
-                    this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
-                    if (aftertouchOutIdx != -1 && this.msg.data2 == this.heldNotes[-1]) {
-                        Std.scalef(this.msg.data3, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
-                    }
-                }
-
-                // CC messages
-                if (midiStatus == MidiMessage.CONTROL_CHANGE + this.channel) {
-                    this.msg.data2 => int controllerNumber;
-                    this.msg.data3 => int controllerData;
-
-                    this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
-                    if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
+            // Pitch out
+            this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
+            if (pitchOutIdx != -1) {
+                if (this.synthMode() == SynthMode.MONO.id) {
+                    this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                } else if (this.synthMode() == SynthMode.ARP.id) {
+                    if (this.heldNotes.size() == 1) spork ~ this.arpeggiate();
                 }
             }
+
+            // Gate out
+            this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
+            if (gateOutIdx != -1) 1. => this.nodeOutputsBox.outs[gateOutIdx].next;
+
+            // Trigger out
+            this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
+            if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
+
+            // Velocity out
+            this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
+            if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[velocityOutIdx].next;
+        // Note off
+        } else if (midiStatus == MidiMessage.NOTE_OFF + this.channel) {
+            msg.data2 => int noteNumber;
+            msg.data3 => int velocity;
+
+            // Remove note from held notes
+            for (this.heldNotes.size() - 1 => int idx; idx >= 0; idx-- ) {
+                if (this.heldNotes[idx] == noteNumber) {
+                    this.heldNotes.popOut(idx);
+                    break;
+                }
+            }
+
+            // Turn off gate if no held notes
+            if (this.heldNotes.size() == 0) {
+                // Only turn off gate if latch is off
+                if (this.latch() == 0) {
+                    // Turn off gate
+                    this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
+                    if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+
+                    // Turn off aftertouch
+                    this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
+                    if (aftertouchOutIdx != -1) 0. => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+
+                    // Turn off velocity
+                    this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
+                    if (velocityOutIdx != -1) 0. => this.nodeOutputsBox.outs[velocityOutIdx].next;
+                }
+
+            // Otherwise go back to previously held note
+            } else {
+                this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
+                if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(this.heldNotes[-1]) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+
+                // Resend Trigger for previously held note
+                this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
+                if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
+            }
+
+        // Polyphonic aftertouch
+        } else if (midiStatus == MidiMessage.POLYPHONIC_AFTERTOUCH + this.channel) {
+            this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
+            if (aftertouchOutIdx != -1 && msg.data2 == this.heldNotes[-1]) {
+                Std.scalef(msg.data3, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+            }
+        }
+
+        // CC messages
+        if (midiStatus == MidiMessage.CONTROL_CHANGE + this.channel) {
+            msg.data2 => int controllerNumber;
+            msg.data3 => int controllerData;
+
+            this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
+            if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
         }
     }
 

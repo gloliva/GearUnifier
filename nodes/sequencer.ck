@@ -29,6 +29,9 @@ public class SequencerNode extends Node {
     MidiRecorder recorder;
     Sequence sequences[0];
 
+    // Run mode
+    int _run;
+
     fun @construct() {
         SequencerNode(1, 4.);
     }
@@ -68,9 +71,22 @@ public class SequencerNode extends Node {
         this.updatePos();
     }
 
+    fun int isRunning() {
+        return this._run;
+    }
+
+    fun void play() {
+        // Turn sequencer on if not recording
+        if (!this.recorder.isRecording()) 1 => this._run;
+    }
+
+    fun void stop() {
+        0 => this._run;
+    }
+
     fun void addJack(int ioType) {
          if (ioType == IOType.INPUT) {
-            this.nodeInputsBox.addJack(SequencerOutputType.allTypes);
+            this.nodeInputsBox.addJack(SequencerInputType.allTypes);
         }
         this.updatePos();
     }
@@ -99,7 +115,13 @@ public class SequencerNode extends Node {
                 }
 
                 if (this.nodeInputsBox.getDataTypeMapping(idx) == SequencerInputType.RUN.id) {
-
+                    if (value > 0 && !this.isRunning()) {
+                        this.play();
+                        <<< "Start sequencer playback" >>>;
+                    } else if  (value <= 0 && this.isRunning()) {
+                        this.stop();
+                        <<< "Stop sequencer playback" >>>;
+                    }
                 } else if (this.nodeInputsBox.getDataTypeMapping(idx) == SequencerInputType.RECORD.id) {
                     // Check if turning recording on and not already recording
                     if (value > 0 && !this.recorder.isRecording()) {

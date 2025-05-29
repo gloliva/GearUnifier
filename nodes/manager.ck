@@ -335,7 +335,7 @@ public class NodeManager {
                     wavefolder.nodeInputsBox.menus[idx].updateSelectedEntry(wavefolderInputTypeIdx);
 
                     // Update input data type mapping
-                    wavefolder.setInputDataTypeMapping(wavefolderInputType, idx);
+                    wavefolder.nodeInputsBox.setDataTypeMapping(wavefolderInputType, idx);
                 }
 
                 // Run wavefolder
@@ -443,7 +443,7 @@ public class NodeManager {
                                 node$WavefolderNode @=> WavefolderNode wavefolder;
 
                                 // Set input data type mapping for Wavefolder node
-                                wavefolder.setInputDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                                wavefolder.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
                             }
 
                             // Sequencer nodes
