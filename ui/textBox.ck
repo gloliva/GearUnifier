@@ -55,6 +55,22 @@ public class NumberEntryBox extends GGen {
         this.box --> this;
     }
 
+    fun void set(int number) {
+        Std.itoa(number) => string numberStr;
+        Math.min(numberStr.length(), this.charLimit) => int limit;
+
+        numberStr.substring(0, limit) => this.numberChars;
+        this.box.setName(this.numberChars);
+    }
+
+    fun void set(float number) {
+        Std.ftoa(number, 2) => string numberStr;
+        Math.min(numberStr.length(), this.charLimit) => int limit;
+
+        numberStr.substring(0, limit) => this.numberChars;
+        this.box.setName(this.numberChars);
+    }
+
     fun int getInt() {
         if (this.numberChars.length() == 0) {
             return 0;

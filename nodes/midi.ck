@@ -733,19 +733,27 @@ public class MidiInNode extends MidiNode {
         data.set("midiName", this.m.name());
         data.set("midiID", this.m.num());
         data.set("optionsActive", this.nodeOptionsBox.active);
+        data.set("inputsActive", this.nodeInputsBox.active);
         data.set("outputsActive", this.nodeOutputsBox.active);
         data.set("numOutputs", this.nodeOutputsBox.numJacks);
         data.set("posX", this.posX());
         data.set("posY", this.posY());
         data.set("posZ", this.posZ());
 
-        // Get menu data
+        // Get input menu data
+        HashMap inputMenuData;
+        for (int idx; idx < this.nodeInputsBox.menus.size(); idx++) {
+            this.nodeInputsBox.menus[idx] @=> DropdownMenu menu;
+            inputMenuData.set(idx, menu.getSelectedEntry().id);
+        }
+        data.set("inputMenuData", inputMenuData);
+
+        // Get output menu data
         HashMap outputMenuData;
         for (int idx; idx < this.nodeOutputsBox.menus.size(); idx++) {
             this.nodeOutputsBox.menus[idx] @=> DropdownMenu menu;
             outputMenuData.set(idx, menu.getSelectedEntry().id);
         }
-
         data.set("outputMenuData", outputMenuData);
 
         return data;

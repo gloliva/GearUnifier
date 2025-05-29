@@ -258,6 +258,23 @@ public class NodeManager {
                 (midiIn.nodeOptionsBox$MidiOptionsBox).synthModeSelectMenu.updateSelectedEntry(synthMode);
                 (midiIn.nodeOptionsBox$MidiOptionsBox).latchSelectMenu.updateSelectedEntry(latch);
 
+                // Handle input data type mappings and menu selections
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+                for (int idx; idx < inputMenuDataKeys.size(); idx++) {
+                    inputMenuData.getInt(idx) => int midiInputTypeIdx;
+                    if (midiInputTypeIdx == -1) continue;
+
+                    MidiInputType.allTypes[midiInputTypeIdx] @=> Enum midiInputType;
+
+                    // Update menu selection
+                    midiIn.nodeInputsBox.menus[idx].updateSelectedEntry(midiInputTypeIdx);
+
+                    // Update output data type mapping
+                    midiIn.nodeInputsBox.setDataTypeMapping(midiInputType, idx);
+                }
+
                 // Handle output data type mappings and menu selections
                 nodeData.get("outputMenuData")$HashMap @=> HashMap outputMenuData;
                 outputMenuData.intKeys() @=> int outputMenuDataKeys[];
@@ -343,6 +360,23 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(wavefolder);
+            } else if (nodeClassName == TransportNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getFloat("tempo") => float tempo;
+                nodeData.getFloat("beatDiv") => float beatDiv;
+
+                TransportNode transport(tempo, beatDiv, 4.);
+                transport.setNodeID(nodeID);
+                @(posX, posY, posZ) => transport.pos;
+
+                // Run transport
+                spork ~ transport.processOptions();
+
+                // Add node to screen
+                this.addNode(transport);
             }
         }
 

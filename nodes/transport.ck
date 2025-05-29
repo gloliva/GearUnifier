@@ -79,13 +79,17 @@ public class TransportNode extends Node {
 
 
     fun @construct() {
-        TransportNode(4.);
+        TransportNode(120., 1., 4.);
     }
 
     fun @construct(float xScale) {
+        TransportNode(120., 1., xScale);
+    }
+
+    fun @construct(float tempo, float beatDiv, float xScale) {
         // Initialize tempo variables
-        120. => this.tempo;
-        1. => this.beatDiv;
+        tempo => this.tempo;
+        beatDiv => this.beatDiv;
 
         // Set node ID and name
         "Transport Node" => this.name;
@@ -96,6 +100,8 @@ public class TransportNode extends Node {
 
         // Create options box
         new TransportOptionsBox(["Tempo", "Beat Div"], xScale) @=> this.nodeOptionsBox;
+        (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(tempo));
+        (this.nodeOptionsBox$TransportOptionsBox).beatDivEntryBox.set(beatDiv);
 
         // Create outputs box
         new IOBox(1, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
@@ -103,6 +109,7 @@ public class TransportNode extends Node {
 
         // Set Step Ugen to jack output for sending Beat information
         this.nodeOutputsBox.jacks[0].setUgen(this.nodeOutputsBox.outs[0]);
+        this.getBeat() => this.nodeOutputsBox.outs[TransportOutputType.BEAT.id].next;
 
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -141,5 +148,18 @@ public class TransportNode extends Node {
 
             this.getBeat() => this.nodeOutputsBox.outs[TransportOutputType.BEAT.id].next;
         }
+    }
+
+    fun HashMap serialize() {
+        HashMap data;
+        data.set("nodeClass", Type.of(this).name());
+        data.set("nodeID", this.nodeID);
+        data.set("tempo", this.tempo);
+        data.set("beatDiv", this.beatDiv);
+        data.set("posX", this.posX());
+        data.set("posY", this.posY());
+        data.set("posZ", this.posZ());
+
+        return data;
     }
 }
