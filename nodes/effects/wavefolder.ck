@@ -107,20 +107,8 @@ public class WavefolderNode extends Node {
         this.updatePos();
     }
 
-    fun void setInputDataTypeMapping(Enum wavefolderInputType, int jackIdx) {
-        wavefolderInputType.id => this.inputDataMap[jackIdx];
-    }
-
-    fun int getInputDataTypeMapping(int jackIdx) {
-        return this.inputDataMap[jackIdx];
-    }
-
-    fun void removeInputDataTypeMapping(int jackIdx) {
-        -1 => this.inputDataMap[jackIdx];
-    }
-
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
-        this.inputDataMap[inputJackIdx] => int dataType;
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
         if (dataType == -1) {
             <<< "No data type mapping for jack", inputJackIdx >>>;
             return;
@@ -133,12 +121,16 @@ public class WavefolderNode extends Node {
     }
 
     fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
-        this.inputDataMap[inputJackIdx] => int dataType;
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
         if (dataType == -1) {
             <<< "No data type mapping for jack", inputJackIdx >>>;
             return;
         }
 
+        // Remove dataType mapping
+        this.nodeInputsBox.removeDataTypeMapping(inputJackIdx);
+
+        // Remove any additional mappings
         if (dataType == WavefolderInputType.WAVE_IN.id) {
             ugen =< this.wavefolder;
         }
@@ -161,9 +153,8 @@ public class WavefolderNode extends Node {
     fun void processInputs() {
         while (true) {
             for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
-                if (this.inputDataMap[idx] == -1) {
-                    continue;
-                }
+                this.nodeInputsBox.getDataTypeMapping(idx) => int dataType;
+                if (dataType == -1) continue;
 
                 // Value can be from a audio rate UGen (which uses last()) or a control rate UGen (which uses next())
                 this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
@@ -178,11 +169,11 @@ public class WavefolderNode extends Node {
                     ugen.last() => value;
                 }
 
-                if (this.inputDataMap[idx] == WavefolderInputType.THRESHOLD.id) {
+                if (dataType == WavefolderInputType.THRESHOLD.id) {
                     Std.scalef(value, -0.5, 0.5, 0.1, 0.9) => this.wavefolder.setThreshold;
-                } else if (this.inputDataMap[idx] == WavefolderInputType.GAIN.id) {
+                } else if (dataType == WavefolderInputType.GAIN.id) {
                     Std.scalef(value, -0.5, 0.5, 1., 20.) => this.wavefolder.setScale;
-                } else if (this.inputDataMap[idx] == WavefolderInputType.MIX.id) {
+                } else if (dataType == WavefolderInputType.MIX.id) {
                     Std.scalef(value, -0.5, 0.5, 0., 1.) => this.wavefolder.setMix;
                 }
             }
