@@ -138,3 +138,80 @@ public class NumberEntryBox extends GGen {
         }
     }
 }
+
+
+public class TextEntryBox extends GGen {
+    // Contents
+    BorderedBox @ box;
+
+    // Number
+    string chars;
+    int charLimit;
+
+    // Event
+    UpdateTextEntryBoxEvent @ updateEvent;
+
+    // Visibility
+    int active;
+
+    fun @construct(int charLimit, float xScale) {
+        charLimit => this.charLimit;
+
+        BorderedBox box("Enter Filename Here", xScale, 0.5);
+        box @=> this.box;
+
+        // Names
+        "Number Entry Box" => this.name;
+        "Box" => this.box.name;
+
+        // Connections
+        this.box --> this;
+    }
+
+    fun void set(string s) {
+        Math.min(s.length(), this.charLimit) => int limit;
+
+        s.substring(0, limit) => this.chars;
+        this.box.setName(this.chars);
+    }
+
+    fun void addChar(string char) {
+        if (this.chars.length() >= this.charLimit) return;
+        this.chars + char => this.chars;
+
+        // Update box
+        this.box.setName(this.chars);
+    }
+
+    fun void addChar(int char) {
+        if (this.chars.length() >= this.charLimit) return;
+        this.chars.appendChar(char);
+
+        // Update box
+        this.box.setName(this.chars);
+    }
+
+    fun void removeChar() {
+        if (this.chars.length() == 0) return;
+
+        this.chars.substring(0, this.chars.length() - 1) => this.chars;
+
+        // Update box
+        this.box.setName(this.chars);
+
+        if (this.chars.length() == 0) {
+            this.box.setName("Enter Filename Here");
+        }
+    }
+
+    fun void setUpdateEvent(UpdateTextEntryBoxEvent updateEvent) {
+        updateEvent @=> this.updateEvent;
+    }
+
+    fun void signalUpdate(int state) {
+        if (this.updateEvent != null && this.chars.length() > 0) {
+            this.updateEvent.set(this.chars, state);
+            this.updateEvent.broadcast();
+        }
+    }
+}

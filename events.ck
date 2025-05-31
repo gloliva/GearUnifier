@@ -24,6 +24,17 @@ public class UpdateNumberEntryBoxEvent extends Event {
 }
 
 
+public class UpdateTextEntryBoxEvent extends Event {
+    string text;
+    int mode;
+
+    fun void set(string text, int mode) {
+        text => this.text;
+        mode => this.mode;
+    }
+}
+
+
 public class MoveCameraEvent extends Event {
     float translateX;
     float translateY;

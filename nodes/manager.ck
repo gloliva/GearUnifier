@@ -153,6 +153,18 @@ public class NodeManager {
         }
     }
 
+    fun void saveHandler(UpdateTextEntryBoxEvent saveEvent) {
+        while (true) {
+            saveEvent => now;
+            if (saveEvent.mode == SaveState.SAVE) {
+                if (saveEvent.text.length() > 0) this.save(saveEvent.text);
+            } else if (saveEvent.mode == SaveState.LOAD) {
+                this.clearScreen();
+                // this.loadSave(saveEvent.text);
+            }
+        }
+    }
+
     fun void findMidiDevices() {
         // Write `chuck --probe` output to file
         "chuck --probe 2>&1 | grep -A 10 \"MIDI\" > .midiDevices.txt" => string chuckProbeCmd;
@@ -217,7 +229,32 @@ public class NodeManager {
         }
     }
 
+    fun void save(string filename) {
+        <<< "Saving Data" >>>;
+        // Serialize the current state of the nodes
+        HashMap nodes;
+        HashMap connections;
+
+        for (int idx; idx < this.nodesOnScreen.size(); idx++) {
+            this.nodesOnScreen[idx] @=> Node node;
+            nodes.set(idx, node.serialize());
+        }
+
+        for (int idx; idx < this.nodeConnections.size(); idx++) {
+            this.nodeConnections[idx] @=> Connection conn;
+            connections.set(idx, conn.serialize());
+        }
+
+        HashMap data;
+        data.set("nodes", nodes);
+        data.set("connections", connections);
+
+        filename + ".json" => filename;
+        SaveHandler.save(filename, data);
+    }
+
     fun void loadSave(string filename) {
+        filename + ".json" => filename;
         SaveHandler.load(filename) @=> HashMap data;
 
         // Load nodes and connections
@@ -507,6 +544,34 @@ public class NodeManager {
             // Add connection to connections list
             this.nodeConnections << connection;
         }
+    }
+
+    fun void clearScreen() {
+        <<< "Clearing screen" >>>;
+        // Clear nodes
+        this.nodesOnScreen.clear();
+        0 => this.numNodes;
+
+        0 => this.nodeSelected;
+        -1 => this.currSelectedNodeIdx;
+        null => this.currSelectedNode;
+
+        0 => this.nodeHeld;
+        -1 => this.currHeldNodeIdx;
+        null => this.currHeldNode;
+
+        // Clear connections
+        this.nodeConnections.clear();
+        0 => this.openConnection;
+        null => this.currOpenConnection;
+
+        0 => this.connectionSelected;
+        -1 => this.currSelectedConnectionIdx;
+        null => this.currSelectedConnection;
+
+        // Menus
+        0 => this.menuOpen;
+        null => this.currMenu;
     }
 
     fun void run() {
@@ -1035,26 +1100,27 @@ public class NodeManager {
 
             // Check if CMD+S is pressed
             if (GWindow.key(GWindow.Key_LeftSuper) && GWindow.keyDown(GWindow.Key_S)) {
-                <<< "Saving Data" >>>;
-                // Serialize the current state of the nodes
-                HashMap nodes;
-                HashMap connections;
+                // <<< "Saving Data" >>>;
+                // // Serialize the current state of the nodes
+                // HashMap nodes;
+                // HashMap connections;
 
-                for (int idx; idx < this.nodesOnScreen.size(); idx++) {
-                    this.nodesOnScreen[idx] @=> Node node;
-                    nodes.set(idx, node.serialize());
-                }
+                // for (int idx; idx < this.nodesOnScreen.size(); idx++) {
+                //     this.nodesOnScreen[idx] @=> Node node;
+                //     nodes.set(idx, node.serialize());
+                // }
 
-                for (int idx; idx < this.nodeConnections.size(); idx++) {
-                    this.nodeConnections[idx] @=> Connection conn;
-                    connections.set(idx, conn.serialize());
-                }
+                // for (int idx; idx < this.nodeConnections.size(); idx++) {
+                //     this.nodeConnections[idx] @=> Connection conn;
+                //     connections.set(idx, conn.serialize());
+                // }
 
-                HashMap data;
-                data.set("nodes", nodes);
-                data.set("connections", connections);
+                // HashMap data;
+                // data.set("nodes", nodes);
+                // data.set("connections", connections);
 
-                SaveHandler.save("autosave.json", data);
+                // SaveHandler.save("autosave.json", data);
+                this.save("autosave");
             }
 
             // All Keys pressed this frame

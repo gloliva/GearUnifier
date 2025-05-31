@@ -1,5 +1,12 @@
 @import "HashMap";
 
+
+public class SaveState {
+    0 => static int SAVE;
+    1 => static int LOAD;
+}
+
+
 public class SaveHandler {
     fun static void save(string filename, HashMap data) {
         FileIO file;

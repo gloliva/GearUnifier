@@ -20,15 +20,17 @@ Color.WHITE => GG.scene().backgroundColor;
 // Events
 AddNodeEvent addNodeEvent;
 MoveCameraEvent moveCameraEvent;
+UpdateTextEntryBoxEvent saveEvent;
 
 // Node Manager
 NodeManager nodeManager(moveCameraEvent);
 nodeManager.findMidiDevices();
 spork ~ nodeManager.run();
 spork ~ nodeManager.addNodeHandler(addNodeEvent);
+spork ~ nodeManager.saveHandler(saveEvent);
 
 // UI
-UIManager uiManager(addNodeEvent, moveCameraEvent);
+UIManager uiManager(addNodeEvent, moveCameraEvent, saveEvent);
 uiManager.setAudioUI();
 uiManager.setMidiInUI(nodeManager.midiInDevices);
 uiManager.setMidiOutUI(nodeManager.midiOutDevices);
@@ -36,6 +38,7 @@ uiManager.setOscUI();
 uiManager.setSequencerUI();
 uiManager.setEffectsUI();
 uiManager.setUtilsUI();
+uiManager.setSaveUI();
 spork ~ uiManager.resize();
 spork ~ uiManager.translate();
 spork ~ uiManager.run();
@@ -56,7 +59,7 @@ nodeManager.addNode(audioOut);
 nodeManager.addNode(audioIn);
 
 // Load autosave on startup
-nodeManager.loadSave("autosave.json");
+nodeManager.loadSave("autosave");
 
 
 // Main loop

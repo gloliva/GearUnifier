@@ -1,13 +1,17 @@
 // imports
 @import "../events.ck"
+@import "../saveHandler.ck"
 @import "../utils.ck"
 @import "../nodes/base.ck"
 @import "menu.ck"
+@import "textBox.ck"
 
 
 public class UIManager {
     GCube topMenuBar;
     GCube bottomMenuBar;
+
+    // Node Menus
     DropdownMenu @ audioMenu;
     DropdownMenu @ midiInMenu;
     DropdownMenu @ midiOutMenu;
@@ -16,15 +20,23 @@ public class UIManager {
     DropdownMenu @ sequencerMenu;
     DropdownMenu @ utilsMenu;
 
+    // Save/Load Handling
+    int saveEntryBoxSelected;
+    BorderedBox @ saveButton;
+    BorderedBox @ loadButton;
+    TextEntryBox @ saveFilenameEntryBox;
+
     vec2 windowSize;
 
     // Events
     AddNodeEvent @ addNodeEvent;
     MoveCameraEvent @ moveCameraEvent;
+    UpdateTextEntryBoxEvent @ updateTextEntryBoxEvent;
 
-    fun @construct(AddNodeEvent addNodeEvent, MoveCameraEvent moveCameraEvent) {
+    fun @construct(AddNodeEvent addNodeEvent, MoveCameraEvent moveCameraEvent, UpdateTextEntryBoxEvent updateTextEntryBoxEvent) {
         addNodeEvent @=> this.addNodeEvent;
         moveCameraEvent @=> this.moveCameraEvent;
+        updateTextEntryBoxEvent @=> this.updateTextEntryBoxEvent;
 
         // Pos
         1 => this.topMenuBar.posZ;
@@ -129,6 +141,57 @@ public class UIManager {
         this.utilsMenu --> GG.scene();
     }
 
+    fun void setSaveUI() {
+        // Save and load buttons
+        new BorderedBox("Save", 2., 0.5) @=> this.saveButton;
+        new BorderedBox("Load", 2., 0.5) @=> this.loadButton;
+        @(0.3, 0.3, 1.) => this.saveButton.sca;
+        @(0.3, 0.3, 1.) => this.loadButton.sca;
+        1.201 => this.saveButton.posZ;
+        1.201 => this.loadButton.posZ;
+        this.saveButton --> GG.scene();
+        this.loadButton --> GG.scene();
+
+        new TextEntryBox(20, 8) @=> this.saveFilenameEntryBox;
+        this.saveFilenameEntryBox.setUpdateEvent(this.updateTextEntryBoxEvent);
+
+        @(0.3, 0.3, 1.) => this.saveFilenameEntryBox.sca;
+        1.201 => this.saveFilenameEntryBox.posZ;
+        this.saveFilenameEntryBox --> GG.scene();
+    }
+
+    fun int mouseOverBox(vec3 mouseWorldPos, GGen boxes[]) {
+        if (boxes.size() < 1) return false;
+
+        boxes[0] @=> GGen parentBox;
+
+        parentBox.posX() => float centerX;
+        parentBox.posY() => float centerY;
+        parentBox.scaX() => float halfW;
+        parentBox.scaY() => float halfH;
+
+        for (1 => int idx; idx < boxes.size(); idx++) {
+            boxes[idx] @=> GGen box;
+            centerX + (box.posX() * parentBox.scaX()) => centerX;
+            centerY + (box.posY() * parentBox.scaY()) => centerY;
+
+            halfW * box.scaX() => halfW;
+            halfH * box.scaY() => halfH;
+        }
+
+        halfW / 2. => halfW;
+        halfH / 2. => halfH;
+
+        if (
+            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
+            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
+        ) {
+            return true;
+        }
+
+        return false;
+    }
+
     fun int mouseOverDropdownMenu(vec3 mouseWorldPos, DropdownMenu menu) {
         menu.posX() + (menu.selectedBox.box.posX() * menu.scaX()) => float centerX;
         menu.posY() + (menu.selectedBox.box.posY() * menu.scaY()) => float centerY;
@@ -190,7 +253,7 @@ public class UIManager {
             // Buffer between menus
             0.05 => float menuBuffer;
 
-            // Reposition UI items
+            // Reposition top bar
             if (this.audioMenu != null) {
                 this.audioMenu.selectedBox.box.scaWorld().x => float audioMenuWidth;
                 3 * (-audioMenuWidth - menuBuffer) => this.audioMenu.posX;
@@ -231,6 +294,21 @@ public class UIManager {
                 3 * (utilsMenuWidth + menuBuffer) => this.utilsMenu.posX;
                 this.topMenuBar.posY() => this.utilsMenu.posY;
             }
+
+            // Reposition bottom bar
+            if (this.saveButton != null) {
+                -3 => this.saveButton.posX;
+                this.bottomMenuBar.posY() => this.saveButton.posY;
+            }
+
+            if (this.saveFilenameEntryBox != null) {
+                this.bottomMenuBar.posY() => this.saveFilenameEntryBox.posY;
+            }
+
+            if (this.loadButton != null) {
+                3 => this.loadButton.posX;
+                this.bottomMenuBar.posY() => this.loadButton.posY;
+            }
         }
     }
 
@@ -243,7 +321,7 @@ public class UIManager {
             translatePos => this.topMenuBar.translate;
             translatePos => this.bottomMenuBar.translate;
 
-            // Move UI menus
+            // Move Top UI menus
             translatePos => this.audioMenu.translate;
             translatePos => this.midiInMenu.translate;
             translatePos => this.midiOutMenu.translate;
@@ -251,6 +329,11 @@ public class UIManager {
             translatePos => this.effectsMenu.translate;
             translatePos => this.sequencerMenu.translate;
             translatePos => this.utilsMenu.translate;
+
+            // Move Bottom UI elements
+            translatePos => this.saveButton.translate;
+            translatePos => this.loadButton.translate;
+            translatePos => this.saveFilenameEntryBox.translate;
         }
     }
 
@@ -264,6 +347,8 @@ public class UIManager {
 
             // Mouse Click Down on this frame
             if (GWindow.mouseLeftDown() == 1) {
+                0 => int uiClickedOn;
+
                 // If Audio Menu is open, check if clicking on a menu entry
                 if (this.audioMenu.expanded) {
                     this.mouseOverMenuEntry(mouseWorldPos, this.audioMenu) => int dropdownMenuEntryIdx;
@@ -279,9 +364,11 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.audioMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the Midi In Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.audioMenu) && !this.audioMenu.expanded) {
                     this.audioMenu.expand();
+                    1 => uiClickedOn;
                 }
 
                 // If MidiIn Menu is open, check if clicking on a menu entry
@@ -295,9 +382,11 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.midiInMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the Midi In Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.midiInMenu) && !this.midiInMenu.expanded) {
                     this.midiInMenu.expand();
+                    1 => uiClickedOn;
                 }
 
                 // If MidiOut Menu is open, check if clicking on a menu entry
@@ -311,9 +400,11 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.midiOutMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the MidiOut Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.midiOutMenu) && !this.midiOutMenu.expanded) {
                     this.midiOutMenu.expand();
+                    1 => uiClickedOn;
                 }
 
                 // If OSC Menu is open, check if clicking on a menu entry
@@ -329,9 +420,11 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.oscMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the OSC Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.oscMenu) && !this.oscMenu.expanded) {
                     this.oscMenu.expand();
+                    1 => uiClickedOn;
                 }
 
                 // If Effects Menu is open, check if clicking on a menu entry
@@ -348,9 +441,11 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.effectsMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the Effects Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.effectsMenu) && !this.effectsMenu.expanded) {
                     this.effectsMenu.expand();
+                    1 => uiClickedOn;
                 }
 
                 // If Sequencer Menu is open, check if clicking on a menu entry
@@ -368,9 +463,11 @@ public class UIManager {
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.sequencerMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the Sequencer Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.sequencerMenu) && !this.sequencerMenu.expanded) {
                     this.sequencerMenu.expand();
+                    1 => uiClickedOn;
                 }
 
                 // If Utilities Menu is open, check if clicking on a menu entry
@@ -381,13 +478,53 @@ public class UIManager {
                         NodeType.SCALE => int nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
+
                     }
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
                     this.utilsMenu.collapse();
+                    1 => uiClickedOn;
                 // Otherwise, check if clicking on the Utilities Menu, then open it
                 } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.utilsMenu) && !this.utilsMenu.expanded) {
                     this.utilsMenu.expand();
+                    1 => uiClickedOn;
+                }
+
+                // Check if clicking on Save TextEntryBox
+                if (this.mouseOverBox(mouseWorldPos, [this.saveFilenameEntryBox, this.saveFilenameEntryBox.box, this.saveFilenameEntryBox.box.box])) {
+                    1 => this.saveEntryBoxSelected;
+                    1 => uiClickedOn;
+                }
+
+                // Check if saving
+                if (this.mouseOverBox(mouseWorldPos, [this.saveButton, this.saveButton.box])) {
+                    <<< "click on save" >>>;
+                    this.saveFilenameEntryBox.signalUpdate(SaveState.SAVE);
+                    1 => uiClickedOn;
+                // Check if loading
+                } else if (this.mouseOverBox(mouseWorldPos, [this.loadButton, this.loadButton.box])) {
+                    <<< "click on load" >>>;
+                    this.saveFilenameEntryBox.signalUpdate(SaveState.LOAD);
+                    1 => uiClickedOn;
+                }
+
+
+                if (!uiClickedOn) 0 => this.saveEntryBoxSelected;
+            }
+
+            // Handle adding text to Save TextEntryBox
+            if (this.saveEntryBoxSelected) {
+                GWindow.keysDown() @=> int keysPressed[];
+                for (int key : keysPressed) {
+
+                    // If a number box is selected and a number key is pressed, add the number to the number box
+                    if ((key >= GWindow.Key_0 && key <= GWindow.Key_9) || (key >= GWindow.Key_A && key <= GWindow.Key_Z)) {
+                        this.saveFilenameEntryBox.addChar(key);
+                    } else if (key == GWindow.Key_Backspace) {
+                        this.saveFilenameEntryBox.removeChar();
+                    } else if (key == GWindow.Key_Enter) {
+                        0 => this.saveEntryBoxSelected;
+                    }
                 }
             }
 
