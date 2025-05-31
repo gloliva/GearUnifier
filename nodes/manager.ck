@@ -169,6 +169,8 @@ public class NodeManager {
             } else if (saveEvent.mode == SaveState.LOAD) {
                 this.clearScreen();
                 this.loadSave(saveEvent.text);
+            } else if (saveEvent.mode == SaveState.NEW) {
+                this.clearScreen();
             }
         }
     }

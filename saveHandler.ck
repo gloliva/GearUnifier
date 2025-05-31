@@ -4,6 +4,7 @@
 public class SaveState {
     0 => static int SAVE;
     1 => static int LOAD;
+    2 => static int NEW;
 }
 
 

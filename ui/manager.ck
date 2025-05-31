@@ -24,6 +24,7 @@ public class UIManager {
     int saveEntryBoxSelected;
     BorderedBox @ saveButton;
     BorderedBox @ loadButton;
+    BorderedBox @ newButton;
     TextEntryBox @ saveFilenameEntryBox;
 
     vec2 windowSize;
@@ -145,12 +146,16 @@ public class UIManager {
         // Save and load buttons
         new BorderedBox("Save", 2., 0.5) @=> this.saveButton;
         new BorderedBox("Load", 2., 0.5) @=> this.loadButton;
+        new BorderedBox("New", 2., 0.5) @=> this.newButton;
         @(0.3, 0.3, 1.) => this.saveButton.sca;
         @(0.3, 0.3, 1.) => this.loadButton.sca;
+        @(0.3, 0.3, 1.) => this.newButton.sca;
         1.201 => this.saveButton.posZ;
         1.201 => this.loadButton.posZ;
+        1.201 => this.newButton.posZ;
         this.saveButton --> GG.scene();
         this.loadButton --> GG.scene();
+        this.newButton --> GG.scene();
 
         new TextEntryBox(20, 8) @=> this.saveFilenameEntryBox;
         this.saveFilenameEntryBox.setUpdateEvent(this.updateTextEntryBoxEvent);
@@ -296,17 +301,22 @@ public class UIManager {
             }
 
             // Reposition bottom bar
-            if (this.saveButton != null) {
-                -3 => this.saveButton.posX;
-                this.bottomMenuBar.posY() => this.saveButton.posY;
+            if (this.newButton != null) {
+                1.55 => this.newButton.posX;
+                this.bottomMenuBar.posY() => this.newButton.posY;
             }
 
             if (this.saveFilenameEntryBox != null) {
                 this.bottomMenuBar.posY() => this.saveFilenameEntryBox.posY;
             }
 
+            if (this.saveButton != null) {
+                -1.55 => this.saveButton.posX;
+                this.bottomMenuBar.posY() => this.saveButton.posY;
+            }
+
             if (this.loadButton != null) {
-                3 => this.loadButton.posX;
+                -2.2 => this.loadButton.posX;
                 this.bottomMenuBar.posY() => this.loadButton.posY;
             }
         }
@@ -505,6 +515,10 @@ public class UIManager {
                 } else if (this.mouseOverBox(mouseWorldPos, [this.loadButton, this.loadButton.box])) {
                     <<< "click on load" >>>;
                     this.saveFilenameEntryBox.signalUpdate(SaveState.LOAD);
+                    1 => uiClickedOn;
+                } else if (this.mouseOverBox(mouseWorldPos, [this.newButton, this.newButton.box])) {
+                    <<< "click on new" >>>;
+                    this.saveFilenameEntryBox.signalUpdate(SaveState.NEW);
                     1 => uiClickedOn;
                 }
 
