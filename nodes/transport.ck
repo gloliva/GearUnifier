@@ -134,7 +134,7 @@ public class TransportNode extends Node {
     fun void processOptions() {
         this.nodeOptionsBox$TransportOptionsBox @=> TransportOptionsBox optionsBox;
 
-        while (true) {
+        while (this.nodeActive) {
             optionsBox.updateNumberEntryBoxEvent => now;
 
             optionsBox.updateNumberEntryBoxEvent.numberBoxIdx => int numberBoxIdx ;

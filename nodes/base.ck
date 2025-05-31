@@ -32,6 +32,8 @@ public class NodeType {
 
 public class Node extends GGen {
     string nodeID;
+    1 => int nodeActive;
+    Shred activeShreds[0];
 
     NameBox @ nodeNameBox;
     OptionsBox @ nodeOptionsBox;
@@ -43,6 +45,36 @@ public class Node extends GGen {
 
     fun void setNodeID(string nodeID) {
         nodeID => this.nodeID;
+    }
+
+    fun void addShreds(Shred shreds[]) {
+        for (Shred shred : shreds) {
+            this.activeShreds << shred;
+        }
+    }
+
+    fun void deactivateNode() {
+        for (Shred shred : this.activeShreds) {
+            <<< "Removing shred" >>>;
+            // shred.exit();
+            Machine.remove( shred.id() );
+            me.yield();
+        }
+
+        // Get Rid of shreds in Input and Output IO Boxes
+        if (this.nodeInputsBox != null) {
+            for (Jack jack : this.nodeInputsBox.jacks) {
+                if (jack.colorShred != null) Machine.remove(jack.colorShred.id());
+            }
+        }
+
+        if (this.nodeOutputsBox != null) {
+            for (Jack jack : this.nodeOutputsBox.jacks) {
+                if (jack.colorShred != null) Machine.remove(jack.colorShred.id());
+            }
+        }
+
+        0 => this.nodeActive;
     }
 
     fun int mouseOverBox(vec3 mouseWorldPos, GGen box) {
@@ -439,6 +471,8 @@ public class Jack extends GGen {
     int isConnected;
     UGen @ ugen;
 
+    Shred @ colorShred;
+
     fun @construct(int jackID, int ioType) {
         // Member variables
         ioType => this.ioType;
@@ -466,7 +500,7 @@ public class Jack extends GGen {
         this.jack --> this.border --> this;
 
         // Handle jack color
-        spork ~ this.setColor();
+        spork ~ this.setColor() @=> this.colorShred;
     }
 
     fun void setUgen(UGen ugen) {

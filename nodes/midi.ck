@@ -529,7 +529,7 @@ public class MidiInNode extends MidiNode {
     }
 
     fun void processInputs() {
-        while (true) {
+        while (this.nodeActive) {
             for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
                 // Check if DataType is set in a Menu
                 this.nodeInputsBox.getDataTypeMapping(idx) => int dataType;
@@ -572,7 +572,7 @@ public class MidiInNode extends MidiNode {
     }
 
     fun void processNumberBoxUpdates() {
-        while (true) {
+        while (this.nodeActive) {
             this.updateNumberEntryBoxEvent => now;
 
             this.updateNumberEntryBoxEvent.numberBoxIdx => int numberBoxIdx;
@@ -613,7 +613,7 @@ public class MidiInNode extends MidiNode {
     }
 
     fun void processMidi() {
-        while (true) {
+        while (this.nodeActive) {
             // Check if in sequence mode, then wait
             if (this.playbackMode() != PlaybackMode.INSTRUMENT_MODE) {
                 10::ms => now;

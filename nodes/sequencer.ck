@@ -99,7 +99,7 @@ public class SequencerNode extends Node {
     }
 
     fun void processInputs() {
-        while (true) {
+        while (this.nodeActive) {
             for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
                 if (this.nodeInputsBox.getDataTypeMapping(idx) == -1) continue;
 

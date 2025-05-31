@@ -151,7 +151,7 @@ public class WavefolderNode extends Node {
     }
 
     fun void processInputs() {
-        while (true) {
+        while (this.nodeActive) {
             for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
                 this.nodeInputsBox.getDataTypeMapping(idx) => int dataType;
                 if (dataType == -1) continue;

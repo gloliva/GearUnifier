@@ -223,7 +223,7 @@ public class ScaleNode extends Node {
     fun void processOptions() {
         this.nodeOptionsBox$ScaleOptionsBox @=> ScaleOptionsBox optionsBox;
 
-        while (true) {
+        while (this.nodeActive) {
             optionsBox.updateNumberEntryBoxEvent => now;
 
             optionsBox.updateNumberEntryBoxEvent.numberBoxIdx => int numberBoxIdx ;

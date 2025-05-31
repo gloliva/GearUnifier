@@ -518,8 +518,22 @@ public class UIManager {
                 for (int key : keysPressed) {
 
                     // If a number box is selected and a number key is pressed, add the number to the number box
-                    if ((key >= GWindow.Key_0 && key <= GWindow.Key_9) || (key >= GWindow.Key_A && key <= GWindow.Key_Z)) {
+                    if (key >= GWindow.Key_0 && key <= GWindow.Key_9) {
                         this.saveFilenameEntryBox.addChar(key);
+                    } else if (key >= GWindow.Key_A && key <= GWindow.Key_Z) {
+                        // Can't use an empty string or else this doesn't work
+                        // So just use any character as a placeholder
+                        "z" => string keyStr;
+                        keyStr.appendChar(key);
+
+                        // Check if SHIFT held down to make letter Uppercase
+                        if (GWindow.key(GWindow.Key_LeftShift) || GWindow.key(GWindow.Key_RightShift)) {
+                            keyStr.upper() => keyStr;
+                        } else {
+                            keyStr.lower() => keyStr;
+                        }
+
+                        this.saveFilenameEntryBox.addChar(keyStr.charAt(1));
                     } else if (key == GWindow.Key_Backspace) {
                         this.saveFilenameEntryBox.removeChar();
                     } else if (key == GWindow.Key_Enter) {

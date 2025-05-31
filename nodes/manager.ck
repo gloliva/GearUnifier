@@ -113,6 +113,9 @@ public class NodeManager {
             this.numNodes--;
         }
 
+        // Exit node's shreds
+        node.deactivateNode();
+
         // Remove from scene
         node --< GG.scene();
     }
@@ -124,9 +127,10 @@ public class NodeManager {
                 addNodeEvent.menuIdx => int midiDeviceID;
                 MidiInNode midiIn(midiDeviceID, 0, 3);
                 this.addNode(midiIn);
-                spork ~ midiIn.processMidi();
-                spork ~ midiIn.processInputs();
-                spork ~ midiIn.processNumberBoxUpdates();
+                spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
+                spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
+                spork ~ midiIn.processNumberBoxUpdates() @=> Shred @ midiInProcessNumberBoxShred;
+                midiIn.addShreds([midiInProcessMidiShred, midiInProcessInputsShred, midiInProcessNumberBoxShred]);
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_IN) {
                 AudioInNode audioIn(adc.channels());
                 this.addNode(audioIn);
@@ -136,19 +140,23 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder);
-                spork ~ wavefolder.processInputs();
+                spork ~ wavefolder.processInputs() @=> Shred @ wavefolderProcessInputsShred;
+                wavefolder.addShreds([wavefolderProcessInputsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 SequencerNode sequencer();
-                spork ~ sequencer.processInputs();
+                spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
                 this.addNode(sequencer);
+                sequencer.addShreds([sequencerProcessInputsShred]);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
-                spork ~ transport.processOptions();
+                spork ~ transport.processOptions() @=> Shred @ transportProcessOptionsShred;
                 this.addNode(transport);
+                transport.addShreds([transportProcessOptionsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SCALE) {
                 ScaleNode scale();
-                spork ~ scale.processOptions();
+                spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;
                 this.addNode(scale);
+                scale.addShreds([scaleProcessOptionsShred]);
             }
         }
     }
@@ -160,7 +168,7 @@ public class NodeManager {
                 if (saveEvent.text.length() > 0) this.save(saveEvent.text);
             } else if (saveEvent.mode == SaveState.LOAD) {
                 this.clearScreen();
-                // this.loadSave(saveEvent.text);
+                this.loadSave(saveEvent.text);
             }
         }
     }
@@ -293,9 +301,10 @@ public class NodeManager {
                 midiIn.latch(latch);
                 @(posX, posY, posZ) => midiIn.pos;
                 this.addNode(midiIn);
-                spork ~ midiIn.processMidi();
-                spork ~ midiIn.processInputs();
-                spork ~ midiIn.processNumberBoxUpdates();
+                spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
+                spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
+                spork ~ midiIn.processNumberBoxUpdates() @=> Shred @ midiInProcessNumberBoxShred;
+                midiIn.addShreds([midiInProcessMidiShred, midiInProcessInputsShred, midiInProcessNumberBoxShred]);
 
                 // Handle options menu selections
                 (midiIn.nodeOptionsBox$MidiOptionsBox).channelSelectMenu.updateSelectedEntry(channel + 1);  // +1 because 0th entry is "All"
@@ -356,13 +365,10 @@ public class NodeManager {
                 nodeData.getFloat("posY") => float posY;
                 nodeData.getFloat("posZ") => float posZ;
 
-                for (Node node : this.nodesOnScreen) {
-                    if (Type.of(node).name() == nodeClassName) {
-                        node.setNodeID(nodeID);
-                        @(posX, posY, posZ) => node.pos;
-                        break;
-                    }
-                }
+                AudioInNode audioIn(adc.channels());
+                audioIn.setNodeID(nodeID);
+                @(posX, posY, posZ) => audioIn.pos;
+                this.addNode(audioIn);
 
             } else if (nodeClassName == AudioOutNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
@@ -370,13 +376,11 @@ public class NodeManager {
                 nodeData.getFloat("posY") => float posY;
                 nodeData.getFloat("posZ") => float posZ;
 
-                for (Node node : this.nodesOnScreen) {
-                    if (Type.of(node).name() == nodeClassName) {
-                        node.setNodeID(nodeID);
-                        @(posX, posY, posZ) => node.pos;
-                        break;
-                    }
-                }
+                AudioOutNode audioOut(dac.channels());
+                audioOut.setNodeID(nodeID);
+                @(posX, posY, posZ) => audioOut.pos;
+                this.addNode(audioOut);
+
             } else if (nodeClassName == WavefolderNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getFloat("posX") => float posX;
@@ -409,7 +413,8 @@ public class NodeManager {
                 }
 
                 // Run wavefolder
-                spork ~ wavefolder.processInputs();
+                spork ~ wavefolder.processInputs() @=> Shred @ wavefolderProcessInputsShred;
+                wavefolder.addShreds([wavefolderProcessInputsShred]);
 
                 // Add node to screen
                 this.addNode(wavefolder);
@@ -472,7 +477,8 @@ public class NodeManager {
 
 
                 // Run sequencer
-                spork ~ sequencer.processInputs();
+                spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
+                sequencer.addShreds([sequencerProcessInputsShred]);
 
                 // Add node to screen
                 this.addNode(sequencer);
@@ -489,7 +495,8 @@ public class NodeManager {
                 @(posX, posY, posZ) => transport.pos;
 
                 // Run transport
-                spork ~ transport.processOptions();
+                spork ~ transport.processOptions() @=> Shred @ transportProcessOptionsShred;
+                transport.addShreds([transportProcessOptionsShred]);
 
                 // Add node to screen
                 this.addNode(transport);
@@ -508,7 +515,8 @@ public class NodeManager {
                 @(posX, posY, posZ) => scale.pos;
 
                 // Run scale
-                spork ~ scale.processOptions();
+                spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;
+                scale.addShreds([scaleProcessOptionsShred]);
 
                 // Add node to screen
                 this.addNode(scale);
@@ -557,6 +565,15 @@ public class NodeManager {
 
     fun void clearScreen() {
         <<< "Clearing screen" >>>;
+        for (Connection conn : this.nodeConnections) {
+            conn.deleteWire();
+        }
+
+        for (Node node : this.nodesOnScreen) {
+            node.deactivateNode();
+            node --< GG.scene();
+        }
+
         // Clear nodes
         this.nodesOnScreen.clear();
         0 => this.numNodes;

@@ -43,23 +43,9 @@ spork ~ uiManager.resize();
 spork ~ uiManager.translate();
 spork ~ uiManager.run();
 
-// Audio
-AudioOutNode audioOut(dac.channels());
-audioOut --> GG.scene();
-3. => audioOut.posX;
-2. => audioOut.posY;
-
-AudioInNode audioIn(adc.channels());
-audioIn --> GG.scene();
--3. => audioIn.posX;
-2. => audioIn.posY;
-
-// Add nodes to node manager
-nodeManager.addNode(audioOut);
-nodeManager.addNode(audioIn);
 
 // Load autosave on startup
-nodeManager.loadSave("autosave");
+// nodeManager.loadSave("autosave");
 
 
 // Main loop
