@@ -10,6 +10,13 @@ public class MidiRecord {
         msg.data3 => this.data3;
         timeSinceLast => this.timeSinceLast;
     }
+
+    fun @construct(int data1, int data2, int data3, dur timeSinceLast) {
+        data1 => this.data1;
+        data2 => this.data2;
+        data3 => this.data3;
+        timeSinceLast => this.timeSinceLast;
+    }
 }
 
 

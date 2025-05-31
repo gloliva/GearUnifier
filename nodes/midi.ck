@@ -626,15 +626,18 @@ public class MidiInNode extends MidiNode {
 
             // Process Midi event
             while (this.m.recv(this.msg)) {
-                // Check if recording in progress, and record incoming MidiMsg
-                if (this.sequencer != null && this.sequencer.recorder.isRecording()) this.sequencer.recorder.recordMsg(this.msg);
+                this.processMidiMsg(this.msg) => int midiProcessed;
 
-                this.processMidiMsg(this.msg);
+                // Check if recording in progress, and record incoming MidiMsg
+                if (midiProcessed && this.sequencer != null && this.sequencer.recorder.isRecording()) this.sequencer.recorder.recordMsg(this.msg);
             }
         }
     }
 
-    fun void processMidiMsg(MidiMsg msg) {
+    fun int processMidiMsg(MidiMsg msg) {
+        // Return status if MIDI message if processed by this channel
+        0 => int midiProcessed;
+
         // Get message status
         msg.data1 => int midiStatus;
 
@@ -665,6 +668,9 @@ public class MidiInNode extends MidiNode {
             // Velocity out
             this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
             if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[velocityOutIdx].next;
+
+            // Set processed status
+            1 => midiProcessed;
         // Note off
         } else if (midiStatus == MidiMessage.NOTE_OFF + this.channel) {
             msg.data2 => int noteNumber;
@@ -705,12 +711,17 @@ public class MidiInNode extends MidiNode {
                 if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
             }
 
+            // Set processed status
+            1 => midiProcessed;
         // Polyphonic aftertouch
         } else if (midiStatus == MidiMessage.POLYPHONIC_AFTERTOUCH + this.channel) {
             this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
             if (aftertouchOutIdx != -1 && msg.data2 == this.heldNotes[-1]) {
                 Std.scalef(msg.data3, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
             }
+
+            // Set processed status
+            1 => midiProcessed;
         }
 
         // CC messages
@@ -720,7 +731,12 @@ public class MidiInNode extends MidiNode {
 
             this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
             if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
+
+            // Set processed status
+            1 => midiProcessed;
         }
+
+        return midiProcessed;
     }
 
     fun HashMap serialize() {
@@ -735,6 +751,7 @@ public class MidiInNode extends MidiNode {
         data.set("optionsActive", this.nodeOptionsBox.active);
         data.set("inputsActive", this.nodeInputsBox.active);
         data.set("outputsActive", this.nodeOutputsBox.active);
+        data.set("numInputs", this.nodeInputsBox.numJacks);
         data.set("numOutputs", this.nodeOutputsBox.numJacks);
         data.set("posX", this.posX());
         data.set("posY", this.posY());

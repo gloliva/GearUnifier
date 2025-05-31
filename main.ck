@@ -19,15 +19,16 @@ Color.WHITE => GG.scene().backgroundColor;
 
 // Events
 AddNodeEvent addNodeEvent;
+MoveCameraEvent moveCameraEvent;
 
 // Node Manager
-NodeManager nodeManager;
+NodeManager nodeManager(moveCameraEvent);
 nodeManager.findMidiDevices();
 spork ~ nodeManager.run();
 spork ~ nodeManager.addNodeHandler(addNodeEvent);
 
 // UI
-UIManager uiManager(addNodeEvent);
+UIManager uiManager(addNodeEvent, moveCameraEvent);
 uiManager.setAudioUI();
 uiManager.setMidiInUI(nodeManager.midiInDevices);
 uiManager.setMidiOutUI(nodeManager.midiOutDevices);
@@ -36,6 +37,7 @@ uiManager.setSequencerUI();
 uiManager.setEffectsUI();
 uiManager.setUtilsUI();
 spork ~ uiManager.resize();
+spork ~ uiManager.translate();
 spork ~ uiManager.run();
 
 // Audio

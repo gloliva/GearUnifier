@@ -49,6 +49,13 @@ public class NodeManager {
     Enum midiInDevices[0];
     Enum midiOutDevices[0];
 
+    // Events
+    MoveCameraEvent @ moveCameraEvent;
+
+    fun @construct(MoveCameraEvent moveCameraEvent) {
+        moveCameraEvent @=> this.moveCameraEvent;
+    }
+
     fun void addNode(Node node) {
         this.nodesOnScreen << node;
         this.numNodes++;
@@ -360,6 +367,69 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(wavefolder);
+            } else if (nodeClassName == SequencerNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getInt("numInputs") => int numInputs;
+
+                // Instantiate node
+                SequencerNode sequencer(numInputs, 4.);
+                sequencer.setNodeID(nodeID);
+                @(posX, posY, posZ) => sequencer.pos;
+
+                // Handle input data type mappings and menu selections
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+                for (int idx; idx < inputMenuDataKeys.size(); idx++) {
+                    inputMenuData.getInt(idx) @=> int sequencerInputTypeIdx;
+
+                    // Skip if no mapping
+                    if (sequencerInputTypeIdx == -1) continue;
+
+                    // Get sequencer input type
+                    SequencerInputType.allTypes[sequencerInputTypeIdx] @=> Enum sequencerInputType;
+
+                    // Update menu selection
+                    sequencer.nodeInputsBox.menus[idx].updateSelectedEntry(sequencerInputTypeIdx);
+
+                    // Update input data type mapping
+                    sequencer.nodeInputsBox.setDataTypeMapping(sequencerInputType, idx);
+                }
+
+                // Handle sequence data
+                nodeData.get("sequenceData")$HashMap @=> HashMap sequenceList;
+                sequenceList.intKeys() @=> int sequenceListKeys[];
+                sequenceListKeys.sort();
+
+                // Iterate through all sequences
+                for (int sequenceIdx; sequenceIdx < sequenceListKeys.size(); sequenceIdx++) {
+                    sequenceList.get(sequenceIdx)$HashMap @=> HashMap sequenceData;
+                    sequenceData.intKeys() @=> int sequenceDataKeys[];
+                    sequenceDataKeys.sort();
+
+                    // Iterate through all records
+                    Sequence currSequence;
+                    for (int recordIdx; recordIdx < sequenceDataKeys.size(); recordIdx++) {
+                        sequenceData.get(recordIdx)$HashMap @=> HashMap recordData;
+                        recordData.getInt("data1") => int data1;
+                        recordData.getInt("data2") => int data2;
+                        recordData.getInt("data3") => int data3;
+                        recordData.getFloat("timeSinceLast") => float timeSinceLast;
+                        MidiRecord record(data1, data2, data3, timeSinceLast::samp);
+                        currSequence.addRecord(record);
+                    }
+                    sequencer.sequences << currSequence;
+                }
+
+
+                // Run sequencer
+                spork ~ sequencer.processInputs();
+
+                // Add node to screen
+                this.addNode(sequencer);
             } else if (nodeClassName == TransportNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getFloat("posX") => float posX;
@@ -901,6 +971,22 @@ public class NodeManager {
                     -1 => this.currHeldNodeIdx;
                     0 => this.nodeHeld;
                     null => this.currHeldNode;
+                }
+            }
+
+            // Handle scroll wheel
+            GWindow.scrollY() => float mouseWheelScrollY;
+            if (mouseWheelScrollY != 0) {
+                mouseWheelScrollY / 10. => float translateVal;
+                if (GWindow.key(GWindow.Key_LeftAlt)) {
+                    GG.scene().camera().translateX(translateVal);
+                    this.moveCameraEvent.set(translateVal, 0.);
+                    this.moveCameraEvent.signal();
+                }
+                else {
+                    GG.scene().camera().translateY(translateVal);
+                    this.moveCameraEvent.set(0., translateVal);
+                    this.moveCameraEvent.signal();
                 }
             }
 

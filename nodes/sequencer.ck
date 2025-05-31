@@ -157,6 +157,29 @@ public class SequencerNode extends Node {
         }
         data.set("inputMenuData", inputMenuData);
 
+        // Sequence data
+        HashMap allSequenceData;
+        for (int sequenceIdx; sequenceIdx < this.sequences.size(); sequenceIdx++) {
+            this.sequences[sequenceIdx] @=> Sequence currSequence;
+            currSequence.getRecords() @=> MidiRecord records[];
+
+            HashMap sequenceData;
+            for (int recordIdx; recordIdx < records.size(); recordIdx++) {
+                records[recordIdx] @=> MidiRecord record;
+
+                HashMap recordData;
+                recordData.set("data1", record.data1);
+                recordData.set("data2", record.data2);
+                recordData.set("data3", record.data3);
+                recordData.set("timeSinceLast", record.timeSinceLast / 1::samp);
+
+                sequenceData.set(recordIdx, recordData);
+            }
+
+            allSequenceData.set(sequenceIdx, sequenceData);
+        }
+        data.set("sequenceData", allSequenceData);
+
         return data;
     }
 }

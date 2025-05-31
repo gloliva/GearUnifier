@@ -10,6 +10,7 @@ public class AddNodeEvent extends Event {
     }
 }
 
+
 public class UpdateNumberEntryBoxEvent extends Event {
     int numberBoxIdx;
     int numberBoxValue;
@@ -19,5 +20,16 @@ public class UpdateNumberEntryBoxEvent extends Event {
         numberBoxIdx => this.numberBoxIdx;
         numberBoxValue => this.numberBoxValue;
         numberBoxFloatValue => this.numberBoxFloatValue;
+    }
+}
+
+
+public class MoveCameraEvent extends Event {
+    float translateX;
+    float translateY;
+
+    fun void set(float x, float y) {
+        x => this.translateX;
+        y => this.translateY;
     }
 }

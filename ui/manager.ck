@@ -20,9 +20,15 @@ public class UIManager {
 
     // Events
     AddNodeEvent @ addNodeEvent;
+    MoveCameraEvent @ moveCameraEvent;
 
-    fun @construct(AddNodeEvent addNodeEvent) {
+    fun @construct(AddNodeEvent addNodeEvent, MoveCameraEvent moveCameraEvent) {
         addNodeEvent @=> this.addNodeEvent;
+        moveCameraEvent @=> this.moveCameraEvent;
+
+        // Pos
+        1 => this.topMenuBar.posZ;
+        1 => this.bottomMenuBar.posZ;
 
         // Scale
         0.25 => this.topMenuBar.scaY;
@@ -47,7 +53,7 @@ public class UIManager {
         this.audioMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.audioMenu.sca;
-        0.201 => this.audioMenu.posZ;
+        1.201 => this.audioMenu.posZ;
         this.audioMenu --> GG.scene();
     }
 
@@ -59,7 +65,7 @@ public class UIManager {
         this.midiInMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.midiInMenu.sca;
-        0.201 => this.midiInMenu.posZ;
+        1.201 => this.midiInMenu.posZ;
         this.midiInMenu --> GG.scene();
     }
 
@@ -71,7 +77,7 @@ public class UIManager {
         this.midiOutMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.midiOutMenu.sca;
-        0.201 => this.midiOutMenu.posZ;
+        1.201 => this.midiOutMenu.posZ;
         this.midiOutMenu --> GG.scene();
     }
 
@@ -83,7 +89,7 @@ public class UIManager {
         this.oscMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.oscMenu.sca;
-        0.201 => this.oscMenu.posZ;
+        1.201 => this.oscMenu.posZ;
         this.oscMenu --> GG.scene();
     }
 
@@ -95,7 +101,7 @@ public class UIManager {
         this.sequencerMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.sequencerMenu.sca;
-        0.201 => this.sequencerMenu.posZ;
+        1.201 => this.sequencerMenu.posZ;
         this.sequencerMenu --> GG.scene();
     }
 
@@ -107,7 +113,7 @@ public class UIManager {
         this.effectsMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.effectsMenu.sca;
-        0.201 => this.effectsMenu.posZ;
+        1.201 => this.effectsMenu.posZ;
         this.effectsMenu --> GG.scene();
     }
 
@@ -119,7 +125,7 @@ public class UIManager {
         this.utilsMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.utilsMenu.sca;
-        0.201 => this.utilsMenu.posZ;
+        1.201 => this.utilsMenu.posZ;
         this.utilsMenu --> GG.scene();
     }
 
@@ -225,6 +231,26 @@ public class UIManager {
                 3 * (utilsMenuWidth + menuBuffer) => this.utilsMenu.posX;
                 this.topMenuBar.posY() => this.utilsMenu.posY;
             }
+        }
+    }
+
+    fun void translate() {
+        while (true) {
+            this.moveCameraEvent => now;
+            @(this.moveCameraEvent.translateX, this.moveCameraEvent.translateY, 0.) => vec3 translatePos;
+
+            // Move UI bars
+            translatePos => this.topMenuBar.translate;
+            translatePos => this.bottomMenuBar.translate;
+
+            // Move UI menus
+            translatePos => this.audioMenu.translate;
+            translatePos => this.midiInMenu.translate;
+            translatePos => this.midiOutMenu.translate;
+            translatePos => this.oscMenu.translate;
+            translatePos => this.effectsMenu.translate;
+            translatePos => this.sequencerMenu.translate;
+            translatePos => this.utilsMenu.translate;
         }
     }
 
