@@ -321,6 +321,7 @@ public class NodeManager {
 
                 // Handle output data type mappings and menu selections
                 nodeData.get("outputMenuData")$HashMap @=> HashMap outputMenuData;
+                nodeData.get("outputNumberBoxData")$HashMap @=> HashMap outputNumberBoxData;
                 outputMenuData.intKeys() @=> int outputMenuDataKeys[];
                 outputMenuDataKeys.sort();
                 for (int idx; idx < outputMenuDataKeys.size(); idx++) {
@@ -332,8 +333,16 @@ public class NodeManager {
                     // Update menu selection
                     midiIn.nodeOutputsBox.menus[idx].updateSelectedEntry(midiDataTypeIdx);
 
+                    // Handle number entry box if needed
+                    0 => int voiceIdx;
+                    if (midiIn.nodeOutputsBox.hasNumberBox(midiDataType.id)) {
+                        midiIn.nodeOutputsBox.showNumberBox(idx);
+                        outputNumberBoxData.getInt(idx) => voiceIdx;
+                        midiIn.nodeOutputsBox.numberBoxes[idx].set(voiceIdx);
+                    }
+
                     // Update output data type mapping
-                    midiIn.outputDataTypeIdx(midiDataType, 0, idx);
+                    midiIn.outputDataTypeIdx(midiDataType, voiceIdx, idx);
                 }
 
                 // Handle visibility

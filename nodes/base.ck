@@ -514,6 +514,7 @@ public class ContentBox extends GGen {
     1 => int active;
 }
 
+
 public class NameBox extends ContentBox {
     GText nodeName;
 

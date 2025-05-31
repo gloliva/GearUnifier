@@ -76,7 +76,7 @@ public class NumberEntryBox extends GGen {
             return 0;
         }
 
-        if (this.numberChars.length() == 0 && (this.numberChars == "-" || this.numberChars == ".")) return 0;
+        if (this.numberChars.length() == 0 || (this.numberChars == "-" || this.numberChars == ".")) return 0;
 
         return Std.atoi(this.numberChars);
     }
@@ -86,7 +86,7 @@ public class NumberEntryBox extends GGen {
             return 0.;
         }
 
-        if (this.numberChars.length() == 0 && (this.numberChars == "-" || this.numberChars == ".")) return 0.;
+        if (this.numberChars.length() == 0 || (this.numberChars == "-" || this.numberChars == ".")) return 0.;
 
         return Std.atof(this.numberChars);
     }

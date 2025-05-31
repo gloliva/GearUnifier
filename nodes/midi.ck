@@ -336,7 +336,6 @@ public class MidiInNode extends MidiNode {
 
     // Sequencing
     SequencerNode @ sequencer;
-    MidiRecorder @ recorder;
 
     // Events
     UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
@@ -765,13 +764,21 @@ public class MidiInNode extends MidiNode {
         }
         data.set("inputMenuData", inputMenuData);
 
-        // Get output menu data
+        // Get output menu and numberBox data
         HashMap outputMenuData;
+        HashMap outputNumberBoxData;
         for (int idx; idx < this.nodeOutputsBox.menus.size(); idx++) {
+            // Menu data
             this.nodeOutputsBox.menus[idx] @=> DropdownMenu menu;
             outputMenuData.set(idx, menu.getSelectedEntry().id);
+
+            // NUmberBox data
+            this.nodeOutputsBox.numberBoxes[idx] @=> NumberEntryBox numberBox;
+            outputNumberBoxData.set(idx, numberBox.getInt());
+
         }
         data.set("outputMenuData", outputMenuData);
+        data.set("outputNumberBoxData", outputNumberBoxData);
 
         return data;
     }
