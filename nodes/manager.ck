@@ -125,7 +125,7 @@ public class NodeManager {
             addNodeEvent => now;
             if (addNodeEvent.nodeType == NodeType.MIDI_IN) {
                 addNodeEvent.menuIdx => int midiDeviceID;
-                MidiInNode midiIn(midiDeviceID, 0, 3);
+                MidiInNode midiIn(midiDeviceID, 0, 1, 3);
                 this.addNode(midiIn);
                 spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
                 spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
@@ -278,6 +278,8 @@ public class NodeManager {
             nodes.get(idx) @=> HashMap nodeData;
             nodeData.getStr("nodeClass") => string nodeClassName;
 
+            <<< "Node class", nodeClassName, "Node name", nodeData.getStr("nodeID") >>>;
+
             // Handle based on node class
             if (nodeClassName == MidiInNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
@@ -285,6 +287,7 @@ public class NodeManager {
                 nodeData.getInt("channel") => int channel;
                 nodeData.getInt("synthMode") => int synthMode;
                 nodeData.getInt("latch") => int latch;
+                nodeData.getInt("numInputs") => int numInputs;
                 nodeData.getInt("numOutputs") => int numOutputs;
                 nodeData.getInt("optionsActive") => int optionsActive;
                 nodeData.getInt("inputsActive") => int inputsActive;
@@ -296,7 +299,7 @@ public class NodeManager {
                 nodeData.getFloat("posZ") => float posZ;
 
                 // Create and add node
-                MidiInNode midiIn(midiID, channel, numOutputs);
+                MidiInNode midiIn(midiID, channel, numInputs, numOutputs);
                 midiIn.setNodeID(nodeID);
                 midiIn.setChannel(channel);
                 midiIn.synthMode(synthMode);
