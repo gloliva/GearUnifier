@@ -119,7 +119,7 @@ public class UIManager {
     }
 
     fun void setEffectsUI() {
-        new DropdownMenu([new Enum(0, "Wavefolder")]) @=> this.effectsMenu;
+        new DropdownMenu([new Enum(0, "Wavefolder"), new Enum(1, "Distortion")]) @=> this.effectsMenu;
 
         // Set name and scale
         this.effectsMenu.setSelectedName("Effects");
@@ -343,6 +343,7 @@ public class UIManager {
             // Move Bottom UI elements
             translatePos => this.saveButton.translate;
             translatePos => this.loadButton.translate;
+            translatePos => this.newButton.translate;
             translatePos => this.saveFilenameEntryBox.translate;
         }
     }
@@ -445,6 +446,7 @@ public class UIManager {
 
                         // Handle Node type for Effects
                         NodeType.WAVEFOLDER => int nodeType;
+                        if (menuEntry.id == 1) NodeType.DISTORTION => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }

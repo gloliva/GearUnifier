@@ -24,6 +24,7 @@ public class NodeType {
 
     // Effects
     50 => static int WAVEFOLDER;
+    51 => static int DISTORTION;
 
     // Utilities
     60 => static int SCALE;

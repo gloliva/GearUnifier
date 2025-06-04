@@ -485,6 +485,12 @@ public class MidiInNode extends MidiNode {
         0. => this.nodeOutputsBox.outs[triggerOutIdx].next;
     }
 
+    fun void clear() {
+        this.heldNotes.reset();
+        this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
+        if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+    }
+
     fun void arpeggiate() {
         while (this.heldNotes.size()) {
             0 => int idx;
@@ -608,6 +614,10 @@ public class MidiInNode extends MidiNode {
                 record.data3 => msg.data3;
 
                 this.processMidiMsg(msg);
+                if (!this.sequencer.isRunning()) {
+                    this.clear();
+                    return;
+                }
             }
         }
     }
@@ -720,7 +730,7 @@ public class MidiInNode extends MidiNode {
             }
 
             // Set processed status
-            1 => midiProcessed;
+            // 1 => midiProcessed;
         }
 
         // CC messages
@@ -732,7 +742,7 @@ public class MidiInNode extends MidiNode {
             if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
 
             // Set processed status
-            1 => midiProcessed;
+            // 1 => midiProcessed;
         }
 
         return midiProcessed;

@@ -3,28 +3,34 @@
 @import "../base.ck"
 @import "HashMap"
 
-public class WavefolderInputType {
+
+public class DistortionInputType {
     new Enum(0, "Wave In") @=> static Enum WAVE_IN;
-    new Enum(1, "Threshold") @=> static Enum THRESHOLD;
+    new Enum(1, "Factor") @=> static Enum FACTOR;
     new Enum(2, "Gain") @=> static Enum GAIN;
     new Enum(3, "Mix") @=> static Enum MIX;
 
     [
-        WavefolderInputType.WAVE_IN,
-        WavefolderInputType.THRESHOLD,
-        WavefolderInputType.GAIN,
-        WavefolderInputType.MIX,
+        DistortionInputType.WAVE_IN,
+        DistortionInputType.FACTOR,
+        DistortionInputType.GAIN,
+        DistortionInputType.MIX,
     ] @=> static Enum allTypes[];
 }
 
 
-public class Wavefolder extends Chugen {
-    0.6 => float threshold;
-    20.0 => float scale;
+public class Distortion extends Chugen {
+    2 => int type;
+    2. => float scale;
+    2. => float factor;
     0.5 => float mix;
 
-    fun void setThreshold(float threshold) {
-        threshold => this.threshold;
+    fun void setType(int type) {
+        type => this.type;
+    }
+
+    fun void setFactor(float factor) {
+        factor => this.factor;
     }
 
     fun void setScale(float scale) {
@@ -36,91 +42,93 @@ public class Wavefolder extends Chugen {
     }
 
     fun float tick(float in) {
-        return this.shapeOne(in) * this.mix + this.shapeThree(in) * (1 - this.mix);
-    }
+        in => float distortedValue;
 
-    fun float shapeOne(float in) {
-        in * scale => float x;
-
-        4 * threshold => float period;
-        (x + threshold) % period => x;
-        if (x < 2 * threshold) {
-            return x - threshold;
-        } else {
-            return 3 * threshold - x;
-        }
-    }
-
-    fun float shapeTwo(float in) {
-        in * scale => float x;
-        return Math.tanh(x);
-    }
-
-    fun float shapeThree(float in) {
-        in * scale => float x;
-
-        this.threshold => float currThreshold;
-
-        repeat(5) {
-            if (x > currThreshold) {
-                2 * currThreshold - x => x;
-            } else if (x < -currThreshold) {
-                -2 * currThreshold - x => x;
-            }
-
-            currThreshold / 2 => currThreshold;
+        if (this.type == 0) {
+            this.halfRect(in) => distortedValue;
+        } else if (this.type == 1) {
+            this.fullRect(in) => distortedValue;
+        } else if (this.type == 2) {
+            this.sintan(in) => distortedValue;
+        } else if (this.type == 3) {
+            this.modDistort(in) => distortedValue;
         }
 
-        return x;
+        return distortedValue;
+
+        // return (in * this.mix) + (distortedValue * (1 - this.mix));
     }
 
-    fun float shapeFour(float in) {
-        // Scale the input (boost to exceed threshold)
-        in * scale => float x;
+    fun float mod(float n, float d) {
+        Math.fmod(n, d) => n;
+        if (n < 0.) n + d => n;
+        return n;
+    }
 
-        4.0 * threshold => float period;
+    fun float modDistort(float x) {
+        return Math.fabs(this.mod(2 * this.scale * x + 2, this.factor) - 2) - 1;
+    }
 
-        // Triangle folding: symmetric around ±threshold
-        // Step 1: Shift, mod, center
-        (((x + threshold) % period + period) % period - 2.0 * threshold) => x;
+    fun float modDistort2(float x) {
+        return this.mod(this.scale * x + 1, 2) - 1;
+    }
 
-        // Step 2: Reflect to triangle shape
-        return threshold - Math.fabs(x);
+    fun float sintan(float x) {
+        return Math.sin(x * this.scale) * Math.tanh(x * this.scale);
+    }
+
+    fun float halfRect(float x) {
+        x * this.scale => x;
+
+        if (x > 0) return x;
+
+        return 0.;
+    }
+
+    fun float cube(float x) {
+        return Math.pow(x * this.scale, 3);
+    }
+
+    fun float fullRect(float x) {
+        x * this.scale => x;
+        return Math.fabs(x);
+    }
+
+    fun float exponential(float x, float factor) {
+        x * this.scale => x;
+        return Math.sgn(x) * (1.0 - Math.exp(-1 * factor * Math.fabs(x)));
+    }
+
+    fun float otherExp(float x) {
+        x * this.scale => x;
+        return Math.sgn(x) * (1.0 - Math.exp(-1 * Math.pow(x, 2) / Math.fabs(x)));
     }
 }
 
 
-public class WavefolderNode extends Node {
-    Wavefolder wavefolder;
-
-    // Data handling
-    int inputDataMap[0];
+public class DistortionNode extends Node {
+    Distortion distortion;
 
     fun @construct() {
-        WavefolderNode(1, 4.);
+        DistortionNode(1, 4.);
     }
 
     fun @construct(int numInputs, float xScale) {
         // Set node ID and name
-        "Wavefolder Node" => this.name;
+        "Distortion Node" => this.name;
         this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
 
         // Node name box
-        new NameBox("Wavefolder", xScale) @=> this.nodeNameBox;
-
-        // Create options box
+        new NameBox("Distortion", xScale) @=> this.nodeNameBox;
 
         // Create inputs box
         new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
-        new IOBox(numInputs, WavefolderInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
-        for (0 => int i; i < WavefolderInputType.allTypes.size(); i++) {
-            this.inputDataMap << -1;
-        }
+        new IOBox(numInputs, DistortionInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
 
         // Create outputs box
         new IOBox(1, [new Enum(0, "Wave Out")], IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
         this.nodeOutputsBox.menus[0].updateSelectedEntry(0);
-        this.nodeOutputsBox.jacks[0].setUgen(this.wavefolder);
+        this.nodeOutputsBox.jacks[0].setUgen(this.distortion);
 
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -146,8 +154,8 @@ public class WavefolderNode extends Node {
             return;
         }
 
-        if (dataType == WavefolderInputType.WAVE_IN.id) {
-            ugen => this.wavefolder;
+        if (dataType == DistortionInputType.WAVE_IN.id) {
+            ugen => this.distortion;
         }
 
     }
@@ -163,14 +171,14 @@ public class WavefolderNode extends Node {
         this.nodeInputsBox.removeDataTypeMapping(inputJackIdx);
 
         // Remove any additional mappings
-        if (dataType == WavefolderInputType.WAVE_IN.id) {
-            ugen =< this.wavefolder;
+        if (dataType == DistortionInputType.WAVE_IN.id) {
+            ugen =< this.distortion;
         }
     }
 
     fun void addJack(int ioType) {
          if (ioType == IOType.INPUT) {
-            this.nodeInputsBox.addJack(WavefolderInputType.allTypes);
+            this.nodeInputsBox.addJack(DistortionInputType.allTypes);
         }
         this.updatePos();
     }
@@ -201,12 +209,12 @@ public class WavefolderNode extends Node {
                     ugen.last() => value;
                 }
 
-                if (dataType == WavefolderInputType.THRESHOLD.id) {
-                    Std.scalef(value, -0.5, 0.5, 0.05, 0.9) => this.wavefolder.setThreshold;
-                } else if (dataType == WavefolderInputType.GAIN.id) {
-                    Std.scalef(value, -0.5, 0.5, 5., 40.) => this.wavefolder.setScale;
-                } else if (dataType == WavefolderInputType.MIX.id) {
-                    Std.scalef(value, -0.5, 0.5, 0., 1.) => this.wavefolder.setMix;
+                if (dataType == DistortionInputType.FACTOR.id) {
+                    Std.scalef(value, -0.5, 0.5, 1., 6.) => this.distortion.setFactor;
+                } else if (dataType == DistortionInputType.GAIN.id) {
+                    Std.scalef(value, -0.5, 0.5, 3., 50.) => this.distortion.setScale;
+                } else if (dataType == DistortionInputType.MIX.id) {
+                    Std.scalef(value, -0.5, 0.5, 0., 1.) => this.distortion.setMix;
                 }
             }
             10::ms => now;
@@ -233,9 +241,9 @@ public class WavefolderNode extends Node {
         data.set("inputMenuData", inputMenuData);
 
         // Wavefolder parameters
-        data.set("threshold", this.wavefolder.threshold);
-        data.set("scale", this.wavefolder.scale);
-        data.set("mix", this.wavefolder.mix);
+        data.set("type", this.distortion.type);
+        data.set("factor", this.distortion.factor);
+        data.set("mix", this.distortion.mix);
 
         return data;
     }

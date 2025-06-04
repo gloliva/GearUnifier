@@ -7,6 +7,7 @@
 @import "midi.ck"
 @import "sequencer.ck"
 @import "transport.ck"
+@import "effects/distortion.ck"
 @import "effects/wavefolder.ck"
 @import "utils/scale.ck"
 
@@ -142,6 +143,11 @@ public class NodeManager {
                 this.addNode(wavefolder);
                 spork ~ wavefolder.processInputs() @=> Shred @ wavefolderProcessInputsShred;
                 wavefolder.addShreds([wavefolderProcessInputsShred]);
+            } else if (addNodeEvent.nodeType == NodeType.DISTORTION) {
+                DistortionNode distortion();
+                spork ~ distortion.processInputs() @=> Shred @ distortionProcessInputsShred;
+                this.addNode(distortion);
+                distortion.addShreds([distortionProcessInputsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 SequencerNode sequencer();
                 spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
@@ -423,6 +429,44 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(wavefolder);
+
+            } else if (nodeClassName == DistortionNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getInt("numInputs") => int numInputs;
+
+                DistortionNode distortion(numInputs, 4.);
+                distortion.setNodeID(nodeID);
+                @(posX, posY, posZ) => distortion.pos;
+
+                // Handle input data type mappings and menu selections
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+                for (int idx; idx < inputMenuDataKeys.size(); idx++) {
+                    inputMenuData.getInt(idx) @=> int distortionInputTypeIdx;
+
+                    // Skip if no mapping
+                    if (distortionInputTypeIdx == -1) continue;
+
+                    // Get distortion input type
+                    DistortionInputType.allTypes[distortionInputTypeIdx] @=> Enum distortionInputType;
+
+                    // Update menu selection
+                    distortion.nodeInputsBox.menus[idx].updateSelectedEntry(distortionInputTypeIdx);
+
+                    // Update input data type mapping
+                    distortion.nodeInputsBox.setDataTypeMapping(distortionInputType, idx);
+                }
+
+                // Run distortion
+                spork ~ distortion.processInputs() @=> Shred @ distortionProcessInputsShred;
+                distortion.addShreds([distortionProcessInputsShred]);
+
+                // Add node to screen
+                this.addNode(distortion);
             } else if (nodeClassName == SequencerNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getFloat("posX") => float posX;
@@ -663,6 +707,13 @@ public class NodeManager {
 
                                 // Set input data type mapping for Wavefolder node
                                 wavefolder.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+
+                            if (Type.of(node).name() == DistortionNode.typeOf().name()) {
+                                node$DistortionNode @=> DistortionNode distortion;
+
+                                // Set input data type mapping for Wavefolder node
+                                distortion.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
                             }
 
                             // Sequencer nodes
