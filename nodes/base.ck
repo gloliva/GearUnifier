@@ -25,6 +25,7 @@ public class NodeType {
     // Effects
     50 => static int WAVEFOLDER;
     51 => static int DISTORTION;
+    52 => static int DELAY;
 
     // Utilities
     60 => static int SCALE;
@@ -975,6 +976,7 @@ public class OptionsBox extends ContentBox {
     GText optionNames[0];
     int numOptions;
     int menuOpen;
+    int menuSelected;
     int entryBoxSelected;
 
     DropdownMenu @ selectedMenu;

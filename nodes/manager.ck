@@ -8,6 +8,7 @@
 @import "sequencer.ck"
 @import "transport.ck"
 @import "effects/distortion.ck"
+@import "effects/delay.ck"
 @import "effects/wavefolder.ck"
 @import "utils/scale.ck"
 
@@ -148,6 +149,12 @@ public class NodeManager {
                 spork ~ distortion.processInputs() @=> Shred @ distortionProcessInputsShred;
                 this.addNode(distortion);
                 distortion.addShreds([distortionProcessInputsShred]);
+            } else if (addNodeEvent.nodeType == NodeType.DELAY) {
+                DelayNode delay();
+                spork ~ delay.processInputs() @=> Shred @ delayProcessInputsShred;
+                spork ~ delay.processOptions() @=> Shred @ delayProcessOptionsShred;
+                this.addNode(delay);
+                delay.addShreds([delayProcessInputsShred, delayProcessOptionsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 SequencerNode sequencer();
                 spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
@@ -437,9 +444,21 @@ public class NodeManager {
                 nodeData.getFloat("posZ") => float posZ;
                 nodeData.getInt("numInputs") => int numInputs;
 
+                // Options
+                nodeData.getInt("mode") => int mode;
+                nodeData.getInt("dist1Type") => int dist1Type;
+                nodeData.getInt("dist2Type") => int dist2Type;
+
                 DistortionNode distortion(numInputs, 4.);
                 distortion.setNodeID(nodeID);
                 @(posX, posY, posZ) => distortion.pos;
+
+                mode => distortion.setMode;
+                dist1Type => distortion.setDist1Type;
+                dist2Type => distortion.setDist2Type;
+                (distortion.nodeOptionsBox$DistortionOptionsBox).mixMenu.updateSelectedEntry(mode);
+                (distortion.nodeOptionsBox$DistortionOptionsBox).dist1Menu.updateSelectedEntry(dist1Type);
+                (distortion.nodeOptionsBox$DistortionOptionsBox).dist2Menu.updateSelectedEntry(dist2Type);
 
                 // Handle input data type mappings and menu selections
                 nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
@@ -467,6 +486,45 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(distortion);
+            } else if (nodeClassName == DelayNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getInt("numInputs") => int numInputs;
+
+                DelayNode delay(numInputs, 4.);
+                delay.setNodeID(nodeID);
+                @(posX, posY, posZ) => delay.pos;
+
+                // Handle input data type mappings and menu selections
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+                for (int idx; idx < inputMenuDataKeys.size(); idx++) {
+                    inputMenuData.getInt(idx) @=> int delayInputTypeIdx;
+
+                    // Skip if no mapping
+                    if (delayInputTypeIdx == -1) continue;
+
+                    // Get wavefolder input type
+                    DelayInputType.allTypes[delayInputTypeIdx] @=> Enum delayInputType;
+
+                    // Update menu selection
+                    delay.nodeInputsBox.menus[idx].updateSelectedEntry(delayInputTypeIdx);
+
+                    // Update input data type mapping
+                    delay.nodeInputsBox.setDataTypeMapping(delayInputType, idx);
+                }
+
+                // Run delay
+                spork ~ delay.processInputs() @=> Shred @ delayProcessInputsShred;
+                spork ~ delay.processOptions() @=> Shred @ delayProcessOptionsShred;
+                delay.addShreds([delayProcessInputsShred, delayProcessOptionsShred]);
+
+                // Add node to screen
+                this.addNode(delay);
+
             } else if (nodeClassName == SequencerNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getFloat("posX") => float posX;
@@ -714,6 +772,13 @@ public class NodeManager {
 
                                 // Set input data type mapping for Wavefolder node
                                 distortion.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+
+                            if (Type.of(node).name() == DelayNode.typeOf().name()) {
+                                node$DelayNode @=> DelayNode delay;
+
+                                // Set input data type mapping for Wavefolder node
+                                delay.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
                             }
 
                             // Sequencer nodes
@@ -1182,26 +1247,6 @@ public class NodeManager {
 
             // Check if CMD+S is pressed
             if (GWindow.key(GWindow.Key_LeftSuper) && GWindow.keyDown(GWindow.Key_S)) {
-                // <<< "Saving Data" >>>;
-                // // Serialize the current state of the nodes
-                // HashMap nodes;
-                // HashMap connections;
-
-                // for (int idx; idx < this.nodesOnScreen.size(); idx++) {
-                //     this.nodesOnScreen[idx] @=> Node node;
-                //     nodes.set(idx, node.serialize());
-                // }
-
-                // for (int idx; idx < this.nodeConnections.size(); idx++) {
-                //     this.nodeConnections[idx] @=> Connection conn;
-                //     connections.set(idx, conn.serialize());
-                // }
-
-                // HashMap data;
-                // data.set("nodes", nodes);
-                // data.set("connections", connections);
-
-                // SaveHandler.save("autosave.json", data);
                 this.save("autosave");
             }
 
