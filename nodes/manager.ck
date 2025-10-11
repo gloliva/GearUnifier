@@ -252,6 +252,25 @@ public class NodeManager {
         }
     }
 
+    fun int midiDeviceConnected(string deviceName, string nodeClassName) {
+        Enum connectedMidiDevices[];
+
+        if (nodeClassName == MidiInNode.typeOf().name()) {
+            this.midiInDevices @=> connectedMidiDevices;
+        } else {
+            <<< "Error retrieving connected MIDI devices with NodeType", nodeClassName >>>;
+            return false;
+        }
+
+        for (Enum midiDevice : connectedMidiDevices) {
+            if (deviceName == midiDevice.name) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     fun void save(string filename) {
         <<< "Saving Data" >>>;
         // Serialize the current state of the nodes
@@ -297,6 +316,7 @@ public class NodeManager {
             if (nodeClassName == MidiInNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getInt("midiID") => int midiID;
+                nodeData.getStr("midiName") => string midiName;
                 nodeData.getInt("channel") => int channel;
                 nodeData.getInt("synthMode") => int synthMode;
                 nodeData.getInt("latch") => int latch;
@@ -310,6 +330,17 @@ public class NodeManager {
                 nodeData.getFloat("posX") => float posX;
                 nodeData.getFloat("posY") => float posY;
                 nodeData.getFloat("posZ") => float posZ;
+
+                // Check if Midi Device is connected
+                if (!this.midiDeviceConnected(midiName, nodeClassName)) {
+                    // If Midi Device does not exist, clear the screen
+                    this.clearScreen();
+
+                    // notify the user that load failed
+                    // TODO: replace this print statement with something better
+                    <<< "Load Error: Midi IN device with name", midiName, "is not connected." >>>;
+                    return;
+                }
 
                 // Create and add node
                 MidiInNode midiIn(midiID, channel, numInputs, numOutputs);
