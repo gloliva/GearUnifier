@@ -126,8 +126,8 @@ public class NodeManager {
         while (true) {
             addNodeEvent => now;
             if (addNodeEvent.nodeType == NodeType.MIDI_IN) {
-                addNodeEvent.menuIdx => int midiDeviceID;
-                MidiInNode midiIn(midiDeviceID, 0, 1, 3);
+                addNodeEvent.menuName => string midiDeviceName;
+                MidiInNode midiIn(midiDeviceName, 0, 1, 3);
                 this.addNode(midiIn);
                 spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
                 spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
@@ -343,7 +343,7 @@ public class NodeManager {
                 }
 
                 // Create and add node
-                MidiInNode midiIn(midiID, channel, numInputs, numOutputs);
+                MidiInNode midiIn(midiName, channel, numInputs, numOutputs);
                 midiIn.setNodeID(nodeID);
                 midiIn.setChannel(channel);
                 midiIn.synthMode(synthMode);

@@ -340,14 +340,14 @@ public class MidiInNode extends MidiNode {
     // Events
     UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
 
-    fun @construct(int deviceID, int channel, int numInputs, int numOutputs) {
-        MidiInNode(deviceID, channel, numInputs, numOutputs, 4.);
+    fun @construct(string deviceName, int channel, int numInputs, int numOutputs) {
+        MidiInNode(deviceName, channel, numInputs, numOutputs, 4.);
     }
 
-    fun @construct(int deviceID, int channel, int numInputs, int numStartJacks, float xScale) {
+    fun @construct(string deviceName, int channel, int numInputs, int numStartJacks, float xScale) {
         // Attempt to connect
-        if ( !this.m.open(deviceID) ) {
-            <<< "Unable to connect to MIDI In device with ID", deviceID >>>;
+        if ( !this.m.open(deviceName) ) {
+            <<< "Unable to connect to MIDI In device with name:", deviceName >>>;
             return;
         }
 
