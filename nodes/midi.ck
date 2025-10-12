@@ -20,6 +20,12 @@
 @import "HashMap"
 
 
+public class MidiConstants {
+    -1 => static int ALL_CHANNELS;
+    16 => static int NUM_CHANNELS;
+}
+
+
 public class MidiMessage {
     0x80 => static int NOTE_OFF;
     0x90 => static int NOTE_ON;
@@ -97,7 +103,7 @@ public class MidiOptionsBox extends OptionsBox {
         // Channel Menu
         Enum channelMenuItems[0];
         channelMenuItems << new Enum(-1, "All");
-        for (int idx; idx < 16; idx++) {
+        for (int idx; idx < MidiConstants.NUM_CHANNELS; idx++) {
             channelMenuItems << new Enum(idx, Std.itoa(idx + 1));
         }
 
@@ -302,7 +308,8 @@ public class MidiNode extends Node {
     }
 
     fun void setChannel(int channel) {
-        if (channel < 0 || channel >= 16) return;
+        // -1 is "ALL" channels
+        if (channel < MidiConstants.ALL_CHANNELS || channel >= MidiConstants.NUM_CHANNELS) return;
 
         channel => this.channel;
     }
@@ -643,6 +650,16 @@ public class MidiInNode extends MidiNode {
         }
     }
 
+    fun int checkMidiStatus(int midiStatus, int msgType, int channel) {
+        // Check if MIDI Status corresponds to this Type (e.g. Note ON) and channel
+        // If MIDI Channel is "All", check if Status is between msgType (e.g. Note ON) and the next boundary (e.g. Polyphonic aftertouch)
+        if (midiStatus == msgType + channel || (channel == MidiConstants.ALL_CHANNELS && midiStatus >= msgType && midiStatus < msgType + MidiConstants.NUM_CHANNELS)) {
+            return true;
+        }
+
+        return false;
+    }
+
     fun int processMidiMsg(MidiMsg msg) {
         // Return status if MIDI message if processed by this channel
         0 => int midiProcessed;
@@ -651,7 +668,7 @@ public class MidiInNode extends MidiNode {
         msg.data1 => int midiStatus;
 
         // Note On
-        if (midiStatus == MidiMessage.NOTE_ON + this.channel) {
+        if (this.checkMidiStatus(midiStatus, MidiMessage.NOTE_ON, this.channel)) {
             msg.data2 => int noteNumber;
             this.heldNotes << noteNumber;
             msg.data3 => int velocity;
@@ -681,7 +698,7 @@ public class MidiInNode extends MidiNode {
             // Set processed status
             1 => midiProcessed;
         // Note off
-        } else if (midiStatus == MidiMessage.NOTE_OFF + this.channel) {
+        } else if (this.checkMidiStatus(midiStatus, MidiMessage.NOTE_OFF, this.channel)) {
             msg.data2 => int noteNumber;
             msg.data3 => int velocity;
 
@@ -723,18 +740,16 @@ public class MidiInNode extends MidiNode {
             // Set processed status
             1 => midiProcessed;
         // Polyphonic aftertouch
-        } else if (midiStatus == MidiMessage.POLYPHONIC_AFTERTOUCH + this.channel) {
+        } else if (this.checkMidiStatus(midiStatus, MidiMessage.POLYPHONIC_AFTERTOUCH, this.channel)) {
             this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
             if (aftertouchOutIdx != -1 && msg.data2 == this.heldNotes[-1]) {
                 Std.scalef(msg.data3, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
             }
 
             // Set processed status
-            // 1 => midiProcessed;
-        }
-
+            // 1 => midiProcessed;  // TODO: this is off right now so aftertouch values don't get recorded in sequences, at some point this should be changed
         // CC messages
-        if (midiStatus == MidiMessage.CONTROL_CHANGE + this.channel) {
+        } else if (this.checkMidiStatus(midiStatus, MidiMessage.CONTROL_CHANGE, this.channel)) {
             msg.data2 => int controllerNumber;
             msg.data3 => int controllerData;
 
