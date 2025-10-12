@@ -11,6 +11,9 @@ public class AddNodeEvent extends Event {
 }
 
 
+public class ButtonClicked extends Event {}
+
+
 public class UpdateNumberEntryBoxEvent extends Event {
     int numberBoxIdx;
     int numberBoxValue;

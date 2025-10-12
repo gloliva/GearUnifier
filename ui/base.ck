@@ -1,3 +1,6 @@
+@import "../events.ck"
+
+
 public class BorderedBox extends GGen {
     GCube box;
     GText text;
@@ -75,5 +78,26 @@ public class BorderedBox extends GGen {
 
     fun void setName(string n) {
         n => this.text.text;
+    }
+}
+
+
+public class Button extends BorderedBox {
+    ButtonClicked clickEvent;
+
+    fun @construct(string nameText, float xScale, float yScale) {
+        BorderedBox(nameText, xScale, yScale);
+
+        // Names
+        "Button" => this.name;
+    }
+
+    fun void clickOn() {
+        Color.DARKGRAY => this.box.color;
+        this.clickEvent.broadcast();
+    }
+
+    fun void clickOff() {
+        Color.GRAY => this.box.color;
     }
 }

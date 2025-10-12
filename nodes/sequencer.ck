@@ -114,6 +114,7 @@ public class SequencerNode extends Node {
                     ugen.last() => value;
                 }
 
+                // Start playback of recorded Midi messages
                 if (this.nodeInputsBox.getDataTypeMapping(idx) == SequencerInputType.RUN.id) {
                     if (value > 0 && !this.isRunning()) {
                         this.play();
@@ -122,6 +123,7 @@ public class SequencerNode extends Node {
                         this.stop();
                         <<< "Stop sequencer playback" >>>;
                     }
+                // Start recording messages from the connected Midi Node
                 } else if (this.nodeInputsBox.getDataTypeMapping(idx) == SequencerInputType.RECORD.id) {
                     // Check if turning recording on and not already recording
                     if (value > 0 && !this.recorder.isRecording()) {

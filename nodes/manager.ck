@@ -1,15 +1,13 @@
 // Imports
 @import "../saveHandler.ck"
 @import "../events.ck"
-@import "../ui/menu.ck"
+@import {"../ui/menu.ck", "../ui/popupBox.ck"}
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
 @import "sequencer.ck"
 @import "transport.ck"
-@import "effects/distortion.ck"
-@import "effects/delay.ck"
-@import "effects/wavefolder.ck"
+@import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import "utils/scale.ck"
 
 
@@ -26,6 +24,9 @@ public class NodeManager {
     // Menus
     int menuOpen;
     DropdownMenu @ currMenu;
+
+    // Popups
+    PopupMenu @ popupMenu;
 
     // Number Entry Box
     int numberBoxSelected;
@@ -337,8 +338,10 @@ public class NodeManager {
                     this.clearScreen();
 
                     // notify the user that load failed
-                    // TODO: replace this print statement with something better
-                    <<< "Load Error: Midi IN device with name", midiName, "is not connected." >>>;
+                    "Load Error: Midi IN device with name \"" + midiName + "\" is not connected." => string popupText;
+                    PopupMenu loadErrorMenu(popupText, 4, 2);
+                    loadErrorMenu @=> this.popupMenu;
+                    spork ~ loadErrorMenu.openAndWait();
                     return;
                 }
 
@@ -756,6 +759,16 @@ public class NodeManager {
 
             // Mouse Click Down on this frame
             if (GWindow.mouseLeftDown() == 1) {
+
+                // First check if there is a popupMenu open, which prevents all other activity
+                if (this.popupMenu != null && this.popupMenu.closed != 1) {
+                    if (this.popupMenu.mouseOverButton(mouseWorldPos)) {
+                        this.popupMenu.button.clickOn();
+                        me.yield();
+                        <<< "Button clicked on" >>>;
+                        continue;
+                    }
+                }
 
                 // If a menu is open, check if clicking on a menu entry item
                 // We check this here before checking nodes, because a dropdown menu
@@ -1208,6 +1221,12 @@ public class NodeManager {
 
             // Check if mouse left click is released
             if (GWindow.mouseLeftUp()) {
+
+                // If a popupMenu is closed, release the menu
+                if (this.popupMenu != null && this.popupMenu.closed == 1) {
+                    this.popupMenu.close();
+                    null => this.popupMenu;
+                }
 
                 // If a node was being held to move it, stop tracking it
                 if (this.nodeHeld) {
