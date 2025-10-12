@@ -300,6 +300,15 @@ public class NodeManager {
         filename + ".json" => filename;
         SaveHandler.load(filename) @=> HashMap data;
 
+        // Verify that loaded file exists, otherwise show an Error popupMenu
+        if (data == null) {
+            "Load Error: File \"" + filename + "\" does not exist." => string popupText;
+            PopupMenu fileLoadErrorMenu(popupText, 4, 2);
+            fileLoadErrorMenu @=> this.popupMenu;
+            spork ~ fileLoadErrorMenu.openAndWait();
+            return;
+        }
+
         // Load nodes and connections
         data.get("nodes") @=> HashMap nodes;
         data.get("connections") @=> HashMap connections;
@@ -338,10 +347,10 @@ public class NodeManager {
                     this.clearScreen();
 
                     // notify the user that load failed
-                    "Load Error: Midi IN device with name \"" + midiName + "\" is not connected." => string popupText;
-                    PopupMenu loadErrorMenu(popupText, 4, 2);
-                    loadErrorMenu @=> this.popupMenu;
-                    spork ~ loadErrorMenu.openAndWait();
+                    "Load Error: Midi In device with name \"" + midiName + "\" is not connected." => string popupText;
+                    PopupMenu midiLoadErrorMenu(popupText, 4, 2);
+                    midiLoadErrorMenu @=> this.popupMenu;
+                    spork ~ midiLoadErrorMenu.openAndWait();
                     return;
                 }
 
