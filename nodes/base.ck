@@ -1,7 +1,5 @@
-@import "../ui/base.ck"
-@import "../ui/menu.ck"
-@import "../ui/textBox.ck"
-@import "../events.ck"
+@import {"../ui/base.ck", "../ui/menu.ck", "../ui/textBox.ck"}
+@import {"../base.ck", "../events.ck"}
 @import "HashMap"
 
 
@@ -32,7 +30,7 @@ public class NodeType {
 }
 
 
-public class Node extends GGen {
+public class Node extends ClickableGGen {
     string nodeID;
     1 => int nodeActive;
     Shred activeShreds[0];
@@ -77,49 +75,6 @@ public class Node extends GGen {
         }
 
         0 => this.nodeActive;
-    }
-
-    fun int mouseOverBox(vec3 mouseWorldPos, GGen box) {
-        this.posX() + box.posX() * this.scaX() => float centerX;
-        this.posY() + box.posY() * this.scaY() => float centerY;
-        (box.scaX() * this.scaX()) / 2.0 => float halfW;
-        (box.scaY() * this.scaY()) / 2.0 => float halfH;
-
-        if (
-            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
-            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    fun int mouseOverBox(vec3 mouseWorldPos, GGen boxes[]) {
-        this.posX() => float centerX;
-        this.posY() => float centerY;
-        this.scaX() => float halfW;
-        this.scaY() => float halfH;
-
-        for (GGen box : boxes) {
-            centerX + (box.posX() * this.scaX()) => centerX;
-            centerY + (box.posY() * this.scaY()) => centerY;
-
-            halfW * box.scaX() => halfW;
-            halfH * box.scaY() => halfH;
-        }
-
-        halfW / 2. => halfW;
-        halfH / 2. => halfH;
-
-        if (
-            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
-            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
-        ) {
-            return true;
-        }
-
-        return false;
     }
 
     fun int mouseOverNameBox(vec3 mouseWorldPos) {

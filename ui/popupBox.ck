@@ -1,8 +1,8 @@
 @import "base.ck"
-@import "../events.ck"
+@import {"../base.ck", "../events.ck"}
 
 
-public class PopupMenu extends GGen {
+public class PopupMenu extends ClickableGGen {
     // Contents
     BorderedBox @ box;
     Button @ button;
@@ -52,32 +52,5 @@ public class PopupMenu extends GGen {
 
     fun int mouseOverButton(vec3 mouseWorldPos) {
         return this.mouseOverBox(mouseWorldPos, [this.button, this.button.box]);
-    }
-
-    fun int mouseOverBox(vec3 mouseWorldPos, GGen boxes[]) {
-        this.posX() => float centerX;
-        this.posY() => float centerY;
-        this.scaX() => float halfW;
-        this.scaY() => float halfH;
-
-        for (GGen box : boxes) {
-            centerX + (box.posX() * this.scaX()) => centerX;
-            centerY + (box.posY() * this.scaY()) => centerY;
-
-            halfW * box.scaX() => halfW;
-            halfH * box.scaY() => halfH;
-        }
-
-        halfW / 2. => halfW;
-        halfH / 2. => halfH;
-
-        if (
-            mouseWorldPos.x >= centerX - halfW && mouseWorldPos.x <= centerX + halfW
-            && mouseWorldPos.y >= centerY - halfH && mouseWorldPos.y <= centerY + halfH
-        ) {
-            return true;
-        }
-
-        return false;
     }
 }

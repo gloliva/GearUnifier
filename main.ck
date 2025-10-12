@@ -44,10 +44,6 @@ spork ~ uiManager.translate();
 spork ~ uiManager.run();
 
 
-// Load autosave on startup
-// nodeManager.loadSave("autosave");
-
-
 // Main loop
 while (true) {
     GG.nextFrame() => now;
