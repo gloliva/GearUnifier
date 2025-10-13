@@ -27,6 +27,8 @@ public class NodeType {
 
     // Utilities
     60 => static int SCALE;
+    61 => static int ASR_ENV;
+    62 => static int ADSR_ENV;
 }
 
 
@@ -273,6 +275,22 @@ public class Node extends ClickableGGen {
 
             currBoxIdx++;
         }
+    }
+
+    fun float getValueFromUGen(UGen ugen) {
+        // Value can be from a audio rate UGen (which uses last()),
+        // a control rate UGen (which uses next()),
+        // or an envelope UGen (which uses value())
+        float value;
+        if (Type.of(ugen).name() == Step.typeOf().name()) {
+            (ugen$Step).next() => value;
+        } else if (Type.of(ugen).name() == ADSR.typeOf().name() || Type.of(ugen).name() == Envelope.typeOf().name()) {
+            (ugen$Envelope).value() => value;
+        } else {
+            ugen.last() => value;
+        }
+
+        return value;
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {

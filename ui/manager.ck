@@ -58,6 +58,15 @@ public class UIManager {
         this.bottomMenuBar --> GG.scene();
     }
 
+    fun static DropdownMenu createDropdownMenu(string entryNames[]) {
+        Enum menu[0];
+        for (int idx; idx < entryNames.size(); idx++) {
+            menu << new Enum(idx, entryNames[idx]);
+        }
+
+        return new DropdownMenu(menu);
+    }
+
     fun void setAudioUI() {
         new DropdownMenu([new Enum(0, "Audio In"), new Enum(1, "Audio Out")]) @=> this.audioMenu;
 
@@ -131,7 +140,7 @@ public class UIManager {
     }
 
     fun void setUtilsUI() {
-        new DropdownMenu([new Enum(0, "Scale")]) @=> this.utilsMenu;
+        this.createDropdownMenu(["Scale", "ASR", "ADSR"]) @=> this.utilsMenu;
 
         // Set name and scale
         this.utilsMenu.setSelectedName("Utilities");
@@ -489,6 +498,8 @@ public class UIManager {
                     if (dropdownMenuEntryIdx != -1) {
                         this.utilsMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
                         NodeType.SCALE => int nodeType;
+                        if (menuEntry.id == 1) NodeType.ASR_ENV => nodeType;
+                        if (menuEntry.id == 2) NodeType.ADSR_ENV => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
 

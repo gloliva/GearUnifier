@@ -5,10 +5,9 @@
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
-@import "sequencer.ck"
-@import "transport.ck"
+@import {"sequencer.ck", "transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
-@import "utils/scale.ck"
+@import {"utils/scale.ck", "utils/envelope.ck"}
 
 
 public class NodeManager {
@@ -171,6 +170,24 @@ public class NodeManager {
                 spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;
                 this.addNode(scale);
                 scale.addShreds([scaleProcessOptionsShred]);
+            } else if (addNodeEvent.nodeType == NodeType.ASR_ENV) {
+                ASRNode asr();
+
+                // ASR input processing
+                spork ~ asr.processInputs() @=> Shred @ asrProcessInputsShred;
+                spork ~ asr.processOptions() @=> Shred @ asrProcessOptionsShred;
+                asr.addShreds([asrProcessInputsShred, asrProcessOptionsShred]);
+
+                this.addNode(asr);
+            } else if (addNodeEvent.nodeType == NodeType.ADSR_ENV) {
+                ADSRNode adsr();
+
+                // ADSR input processing
+                spork ~ adsr.processInputs() @=> Shred @ adsrProcessInputsShred;
+                spork ~ adsr.processOptions() @=> Shred @ adsrProcessOptionsShred;
+                adsr.addShreds([adsrProcessInputsShred, adsrProcessOptionsShred]);
+
+                this.addNode(adsr);
             }
         }
     }
@@ -670,6 +687,47 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(scale);
+            } else if (nodeClassName == ASRNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getFloat("attackTime")::second => dur attackTime;
+                nodeData.getFloat("sustainLevel") => float sustainLevel;
+                nodeData.getFloat("releaseTime")::second  => dur releaseTime;
+
+                ASRNode asr(attackTime, sustainLevel, releaseTime, 4.);
+                asr.setNodeID(nodeID);
+                @(posX, posY, posZ) => asr.pos;
+
+                // Run asr input and option processing
+                spork ~ asr.processInputs() @=> Shred @ asrProcessInputsShred;
+                spork ~ asr.processOptions() @=> Shred @ asrProcessOptionsShred;
+                asr.addShreds([asrProcessInputsShred, asrProcessOptionsShred]);
+
+                // Add node to screen
+                this.addNode(asr);
+            } else if (nodeClassName == ADSRNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getFloat("attackTime")::second => dur attackTime;
+                nodeData.getFloat("decayTime")::second  => dur decayTime;
+                nodeData.getFloat("sustainLevel") => float sustainLevel;
+                nodeData.getFloat("releaseTime")::second  => dur releaseTime;
+
+                ADSRNode adsr(attackTime, decayTime, sustainLevel, releaseTime, 4.);
+                adsr.setNodeID(nodeID);
+                @(posX, posY, posZ) => adsr.pos;
+
+                // Run adsr input and options processing
+                spork ~ adsr.processInputs() @=> Shred @ adsrProcessInputsShred;
+                spork ~ adsr.processOptions() @=> Shred @ adsrProcessOptionsShred;
+                adsr.addShreds([adsrProcessInputsShred, adsrProcessOptionsShred]);
+
+                // Add node to screen
+                this.addNode(adsr);
             }
         }
 
