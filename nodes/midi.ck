@@ -10,7 +10,7 @@
 */
 
 // Imports
-@import "../tuning.ck"
+@import "../tuning/base.ck"
 @import "../utils.ck"
 @import "../sequencer/recorder.ck"
 @import "../ui/menu.ck"
