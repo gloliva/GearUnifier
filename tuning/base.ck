@@ -57,10 +57,8 @@ public class ScaleTuning extends Tuning {
         }
 
         this.positiveModulo(note, this.numNotes) => int degree;
-
         return this.voltPerOctave * (numPeriods * Math.log2(this.period) + Math.log2(this.degreesRatio[degree]));
     }
-
 }
 
 
@@ -75,11 +73,15 @@ public class EDO extends Tuning {
 
     fun @construct(int divisions) {
         Tuning();
+        this.setDivisions(divisions);
+    }
+
+    fun void setDivisions(int divisions) {
         divisions => this.divisions;
-        this.voltPerOctave / divisions => cvStep;
+        this.voltPerOctave / divisions => this.cvStep;
     }
 
     fun float cv(int degree, int octaveDiff) {
-        return ( octaveDiff * this.voltPerOctave ) + ( (degree + this.degreeOffset) * cvStep );
+        return ( octaveDiff * this.voltPerOctave ) + ( (degree + this.degreeOffset) * this.cvStep );
     }
 }

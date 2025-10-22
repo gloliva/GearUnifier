@@ -5,7 +5,7 @@
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
-@import {"sequencer.ck", "transport.ck"}
+@import {"sequencer.ck", "tuning.ck", "transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck"}
 
@@ -165,6 +165,16 @@ public class NodeManager {
                 spork ~ transport.processOptions() @=> Shred @ transportProcessOptionsShred;
                 this.addNode(transport);
                 transport.addShreds([transportProcessOptionsShred]);
+            } else if (addNodeEvent.nodeType == NodeType.SCALE_TUNING) {
+
+            } else if (addNodeEvent.nodeType == NodeType.EDO_TUNING) {
+                EDOTuningNode edoTuning();
+
+                // Tuning options processing
+                spork ~ edoTuning.processOptions() @=> Shred @ edoTuningProcessOptionsShred;
+                edoTuning.addShreds([edoTuningProcessOptionsShred]);
+
+                this.addNode(edoTuning);
             } else if (addNodeEvent.nodeType == NodeType.SCALE) {
                 ScaleNode scale();
                 spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;

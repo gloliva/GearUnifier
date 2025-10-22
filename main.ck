@@ -37,7 +37,7 @@ uiManager.setMidiOutUI(nodeManager.midiOutDevices);
 uiManager.setOscUI();
 uiManager.setSequencerUI();
 uiManager.setEffectsUI();
-uiManager.setUtilsUI();
+uiManager.setModifiersUI();
 uiManager.setSaveUI();
 spork ~ uiManager.resize();
 spork ~ uiManager.translate();

@@ -25,10 +25,12 @@ public class NodeType {
     51 => static int DISTORTION;
     52 => static int DELAY;
 
-    // Utilities
-    60 => static int SCALE;
-    61 => static int ASR_ENV;
-    62 => static int ADSR_ENV;
+    // Modifiers
+    600 => static int SCALE;
+    601 => static int ASR_ENV;
+    602 => static int ADSR_ENV;
+    602 => static int SCALE_TUNING;
+    603 => static int EDO_TUNING;
 }
 
 

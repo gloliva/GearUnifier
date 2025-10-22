@@ -15,8 +15,7 @@
 @import "../sequencer/recorder.ck"
 @import "../ui/menu.ck"
 @import "../events.ck"
-@import "base.ck"
-@import "sequencer.ck"
+@import {"base.ck", "sequencer.ck", "tuning.ck"}
 @import "HashMap"
 
 
@@ -64,11 +63,13 @@ public class MidiInputType {
     new Enum(0, "Sequencer") @=> static Enum SEQUENCER;
     new Enum(1, "Latch") @=> static Enum LATCH;
     new Enum(2, "Transport") @=> static Enum TRANSPORT;
+    new Enum(3, "Tuning") @=> static Enum TUNING;
 
     [
         MidiInputType.SEQUENCER,
         MidiInputType.LATCH,
         MidiInputType.TRANSPORT,
+        MidiInputType.TUNING,
     ] @=> static Enum allTypes[];
 }
 
@@ -521,6 +522,13 @@ public class MidiInNode extends MidiNode {
             if (Type.of(outputNode).name() == SequencerNode.typeOf().name()) {
                 <<< "CONNECTING A SEQUENCER" >>>;
                 outputNode$SequencerNode @=> this.sequencer;
+            }
+        } else if (dataType == MidiInputType.TUNING.id) {
+            if (Type.of(outputNode).name() == ScaleTuningNode.typeOf().name()) {
+                <<< "Connecting a Tuning File Node" >>>;
+                // outputNode$TuningFileNode
+            } else if (Type.of(outputNode).name() == EDOTuningNode.typeOf().name()) {
+                <<< "Connecting an EDO Tuning Node" >>>;
             }
         }
     }

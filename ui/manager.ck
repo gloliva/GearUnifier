@@ -18,7 +18,7 @@ public class UIManager {
     DropdownMenu @ oscMenu;
     DropdownMenu @ effectsMenu;
     DropdownMenu @ sequencerMenu;
-    DropdownMenu @ utilsMenu;
+    DropdownMenu @ modifiersMenu;
 
     // Save/Load Handling
     int saveEntryBoxSelected;
@@ -139,16 +139,16 @@ public class UIManager {
         this.effectsMenu --> GG.scene();
     }
 
-    fun void setUtilsUI() {
-        this.createDropdownMenu(["Scale", "ASR", "ADSR"]) @=> this.utilsMenu;
+    fun void setModifiersUI() {
+        this.createDropdownMenu(["Scale", "ASR", "ADSR", "Scale Tuning", "EDO Tuning"]) @=> this.modifiersMenu;
 
         // Set name and scale
-        this.utilsMenu.setSelectedName("Utilities");
-        this.utilsMenu.setScale(4., 0.5);
+        this.modifiersMenu.setSelectedName("Modifiers");
+        this.modifiersMenu.setScale(4., 0.5);
 
-        @(0.3, 0.3, 1.) => this.utilsMenu.sca;
-        1.201 => this.utilsMenu.posZ;
-        this.utilsMenu --> GG.scene();
+        @(0.3, 0.3, 1.) => this.modifiersMenu.sca;
+        1.201 => this.modifiersMenu.posZ;
+        this.modifiersMenu --> GG.scene();
     }
 
     fun void setSaveUI() {
@@ -303,10 +303,10 @@ public class UIManager {
                 this.topMenuBar.posY() => this.effectsMenu.posY;
             }
 
-            if (this.utilsMenu != null) {
-                this.utilsMenu.selectedBox.box.scaWorld().x => float utilsMenuWidth;
-                3 * (utilsMenuWidth + menuBuffer) => this.utilsMenu.posX;
-                this.topMenuBar.posY() => this.utilsMenu.posY;
+            if (this.modifiersMenu != null) {
+                this.modifiersMenu.selectedBox.box.scaWorld().x => float modifiersMenuWidth;
+                3 * (modifiersMenuWidth + menuBuffer) => this.modifiersMenu.posX;
+                this.topMenuBar.posY() => this.modifiersMenu.posY;
             }
 
             // Reposition bottom bar
@@ -347,7 +347,7 @@ public class UIManager {
             translatePos => this.oscMenu.translate;
             translatePos => this.effectsMenu.translate;
             translatePos => this.sequencerMenu.translate;
-            translatePos => this.utilsMenu.translate;
+            translatePos => this.modifiersMenu.translate;
 
             // Move Bottom UI elements
             translatePos => this.saveButton.translate;
@@ -492,25 +492,27 @@ public class UIManager {
                     1 => uiClickedOn;
                 }
 
-                // If Utilities Menu is open, check if clicking on a menu entry
-                if (this.utilsMenu.expanded) {
-                    this.mouseOverMenuEntry(mouseWorldPos, this.utilsMenu) => int dropdownMenuEntryIdx;
+                // If Modifiers Menu is open, check if clicking on a menu entry
+                if (this.modifiersMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.modifiersMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
-                        this.utilsMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        this.modifiersMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
                         NodeType.SCALE => int nodeType;
                         if (menuEntry.id == 1) NodeType.ASR_ENV => nodeType;
                         if (menuEntry.id == 2) NodeType.ADSR_ENV => nodeType;
+                        if (menuEntry.id == 3) NodeType.SCALE_TUNING => nodeType;
+                        if (menuEntry.id == 4) NodeType.EDO_TUNING => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
 
                     }
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
-                    this.utilsMenu.collapse();
+                    this.modifiersMenu.collapse();
                     1 => uiClickedOn;
                 // Otherwise, check if clicking on the Utilities Menu, then open it
-                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.utilsMenu) && !this.utilsMenu.expanded) {
-                    this.utilsMenu.expand();
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.modifiersMenu) && !this.modifiersMenu.expanded) {
+                    this.modifiersMenu.expand();
                     1 => uiClickedOn;
                 }
 
@@ -601,9 +603,9 @@ public class UIManager {
                 this.effectsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
-            if (this.utilsMenu.expanded) {
-                this.mouseOverMenuEntry(mouseWorldPos, this.utilsMenu) => int dropdownMenuEntryIdx;
-                this.utilsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            if (this.modifiersMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.modifiersMenu) => int dropdownMenuEntryIdx;
+                this.modifiersMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             GG.nextFrame() => now;
