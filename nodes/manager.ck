@@ -738,6 +738,24 @@ public class NodeManager {
 
                 // Add node to screen
                 this.addNode(adsr);
+            } else if (nodeClassName == ScaleTuningNode.typeOf().name()) {
+
+            } else if (nodeClassName == EDOTuningNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getInt("scaleSize") => int scaleSize;
+
+                EDOTuningNode edoTuning(scaleSize);
+                edoTuning.setNodeID(nodeID);
+                @(posX, posY, posZ) => edoTuning.pos;
+
+                // Tuning options processing
+                spork ~ edoTuning.processOptions() @=> Shred @ edoTuningProcessOptionsShred;
+                edoTuning.addShreds([edoTuningProcessOptionsShred]);
+
+                this.addNode(edoTuning);
             }
         }
 
