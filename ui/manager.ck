@@ -504,7 +504,6 @@ public class UIManager {
                         if (menuEntry.id == 4) NodeType.EDO_TUNING => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
-
                     }
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu

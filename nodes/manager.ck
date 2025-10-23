@@ -166,7 +166,14 @@ public class NodeManager {
                 this.addNode(transport);
                 transport.addShreds([transportProcessOptionsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SCALE_TUNING) {
+                ScaleTuningNode scaleTuning();
 
+                // Tuning processing
+                spork ~ scaleTuning.processOptions() @=> Shred @ scaleTuningProcessOptionsShred;
+                spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
+                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningClickEventShred]);
+
+                this.addNode(scaleTuning);
             } else if (addNodeEvent.nodeType == NodeType.EDO_TUNING) {
                 EDOTuningNode edoTuning();
 
@@ -739,7 +746,25 @@ public class NodeManager {
                 // Add node to screen
                 this.addNode(adsr);
             } else if (nodeClassName == ScaleTuningNode.typeOf().name()) {
+                nodeData.getStr("nodeID") => string nodeID;
+                nodeData.getFloat("posX") => float posX;
+                nodeData.getFloat("posY") => float posY;
+                nodeData.getFloat("posZ") => float posZ;
+                nodeData.getStr("tuningFilename") => string tuningFilename;
 
+                ScaleTuningNode scaleTuning();
+                scaleTuning.setNodeID(nodeID);
+                @(posX, posY, posZ) => scaleTuning.pos;
+
+                // Set tuning
+                scaleTuning.setTuning(tuningFilename);
+
+                // Tuning processing
+                spork ~ scaleTuning.processOptions() @=> Shred @ scaleTuningProcessOptionsShred;
+                spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
+                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningClickEventShred]);
+
+                this.addNode(scaleTuning);
             } else if (nodeClassName == EDOTuningNode.typeOf().name()) {
                 nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getFloat("posX") => float posX;
@@ -975,6 +1000,9 @@ public class NodeManager {
                         1 => this.nodeSelected;
                         nodeIdx => this.currSelectedNodeIdx;
                         node @=> this.currSelectedNode;
+
+                        // Highlight node
+                        node.selectNode();
 
                         // Found the node that was clicked on, can exit early
                         nodeIdx => clickedNodeIdx;
@@ -1261,6 +1289,9 @@ public class NodeManager {
                     null => this.currMenu;
                 // If clicked outside of a node and a node is selected, remove the selection
                 } else if (clickedNodeIdx == -1 && this.nodeSelected) {
+                    // Unhighlight node
+                    this.currSelectedNode.unselectNode();
+
                     0 => this.nodeSelected;
                     -1 => this.currSelectedNodeIdx;
                     null => this.currSelectedNode;
@@ -1369,6 +1400,9 @@ public class NodeManager {
                 // If a node is selected, delete the node
                 } else if (this.nodeSelected && !this.numberBoxSelected) {
                     this.removeNode(this.currSelectedNode);
+
+                    // Unhighlight node
+                    this.currSelectedNode.unselectNode();
 
                     0 => this.nodeSelected;
                     -1 => this.currSelectedNodeIdx;

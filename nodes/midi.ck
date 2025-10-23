@@ -527,6 +527,7 @@ public class MidiInNode extends MidiNode {
             if (Type.of(outputNode).name() == ScaleTuningNode.typeOf().name()) {
                 <<< "Connecting a Tuning File Node" >>>;
                 // outputNode$TuningFileNode
+                (outputNode$ScaleTuningNode).tuning @=> this.tuning;
             } else if (Type.of(outputNode).name() == EDOTuningNode.typeOf().name()) {
                 <<< "Connecting an EDO Tuning Node" >>>;
                 (outputNode$EDOTuningNode).tuning @=> this.tuning;

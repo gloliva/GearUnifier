@@ -33,10 +33,14 @@ public class ScaleTuning extends Tuning {
 
     fun @construct(int numNotes, float degreesRatio[], float period) {
         Tuning();
+        this.setScale(numNotes, degreesRatio, period);
+    }
 
+    fun void setScale(int numNotes, float degreesRatio[], float period) {
         numNotes => this.numNotes;
         period => this.period;
 
+        this.degreesRatio.reset();
         this.degreesRatio << 1.;
         for (float ratio : degreesRatio) {
             if (ratio == period) continue;

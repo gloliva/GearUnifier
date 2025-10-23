@@ -29,8 +29,8 @@ public class NodeType {
     600 => static int SCALE;
     601 => static int ASR_ENV;
     602 => static int ADSR_ENV;
-    602 => static int SCALE_TUNING;
-    603 => static int EDO_TUNING;
+    603 => static int SCALE_TUNING;
+    604 => static int EDO_TUNING;
 }
 
 
@@ -183,6 +183,18 @@ public class Node extends ClickableGGen {
         this.nodeOptionsBox --> this;
         1 => this.nodeOptionsBox.active;
         this.updatePos();
+    }
+
+    fun void selectNode() {
+        if (this.nodeNameBox != null) {
+            Color.RED => this.nodeNameBox.contentBox.color;
+        }
+    }
+
+    fun void unselectNode() {
+        if (this.nodeNameBox != null) {
+            Color.BLACK => this.nodeNameBox.contentBox.color;
+        }
     }
 
     fun vec2 inputJackPos(int jackIdx) {
@@ -953,9 +965,11 @@ public class OptionsBox extends ContentBox {
     int menuOpen;
     int menuSelected;
     int entryBoxSelected;
+    int textBoxSelected;
 
     DropdownMenu @ selectedMenu;
     NumberEntryBox @ selectedEntryBox;
+    TextEntryBox @ selectedTextBox;
 
     fun @construct(string optionNames[], float xScale) {
         optionNames.size() => this.numOptions;

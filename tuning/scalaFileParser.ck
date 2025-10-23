@@ -43,7 +43,7 @@ public class ScalaFileParser {
             return 0;
         }
 
-        filename => this.scalaFile.open;
+        this.scalaFile.open(filename, IO.READ);
         // Ensure file opened correctly
         if (!this.scalaFile.good()) {
             cherr <= "ERROR: Unable to open file with name " <= filename <= " for reading." <= IO.newline();

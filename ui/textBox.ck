@@ -143,6 +143,7 @@ public class NumberEntryBox extends GGen {
 public class TextEntryBox extends GGen {
     // Contents
     BorderedBox @ box;
+    string defaultMessage;
 
     // Number
     string chars;
@@ -155,9 +156,14 @@ public class TextEntryBox extends GGen {
     int active;
 
     fun @construct(int charLimit, float xScale) {
+        TextEntryBox("Enter Filename Here", charLimit, xScale);
+    }
+
+    fun @construct(string defaultMessage, int charLimit, float xScale) {
+        defaultMessage => this.defaultMessage;
         charLimit => this.charLimit;
 
-        BorderedBox box("Enter Filename Here", xScale, 0.5);
+        BorderedBox box(this.defaultMessage, xScale, 0.5);
         box @=> this.box;
 
         // Names
@@ -200,7 +206,7 @@ public class TextEntryBox extends GGen {
         this.box.setName(this.chars);
 
         if (this.chars.length() == 0) {
-            this.box.setName("Enter Filename Here");
+            this.box.setName(this.defaultMessage);
         }
     }
 
