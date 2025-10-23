@@ -53,6 +53,9 @@ public class ScaleTuning extends Tuning {
     }
 
     fun float cv(int note, int octaveDiff) {
+        // Handle offset
+        note + degreeOffset => note;
+
         int numPeriods;
         if (note >= 0) {
             note / this.numNotes => numPeriods;

@@ -170,8 +170,9 @@ public class NodeManager {
 
                 // Tuning processing
                 spork ~ scaleTuning.processOptions() @=> Shred @ scaleTuningProcessOptionsShred;
+                spork ~ scaleTuning.processNumberBoxUpdates() @=> Shred @ scaleTuningNumberBoxShred;
                 spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
-                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningClickEventShred]);
+                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningNumberBoxShred, scaleTuningClickEventShred]);
 
                 this.addNode(scaleTuning);
             } else if (addNodeEvent.nodeType == NodeType.EDO_TUNING) {
@@ -751,8 +752,9 @@ public class NodeManager {
                 nodeData.getFloat("posY") => float posY;
                 nodeData.getFloat("posZ") => float posZ;
                 nodeData.getStr("tuningFilename") => string tuningFilename;
+                nodeData.getInt("degreeOffset") => int degreeOffset;
 
-                ScaleTuningNode scaleTuning();
+                ScaleTuningNode scaleTuning(degreeOffset);
                 scaleTuning.setNodeID(nodeID);
                 @(posX, posY, posZ) => scaleTuning.pos;
 
@@ -761,8 +763,9 @@ public class NodeManager {
 
                 // Tuning processing
                 spork ~ scaleTuning.processOptions() @=> Shred @ scaleTuningProcessOptionsShred;
+                spork ~ scaleTuning.processNumberBoxUpdates() @=> Shred @ scaleTuningNumberBoxShred;
                 spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
-                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningClickEventShred]);
+                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningNumberBoxShred, scaleTuningClickEventShred]);
 
                 this.addNode(scaleTuning);
             } else if (nodeClassName == EDOTuningNode.typeOf().name()) {
@@ -771,8 +774,9 @@ public class NodeManager {
                 nodeData.getFloat("posY") => float posY;
                 nodeData.getFloat("posZ") => float posZ;
                 nodeData.getInt("scaleSize") => int scaleSize;
+                nodeData.getInt("degreeOffset") => int degreeOffset;
 
-                EDOTuningNode edoTuning(scaleSize);
+                EDOTuningNode edoTuning(scaleSize, degreeOffset);
                 edoTuning.setNodeID(nodeID);
                 @(posX, posY, posZ) => edoTuning.pos;
 
