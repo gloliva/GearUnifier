@@ -53,9 +53,15 @@ public class NodeManager {
 
     // Events
     MoveCameraEvent @ moveCameraEvent;
+    SaveLoadEvent @ saveLoadEvent;
 
-    fun @construct(MoveCameraEvent moveCameraEvent) {
+    // Open file
+    string openedFilePath;
+
+    fun @construct(MoveCameraEvent moveCameraEvent, SaveLoadEvent saveLoadEvent) {
         moveCameraEvent @=> this.moveCameraEvent;
+        saveLoadEvent @=> this.saveLoadEvent;
+        "" => this.openedFilePath;
     }
 
     fun void addNode(Node node) {
@@ -210,16 +216,38 @@ public class NodeManager {
         }
     }
 
-    fun void saveHandler(UpdateTextEntryBoxEvent saveEvent) {
+    fun void saveHandler() {
         while (true) {
-            saveEvent => now;
-            if (saveEvent.mode == SaveState.SAVE) {
-                if (saveEvent.text.length() > 0) this.save(saveEvent.text);
-            } else if (saveEvent.mode == SaveState.LOAD) {
+            this.saveLoadEvent => now;
+            if (this.saveLoadEvent.mode == SaveState.SAVE_AS) {
+                // Open save file dialog
+                GG.saveFileDialog(null) => string saveFilePath;
+                if (saveFilePath != null) {
+                    this.save(saveFilePath);
+                    saveFilePath => this.openedFilePath;
+                }
+            } else if (this.saveLoadEvent.mode == SaveState.SAVE) {
+                // Check if a saved file is currently open
+                if (this.openedFilePath != "") {
+                    this.save(this.openedFilePath);
+                } else {
+                    // Open save file dialog
+                    GG.saveFileDialog(null) => string saveFilePath;
+                    if (saveFilePath != null) {
+                        this.save(saveFilePath);
+                        saveFilePath => this.openedFilePath;
+                    }
+                }
+            } else if (this.saveLoadEvent.mode == SaveState.LOAD) {
+                GG.openFileDialog(null) => string loadFilePath;
+                if (loadFilePath != null) {
+                    this.clearScreen();
+                    this.loadSave(loadFilePath);
+                    loadFilePath => this.openedFilePath;
+                }
+            } else if (this.saveLoadEvent.mode == SaveState.NEW) {
                 this.clearScreen();
-                this.loadSave(saveEvent.text);
-            } else if (saveEvent.mode == SaveState.NEW) {
-                this.clearScreen();
+                "" => this.openedFilePath;
             }
         }
     }
@@ -307,7 +335,7 @@ public class NodeManager {
         return false;
     }
 
-    fun void save(string filename) {
+    fun void save(string filePath) {
         <<< "Saving Data" >>>;
         // Serialize the current state of the nodes
         HashMap nodes;
@@ -327,17 +355,25 @@ public class NodeManager {
         data.set("nodes", nodes);
         data.set("connections", connections);
 
-        filename + ".json" => filename;
-        SaveHandler.save(filename, data);
+        // Check if `.json` is included
+        if (filePath.substring(filePath.length() - SaveHandler.EXTENSION.length()) != SaveHandler.EXTENSION) {
+            filePath + SaveHandler.EXTENSION => filePath;
+        }
+
+        SaveHandler.save(filePath, data);
     }
 
-    fun void loadSave(string filename) {
-        filename + ".json" => filename;
-        SaveHandler.load(filename) @=> HashMap data;
+    fun void loadSave(string filePath) {
+        // Check if `.json` is included
+        if (filePath.substring(filePath.length() - SaveHandler.EXTENSION.length()) != SaveHandler.EXTENSION) {
+            filePath + SaveHandler.EXTENSION => filePath;
+        }
+
+        SaveHandler.load(filePath) @=> HashMap data;
 
         // Verify that loaded file exists, otherwise show an Error popupMenu
         if (data == null) {
-            "Load Error: File \"" + filename + "\" does not exist." => string popupText;
+            "Load Error: File \"" + filePath + "\" does not exist." => string popupText;
             PopupMenu fileLoadErrorMenu(popupText, 4, 2);
             fileLoadErrorMenu @=> this.popupMenu;
             spork ~ fileLoadErrorMenu.openAndWait();
@@ -1430,7 +1466,11 @@ public class NodeManager {
 
             // Check if CMD+S is pressed
             if (GWindow.key(GWindow.Key_LeftSuper) && GWindow.keyDown(GWindow.Key_S)) {
-                this.save("autosave");
+                this.saveLoadEvent.set(SaveState.SAVE);
+                this.saveLoadEvent.broadcast();
+            } else if (GWindow.key(GWindow.Key_LeftSuper) && GWindow.keyDown(GWindow.Key_O)) {
+                this.saveLoadEvent.set(SaveState.LOAD);
+                this.saveLoadEvent.broadcast();
             }
 
             // All Keys pressed this frame

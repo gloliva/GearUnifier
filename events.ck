@@ -11,6 +11,15 @@ public class AddNodeEvent extends Event {
 }
 
 
+public class SaveLoadEvent extends Event {
+    int mode;
+
+    fun void set(int mode) {
+        mode => this.mode;
+    }
+}
+
+
 public class ButtonClicked extends Event {}
 
 
