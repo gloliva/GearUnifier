@@ -55,13 +55,15 @@ public class NodeManager {
     MoveCameraEvent @ moveCameraEvent;
     SaveLoadEvent @ saveLoadEvent;
 
-    // Open file
+    // File management
     string openedFilePath;
+    string droppedFilePaths[];
 
     fun @construct(MoveCameraEvent moveCameraEvent, SaveLoadEvent saveLoadEvent) {
         moveCameraEvent @=> this.moveCameraEvent;
         saveLoadEvent @=> this.saveLoadEvent;
         "" => this.openedFilePath;
+        GWindow.files() @=> this.droppedFilePaths;
     }
 
     fun void addNode(Node node) {
@@ -1399,6 +1401,22 @@ public class NodeManager {
                     -1 => this.currHeldNodeIdx;
                     0 => this.nodeHeld;
                     null => this.currHeldNode;
+                }
+            }
+
+            // Check if Drag+Drop files have changed
+            if (GWindow.files() != this.droppedFilePaths) {
+                GWindow.files() @=> this.droppedFilePaths;
+
+                if (this.droppedFilePaths.size() > 0) {
+                    for (Node node : this.nodesOnScreen) {
+                        // Check if dropped onto a ScaleTuning node to change scale file
+                        if (Type.of(node).name() == ScaleTuningNode.typeOf().name() && node.mouseOverNode(mouseWorldPos)) {
+                            // Take first file if multiple dropped files
+                            this.droppedFilePaths[0] => string filePath;
+                            (node$ScaleTuningNode).setTuning(filePath);
+                        }
+                    }
                 }
             }
 

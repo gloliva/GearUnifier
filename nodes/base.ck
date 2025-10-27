@@ -81,6 +81,20 @@ public class Node extends ClickableGGen {
         0 => this.nodeActive;
     }
 
+    fun int mouseOverNode(vec3 mouseWorldPos) {
+        false => int mouseIsOver;
+
+        this.mouseOverNameBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverOptionsBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverInputsModifierBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverInputsBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverOutputsModifierBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverOutputsBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverVisibilityBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+
+        return mouseIsOver;
+    }
+
     fun int mouseOverNameBox(vec3 mouseWorldPos) {
         if (this.nodeNameBox == null) return false;
         return this.mouseOverBox(mouseWorldPos, [this.nodeNameBox, this.nodeNameBox.contentBox]);

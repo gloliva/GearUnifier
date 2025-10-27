@@ -37,6 +37,22 @@ public class ScalaFile {
 public class ScalaFileParser {
     FileIO scalaFile;
 
+    fun static string getFilenameFromPath(string filePath, int removeExtension) {
+        // Tokenize filePath
+        StringTokenizer tokenizer;
+        filePath.replace("/", " ");
+        tokenizer.set(filePath);
+
+        // Get last token
+        tokenizer.get(tokenizer.size() - 1) => string filename;
+
+        if (removeExtension) {
+            filename.replace(ScalaFile.EXTENSION, "");
+        }
+
+        return filename;
+    }
+
     fun int open(string filename) {
         if (filename.substring(filename.length() - ScalaFile.EXTENSION.length()) != ScalaFile.EXTENSION) {
             cherr <= "ERROR: File with name " <= filename <= " is not a valid Scala file." <= IO.newline();
@@ -101,7 +117,7 @@ public class ScalaFileParser {
                 // Invalid pitch value
                 if (containsPeriod && containsSlash) {
                     cherr <= "ERROR: Invalid pitch value " <= token <= " in Scala file " <= this.scalaFile.filename() <= IO.newline();
-                    me.exit();
+                    return null;
                 // Parse cent values (floats)
                 } else if (containsPeriod && !containsSlash) {
                     // Convert to ratio
@@ -116,7 +132,7 @@ public class ScalaFileParser {
                     tokenizer.next().toFloat() => float numerator;
                     if (!tokenizer.more()) {
                         cherr <= "ERROR: Pitch value" <= line <= " is not a valid ratio in file " <= this.scalaFile.filename() <= IO.newline();
-                        me.exit();
+                        return null;
                     }
 
                     tokenizer.next().toFloat() => float denominator;

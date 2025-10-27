@@ -16,7 +16,7 @@ public class TuningOutputType {
 
 public class ScaleTuningOptionsBox extends OptionsBox {
     // Text Entry Boxes
-    TextEntryBox @ filenameEntryBox;
+    BorderedBox @ filenameBox;
 
     // Buttons
     Button @ loadButton;
@@ -26,39 +26,41 @@ public class ScaleTuningOptionsBox extends OptionsBox {
     NumberEntryBox @ noteOffsetEntryBox;
 
     // Events
-    UpdateTextEntryBoxEvent updateTextEntryBoxEvent;
     UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
 
     fun @construct(string optionNames[], float xScale) {
         OptionsBox(optionNames, xScale);
 
         // Handle Text Entry Boxes
-        new TextEntryBox("Scala Filename", 20, 3.5) @=> this.filenameEntryBox;
+        new BorderedBox("No File Open", 3.5, 0.5) @=> this.filenameBox;
 
         // Handle Buttons
-        new Button("load", 2., 0.5) @=> this.loadButton;
+        new Button("Open", 2., 0.5) @=> this.loadButton;
 
         // Handle Number Entry Boxes
         new NumberEntryBox(3, 0, NumberBoxType.INT, 2.) @=> this.noteOffsetEntryBox;
 
         // Set Events
-        this.filenameEntryBox.setUpdateEvent(this.updateTextEntryBoxEvent);
         this.noteOffsetEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
 
         // Position
-        @(0., this.optionNames[0].posY(), 0.201) => this.filenameEntryBox.pos;
+        @(0., this.optionNames[0].posY(), 0.201) => this.filenameBox.pos;
         @(0., this.optionNames[1].posY(), 0.201) => this.loadButton.pos;
         @(0.75, this.optionNames[2].posY(), 0.201) => this.noteOffsetEntryBox.pos;
 
         // Name
-        "ScaleSize TextEntryBox" => this.filenameEntryBox.name;
+        "ScaleSize TextEntryBox" => this.filenameBox.name;
         "LoadFile Button" => this.loadButton.name;
         "NoteOffset NumberEntryBox" => this.noteOffsetEntryBox.name;
 
         // Connections
-        this.filenameEntryBox --> this;
+        this.filenameBox --> this;
         this.loadButton --> this;
         this.noteOffsetEntryBox --> this;
+    }
+
+    fun void setFilename(string filename) {
+        this.filenameBox.setName(filename);
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {
@@ -69,14 +71,8 @@ public class ScaleTuningOptionsBox extends OptionsBox {
     fun int handleMouseLeftDown(vec3 mouseWorldPos) {
         this.parent()$ScaleTuningNode @=> ScaleTuningNode parentNode;
 
-        // Check if Scala Filename is clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.filenameEntryBox, this.filenameEntryBox.box, this.filenameEntryBox.box.box])) {
-            <<< "Click on Tuning text box" >>>;
-            1 => this.textBoxSelected;
-            this.filenameEntryBox @=> this.selectedTextBox;
-            return true;
         // Check if Load button is clicked on
-        } else if (parentNode.mouseOverBox(mouseWorldPos, [this, this.loadButton, this.loadButton.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.loadButton, this.loadButton.box])) {
             1 => this.buttonClicked;
             this.loadButton.clickOn();
             return true;
@@ -150,6 +146,12 @@ public class ScaleTuningNode extends Node {
 
         tuningFilename => this.tuningFilename;
         this.scalaFileParser.parse() @=> ScalaFile scalaFile;
+
+        if (scalaFile == null) {
+            <<< "ERROR: Couldn't parse Scala file with name", tuningFilename >>>;
+            return 0;
+        }
+
         scalaFile.printContents();
         if (this.tuning == null) {
             new ScaleTuning(scalaFile.numNotes, scalaFile.centDegrees, scalaFile.period) @=> this.tuning;
@@ -159,6 +161,9 @@ public class ScaleTuningNode extends Node {
             this.tuning.setScale(scalaFile.numNotes, scalaFile.centDegrees, scalaFile.period);
         }
 
+        this.scalaFileParser.getFilenameFromPath(tuningFilename, 1) => string filename;
+        (this.nodeOptionsBox$ScaleTuningOptionsBox).setFilename(filename);
+
         return 1;
     }
 
@@ -166,40 +171,10 @@ public class ScaleTuningNode extends Node {
         this.nodeOptionsBox$ScaleTuningOptionsBox @=> ScaleTuningOptionsBox optionsBox;
 
         while (this.nodeActive) {
-            if (optionsBox.textBoxSelected) {
-                GWindow.keysDown() @=> int keysPressed[];
-                for (int key : keysPressed) {
+            if (optionsBox.buttonClicked) {
+                GG.openFileDialog(null) => string scalaFilename;
 
-                    // If a number box is selected and a number key is pressed, add the number to the number box
-                    if (key >= GWindow.Key_0 && key <= GWindow.Key_9) {
-                        optionsBox.filenameEntryBox.addChar(key);
-                    } else if (key >= GWindow.Key_A && key <= GWindow.Key_Z) {
-                        // Can't use an empty string or else this doesn't work
-                        // So just use any character as a placeholder
-                        "z" => string keyStr;
-                        keyStr.appendChar(key);
-
-                        // Check if SHIFT held down to make letter Uppercase
-                        if (GWindow.key(GWindow.Key_LeftShift) || GWindow.key(GWindow.Key_RightShift)) {
-                            keyStr.upper() => keyStr;
-                        } else {
-                            keyStr.lower() => keyStr;
-                        }
-
-                        optionsBox.filenameEntryBox.addChar(keyStr.charAt(1));
-                    } else if (key == GWindow.Key_Minus && (GWindow.key(GWindow.Key_LeftShift) || GWindow.key(GWindow.Key_RightShift))) {
-                        optionsBox.filenameEntryBox.addChar("_");
-                    } else if (key == GWindow.Key_Period || key == GWindow.Key_Minus) {
-                        optionsBox.filenameEntryBox.addChar(key);
-                    } else if (key == GWindow.Key_Backspace) {
-                        optionsBox.filenameEntryBox.removeChar();
-                    } else if (key == GWindow.Key_Enter) {
-                        0 => optionsBox.textBoxSelected;
-                    }
-                }
-            } else if (optionsBox.buttonClicked) {
-                "./scala/" + optionsBox.filenameEntryBox.chars => string scalaFilename;
-                this.setTuning(scalaFilename);
+                if (scalaFilename != null) this.setTuning(scalaFilename);
                 0 => optionsBox.buttonClicked;
             }
 
