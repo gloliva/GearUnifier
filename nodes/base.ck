@@ -341,6 +341,30 @@ public class Node extends ClickableGGen {
         <<< "ERROR: Override the serialize function for Child Nodes" >>>;
         return null;
     }
+
+    fun void serialize(HashMap data) {
+        // TODO: when `super()` is supported, replace this function with
+        // Node.serialize() which just returns the base HashMap, which the
+        // child node can add to.
+        data.set("nodeClass", Type.of(this).name());
+        data.set("nodeID", this.nodeID);
+        data.set("posX", this.posX());
+        data.set("posY", this.posY());
+        data.set("posZ", this.posZ());
+
+        // Handle visibility
+        if (this.nodeOptionsBox != null) {
+            data.set("optionsActive", this.nodeOptionsBox.active);
+        }
+
+        if (this.nodeInputsBox != null) {
+            data.set("inputsActive", this.nodeInputsBox.active);
+        }
+
+        if (this.nodeOutputsBox != null) {
+            data.set("outputsActive", this.nodeOutputsBox.active);
+        }
+    }
 }
 
 

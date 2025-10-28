@@ -247,14 +247,11 @@ public class ASRNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
         data.set("attackTime", this.attackTime / 1::second);
         data.set("sustainLevel", this.sustainLevel);
         data.set("releaseTime", this.releaseTime / 1::second);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         return data;
     }
@@ -495,15 +492,12 @@ public class ADSRNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
         data.set("attackTime", this.adsr.attackTime() / 1::second);
         data.set("decayTime", this.adsr.decayTime() / 1::second);
         data.set("sustainLevel", this.adsr.sustainLevel());
         data.set("releaseTime", this.adsr.releaseTime() / 1::second);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         return data;
     }

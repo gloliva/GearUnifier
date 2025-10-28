@@ -777,8 +777,9 @@ public class MidiInNode extends MidiNode {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
+        // Midi Data
         data.set("channel", this.channel);
         data.set("synthMode", this.synthMode());
         data.set("latch", this.latch());
@@ -789,9 +790,6 @@ public class MidiInNode extends MidiNode {
         data.set("outputsActive", this.nodeOutputsBox.active);
         data.set("numInputs", this.nodeInputsBox.numJacks);
         data.set("numOutputs", this.nodeOutputsBox.numJacks);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         // Get input menu data
         HashMap inputMenuData;

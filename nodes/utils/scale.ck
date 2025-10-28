@@ -244,15 +244,12 @@ public class ScaleNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
         data.set("inLow", this.scale.inLow);
         data.set("inHigh", this.scale.inHigh);
         data.set("outLow", this.scale.outLow);
         data.set("outHigh", this.scale.outHigh);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         return data;
     }

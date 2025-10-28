@@ -390,14 +390,20 @@ public class NodeManager {
         nodes.intKeys() @=> int nodeKeys[];
         nodeKeys.sort();
         for (int idx; idx < nodeKeys.size(); idx++) {
+            Node @ currNode;
             nodes.get(idx) @=> HashMap nodeData;
+
+            // Data shared across all nodes
             nodeData.getStr("nodeClass") => string nodeClassName;
+            nodeData.getStr("nodeID") => string nodeID;
+            nodeData.getFloat("posX") => float posX;
+            nodeData.getFloat("posY") => float posY;
+            nodeData.getFloat("posZ") => float posZ;
 
             <<< "Node class", nodeClassName, "Node name", nodeData.getStr("nodeID") >>>;
 
             // Handle based on node class
             if (nodeClassName == MidiInNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
                 nodeData.getInt("midiID") => int midiID;
                 nodeData.getStr("midiName") => string midiName;
                 nodeData.getInt("channel") => int channel;
@@ -408,11 +414,6 @@ public class NodeManager {
                 nodeData.getInt("optionsActive") => int optionsActive;
                 nodeData.getInt("inputsActive") => int inputsActive;
                 nodeData.getInt("outputsActive") => int outputsActive;
-
-                // Position
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
 
                 // Check if Midi Device is connected
                 if (!this.midiDeviceConnected(midiName, nodeClassName)) {
@@ -429,12 +430,11 @@ public class NodeManager {
 
                 // Create and add node
                 MidiInNode midiIn(midiName, channel, numInputs, numOutputs);
-                midiIn.setNodeID(nodeID);
                 midiIn.setChannel(channel);
                 midiIn.synthMode(synthMode);
                 midiIn.latch(latch);
-                @(posX, posY, posZ) => midiIn.pos;
-                this.addNode(midiIn);
+                midiIn @=> currNode;
+
                 spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
                 spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
                 spork ~ midiIn.processNumberBoxUpdates() @=> Shred @ midiInProcessNumberBoxShred;
@@ -487,44 +487,17 @@ public class NodeManager {
                     // Update output data type mapping
                     midiIn.outputDataTypeIdx(midiDataType, voiceIdx, idx);
                 }
-
-                // Handle visibility
-                if (!optionsActive) midiIn.hideOptionsBox();
-                if (!inputsActive) midiIn.hideInputsBox();
-                if (!outputsActive) midiIn.hideOutputsBox();
-
             } else if (nodeClassName == AudioInNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
-
                 AudioInNode audioIn(adc.channels());
-                audioIn.setNodeID(nodeID);
-                @(posX, posY, posZ) => audioIn.pos;
-                this.addNode(audioIn);
-
+                audioIn @=> currNode;
             } else if (nodeClassName == AudioOutNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
-
                 AudioOutNode audioOut(dac.channels());
-                audioOut.setNodeID(nodeID);
-                @(posX, posY, posZ) => audioOut.pos;
-                this.addNode(audioOut);
-
+                audioOut @=> currNode;
             } else if (nodeClassName == WavefolderNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
+                // Instantiate node
                 nodeData.getInt("numInputs") => int numInputs;
-
                 WavefolderNode wavefolder(numInputs, 4.);
-                wavefolder.setNodeID(nodeID);
-                @(posX, posY, posZ) => wavefolder.pos;
+                wavefolder @=> currNode;
 
                 // Handle input data type mappings and menu selections
                 nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
@@ -549,25 +522,16 @@ public class NodeManager {
                 // Run wavefolder
                 spork ~ wavefolder.processInputs() @=> Shred @ wavefolderProcessInputsShred;
                 wavefolder.addShreds([wavefolderProcessInputsShred]);
-
-                // Add node to screen
-                this.addNode(wavefolder);
-
             } else if (nodeClassName == DistortionNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
-                nodeData.getInt("numInputs") => int numInputs;
-
                 // Options
                 nodeData.getInt("mode") => int mode;
                 nodeData.getInt("dist1Type") => int dist1Type;
                 nodeData.getInt("dist2Type") => int dist2Type;
 
+                // Instantiate node
+                nodeData.getInt("numInputs") => int numInputs;
                 DistortionNode distortion(numInputs, 4.);
-                distortion.setNodeID(nodeID);
-                @(posX, posY, posZ) => distortion.pos;
+                distortion @=> currNode;
 
                 mode => distortion.setMode;
                 dist1Type => distortion.setDist1Type;
@@ -599,19 +563,11 @@ public class NodeManager {
                 // Run distortion
                 spork ~ distortion.processInputs() @=> Shred @ distortionProcessInputsShred;
                 distortion.addShreds([distortionProcessInputsShred]);
-
-                // Add node to screen
-                this.addNode(distortion);
             } else if (nodeClassName == DelayNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
+                // Instantiate node
                 nodeData.getInt("numInputs") => int numInputs;
-
                 DelayNode delay(numInputs, 4.);
-                delay.setNodeID(nodeID);
-                @(posX, posY, posZ) => delay.pos;
+                delay @=> currNode;
 
                 // Handle input data type mappings and menu selections
                 nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
@@ -637,21 +593,11 @@ public class NodeManager {
                 spork ~ delay.processInputs() @=> Shred @ delayProcessInputsShred;
                 spork ~ delay.processOptions() @=> Shred @ delayProcessOptionsShred;
                 delay.addShreds([delayProcessInputsShred, delayProcessOptionsShred]);
-
-                // Add node to screen
-                this.addNode(delay);
-
             } else if (nodeClassName == SequencerNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
-                nodeData.getInt("numInputs") => int numInputs;
-
                 // Instantiate node
+                nodeData.getInt("numInputs") => int numInputs;
                 SequencerNode sequencer(numInputs, 4.);
-                sequencer.setNodeID(nodeID);
-                @(posX, posY, posZ) => sequencer.pos;
+                sequencer @=> currNode;
 
                 // Handle input data type mappings and menu selections
                 nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
@@ -698,103 +644,57 @@ public class NodeManager {
                     sequencer.sequences << currSequence;
                 }
 
-
                 // Run sequencer
                 spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
                 sequencer.addShreds([sequencerProcessInputsShred]);
-
-                // Add node to screen
-                this.addNode(sequencer);
             } else if (nodeClassName == TransportNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;
-
                 TransportNode transport(tempo, beatDiv, 4.);
-                transport.setNodeID(nodeID);
-                @(posX, posY, posZ) => transport.pos;
+                transport @=> currNode;
 
                 // Run transport
                 spork ~ transport.processOptions() @=> Shred @ transportProcessOptionsShred;
                 transport.addShreds([transportProcessOptionsShred]);
-
-                // Add node to screen
-                this.addNode(transport);
             } else if (nodeClassName == ScaleNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
                 nodeData.getFloat("inLow") => float inLow;
                 nodeData.getFloat("inHigh") => float inHigh;
                 nodeData.getFloat("outLow") => float outLow;
                 nodeData.getFloat("outHigh") => float outHigh;
-
                 ScaleNode scale(inLow, inHigh, outLow, outHigh, 1, 4.);
-                scale.setNodeID(nodeID);
-                @(posX, posY, posZ) => scale.pos;
+                scale @=> currNode;
 
                 // Run scale
                 spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;
                 scale.addShreds([scaleProcessOptionsShred]);
-
-                // Add node to screen
-                this.addNode(scale);
             } else if (nodeClassName == ASRNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
                 nodeData.getFloat("attackTime")::second => dur attackTime;
                 nodeData.getFloat("sustainLevel") => float sustainLevel;
                 nodeData.getFloat("releaseTime")::second  => dur releaseTime;
-
                 ASRNode asr(attackTime, sustainLevel, releaseTime, 4.);
-                asr.setNodeID(nodeID);
-                @(posX, posY, posZ) => asr.pos;
+                asr @=> currNode;
 
                 // Run asr input and option processing
                 spork ~ asr.processInputs() @=> Shred @ asrProcessInputsShred;
                 spork ~ asr.processOptions() @=> Shred @ asrProcessOptionsShred;
                 asr.addShreds([asrProcessInputsShred, asrProcessOptionsShred]);
-
-                // Add node to screen
-                this.addNode(asr);
             } else if (nodeClassName == ADSRNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
                 nodeData.getFloat("attackTime")::second => dur attackTime;
                 nodeData.getFloat("decayTime")::second  => dur decayTime;
                 nodeData.getFloat("sustainLevel") => float sustainLevel;
                 nodeData.getFloat("releaseTime")::second  => dur releaseTime;
-
                 ADSRNode adsr(attackTime, decayTime, sustainLevel, releaseTime, 4.);
-                adsr.setNodeID(nodeID);
-                @(posX, posY, posZ) => adsr.pos;
+                adsr @=> currNode;
 
                 // Run adsr input and options processing
                 spork ~ adsr.processInputs() @=> Shred @ adsrProcessInputsShred;
                 spork ~ adsr.processOptions() @=> Shred @ adsrProcessOptionsShred;
                 adsr.addShreds([adsrProcessInputsShred, adsrProcessOptionsShred]);
-
-                // Add node to screen
-                this.addNode(adsr);
             } else if (nodeClassName == ScaleTuningNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
                 nodeData.getStr("tuningFilename") => string tuningFilename;
                 nodeData.getInt("degreeOffset") => int degreeOffset;
-
                 ScaleTuningNode scaleTuning(degreeOffset);
-                scaleTuning.setNodeID(nodeID);
-                @(posX, posY, posZ) => scaleTuning.pos;
+                scaleTuning @=> currNode;
 
                 // Set tuning
                 scaleTuning.setTuning(tuningFilename);
@@ -804,26 +704,38 @@ public class NodeManager {
                 spork ~ scaleTuning.processNumberBoxUpdates() @=> Shred @ scaleTuningNumberBoxShred;
                 spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
                 scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningNumberBoxShred, scaleTuningClickEventShred]);
-
-                this.addNode(scaleTuning);
             } else if (nodeClassName == EDOTuningNode.typeOf().name()) {
-                nodeData.getStr("nodeID") => string nodeID;
-                nodeData.getFloat("posX") => float posX;
-                nodeData.getFloat("posY") => float posY;
-                nodeData.getFloat("posZ") => float posZ;
                 nodeData.getInt("scaleSize") => int scaleSize;
                 nodeData.getInt("degreeOffset") => int degreeOffset;
-
                 EDOTuningNode edoTuning(scaleSize, degreeOffset);
-                edoTuning.setNodeID(nodeID);
-                @(posX, posY, posZ) => edoTuning.pos;
+                edoTuning @=> currNode;
 
                 // Tuning options processing
                 spork ~ edoTuning.processOptions() @=> Shred @ edoTuningProcessOptionsShred;
                 edoTuning.addShreds([edoTuningProcessOptionsShred]);
-
-                this.addNode(edoTuning);
             }
+
+            // Set attributes relevant to all nodes
+            currNode.setNodeID(nodeID);
+            @(posX, posY, posZ) => currNode.pos;
+
+            if (nodeData.has("optionsActive")) {
+                nodeData.getInt("optionsActive") => int optionsActive;
+                if (!optionsActive) currNode.hideOptionsBox();
+            }
+
+            if (nodeData.has("inputsActive")) {
+                nodeData.getInt("inputsActive") => int inputsActive;
+                if (!inputsActive) currNode.hideInputsBox();
+            }
+
+            if (nodeData.has("outputsActive")) {
+                nodeData.getInt("outputsActive") => int outputsActive;
+                if (!outputsActive) currNode.hideOutputsBox();
+            }
+
+            // Add the node to the screen
+            this.addNode(currNode);
         }
 
         // Create and add connections

@@ -152,13 +152,10 @@ public class TransportNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
         data.set("tempo", this.tempo);
         data.set("beatDiv", this.beatDiv);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         return data;
     }

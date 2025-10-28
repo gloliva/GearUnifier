@@ -219,13 +219,10 @@ public class ScaleTuningNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
         data.set("tuningFilename", this.tuningFilename);
         data.set("degreeOffset", this.degreeOffset);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         return data;
     }
@@ -367,13 +364,10 @@ public class EDOTuningNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
+        this.serialize(data);
+
         data.set("scaleSize", this.scaleSize);
         data.set("degreeOffset", this.degreeOffset);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
 
         return data;
     }

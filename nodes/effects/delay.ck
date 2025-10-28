@@ -243,13 +243,9 @@ public class DelayNode extends Node {
 
     fun HashMap serialize() {
         HashMap data;
+        this.serialize(data);
 
         // Node data
-        data.set("nodeClass", Type.of(this).name());
-        data.set("nodeID", this.nodeID);
-        data.set("posX", this.posX());
-        data.set("posY", this.posY());
-        data.set("posZ", this.posZ());
         data.set("numInputs", this.nodeInputsBox.numJacks);
 
         // Input menu data
