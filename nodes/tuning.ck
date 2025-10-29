@@ -134,6 +134,12 @@ public class ScaleTuningNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        spork ~ this.processNumberBoxUpdates() @=> Shred @ numberBoxShred;
+        spork ~ this.handleButtonClickEvent() @=> Shred @ clickEventShred;
+        this.addShreds([processOptionsShred, numberBoxShred, clickEventShred]);
     }
 
     fun int setTuning(string tuningFilename) {
@@ -338,6 +344,10 @@ public class EDOTuningNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        this.addShreds([processOptionsShred]);
     }
 
     fun void processOptions() {

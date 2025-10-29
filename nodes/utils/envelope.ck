@@ -155,6 +155,11 @@ public class ASRNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        this.addShreds([processInputsShred, processOptionsShred]);
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
@@ -398,6 +403,11 @@ public class ADSRNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        this.addShreds([processInputsShred, processOptionsShred]);
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {

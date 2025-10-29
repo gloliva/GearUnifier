@@ -125,6 +125,10 @@ public class TransportNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        this.addShreds([processOptionsShred]);
     }
 
     fun float getBeat() {

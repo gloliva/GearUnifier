@@ -137,10 +137,6 @@ public class NodeManager {
                 addNodeEvent.menuName => string midiDeviceName;
                 MidiInNode midiIn(midiDeviceName, MidiConstants.ALL_CHANNELS, 1, 3);
                 this.addNode(midiIn);
-                spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
-                spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
-                spork ~ midiIn.processNumberBoxUpdates() @=> Shred @ midiInProcessNumberBoxShred;
-                midiIn.addShreds([midiInProcessMidiShred, midiInProcessInputsShred, midiInProcessNumberBoxShred]);
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_IN) {
                 AudioInNode audioIn(adc.channels());
                 this.addNode(audioIn);
@@ -150,69 +146,32 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder);
-                spork ~ wavefolder.processInputs() @=> Shred @ wavefolderProcessInputsShred;
-                wavefolder.addShreds([wavefolderProcessInputsShred]);
             } else if (addNodeEvent.nodeType == NodeType.DISTORTION) {
                 DistortionNode distortion();
-                spork ~ distortion.processInputs() @=> Shred @ distortionProcessInputsShred;
                 this.addNode(distortion);
-                distortion.addShreds([distortionProcessInputsShred]);
             } else if (addNodeEvent.nodeType == NodeType.DELAY) {
                 DelayNode delay();
-                spork ~ delay.processInputs() @=> Shred @ delayProcessInputsShred;
-                spork ~ delay.processOptions() @=> Shred @ delayProcessOptionsShred;
                 this.addNode(delay);
-                delay.addShreds([delayProcessInputsShred, delayProcessOptionsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 SequencerNode sequencer();
-                spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
                 this.addNode(sequencer);
-                sequencer.addShreds([sequencerProcessInputsShred]);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
-                spork ~ transport.processOptions() @=> Shred @ transportProcessOptionsShred;
                 this.addNode(transport);
-                transport.addShreds([transportProcessOptionsShred]);
             } else if (addNodeEvent.nodeType == NodeType.SCALE_TUNING) {
                 ScaleTuningNode scaleTuning();
-
-                // Tuning processing
-                spork ~ scaleTuning.processOptions() @=> Shred @ scaleTuningProcessOptionsShred;
-                spork ~ scaleTuning.processNumberBoxUpdates() @=> Shred @ scaleTuningNumberBoxShred;
-                spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
-                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningNumberBoxShred, scaleTuningClickEventShred]);
-
                 this.addNode(scaleTuning);
             } else if (addNodeEvent.nodeType == NodeType.EDO_TUNING) {
                 EDOTuningNode edoTuning();
-
-                // Tuning options processing
-                spork ~ edoTuning.processOptions() @=> Shred @ edoTuningProcessOptionsShred;
-                edoTuning.addShreds([edoTuningProcessOptionsShred]);
-
                 this.addNode(edoTuning);
             } else if (addNodeEvent.nodeType == NodeType.SCALE) {
                 ScaleNode scale();
-                spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;
                 this.addNode(scale);
-                scale.addShreds([scaleProcessOptionsShred]);
             } else if (addNodeEvent.nodeType == NodeType.ASR_ENV) {
                 ASRNode asr();
-
-                // ASR input processing
-                spork ~ asr.processInputs() @=> Shred @ asrProcessInputsShred;
-                spork ~ asr.processOptions() @=> Shred @ asrProcessOptionsShred;
-                asr.addShreds([asrProcessInputsShred, asrProcessOptionsShred]);
-
                 this.addNode(asr);
             } else if (addNodeEvent.nodeType == NodeType.ADSR_ENV) {
                 ADSRNode adsr();
-
-                // ADSR input processing
-                spork ~ adsr.processInputs() @=> Shred @ adsrProcessInputsShred;
-                spork ~ adsr.processOptions() @=> Shred @ adsrProcessOptionsShred;
-                adsr.addShreds([adsrProcessInputsShred, adsrProcessOptionsShred]);
-
                 this.addNode(adsr);
             }
         }
@@ -435,11 +394,6 @@ public class NodeManager {
                 midiIn.latch(latch);
                 midiIn @=> currNode;
 
-                spork ~ midiIn.processMidi() @=> Shred @ midiInProcessMidiShred;
-                spork ~ midiIn.processInputs() @=> Shred @ midiInProcessInputsShred;
-                spork ~ midiIn.processNumberBoxUpdates() @=> Shred @ midiInProcessNumberBoxShred;
-                midiIn.addShreds([midiInProcessMidiShred, midiInProcessInputsShred, midiInProcessNumberBoxShred]);
-
                 // Handle options menu selections
                 (midiIn.nodeOptionsBox$MidiOptionsBox).channelSelectMenu.updateSelectedEntry(channel + 1);  // +1 because 0th entry is "All"
                 (midiIn.nodeOptionsBox$MidiOptionsBox).synthModeSelectMenu.updateSelectedEntry(synthMode);
@@ -518,10 +472,6 @@ public class NodeManager {
                     // Update input data type mapping
                     wavefolder.nodeInputsBox.setDataTypeMapping(wavefolderInputType, idx);
                 }
-
-                // Run wavefolder
-                spork ~ wavefolder.processInputs() @=> Shred @ wavefolderProcessInputsShred;
-                wavefolder.addShreds([wavefolderProcessInputsShred]);
             } else if (nodeClassName == DistortionNode.typeOf().name()) {
                 // Options
                 nodeData.getInt("mode") => int mode;
@@ -559,10 +509,6 @@ public class NodeManager {
                     // Update input data type mapping
                     distortion.nodeInputsBox.setDataTypeMapping(distortionInputType, idx);
                 }
-
-                // Run distortion
-                spork ~ distortion.processInputs() @=> Shred @ distortionProcessInputsShred;
-                distortion.addShreds([distortionProcessInputsShred]);
             } else if (nodeClassName == DelayNode.typeOf().name()) {
                 // Instantiate node
                 nodeData.getInt("numInputs") => int numInputs;
@@ -588,11 +534,6 @@ public class NodeManager {
                     // Update input data type mapping
                     delay.nodeInputsBox.setDataTypeMapping(delayInputType, idx);
                 }
-
-                // Run delay
-                spork ~ delay.processInputs() @=> Shred @ delayProcessInputsShred;
-                spork ~ delay.processOptions() @=> Shred @ delayProcessOptionsShred;
-                delay.addShreds([delayProcessInputsShred, delayProcessOptionsShred]);
             } else if (nodeClassName == SequencerNode.typeOf().name()) {
                 // Instantiate node
                 nodeData.getInt("numInputs") => int numInputs;
@@ -643,19 +584,11 @@ public class NodeManager {
                     }
                     sequencer.sequences << currSequence;
                 }
-
-                // Run sequencer
-                spork ~ sequencer.processInputs() @=> Shred @ sequencerProcessInputsShred;
-                sequencer.addShreds([sequencerProcessInputsShred]);
             } else if (nodeClassName == TransportNode.typeOf().name()) {
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;
                 TransportNode transport(tempo, beatDiv, 4.);
                 transport @=> currNode;
-
-                // Run transport
-                spork ~ transport.processOptions() @=> Shred @ transportProcessOptionsShred;
-                transport.addShreds([transportProcessOptionsShred]);
             } else if (nodeClassName == ScaleNode.typeOf().name()) {
                 nodeData.getFloat("inLow") => float inLow;
                 nodeData.getFloat("inHigh") => float inHigh;
@@ -663,21 +596,12 @@ public class NodeManager {
                 nodeData.getFloat("outHigh") => float outHigh;
                 ScaleNode scale(inLow, inHigh, outLow, outHigh, 1, 4.);
                 scale @=> currNode;
-
-                // Run scale
-                spork ~ scale.processOptions() @=> Shred @ scaleProcessOptionsShred;
-                scale.addShreds([scaleProcessOptionsShred]);
             } else if (nodeClassName == ASRNode.typeOf().name()) {
                 nodeData.getFloat("attackTime")::second => dur attackTime;
                 nodeData.getFloat("sustainLevel") => float sustainLevel;
                 nodeData.getFloat("releaseTime")::second  => dur releaseTime;
                 ASRNode asr(attackTime, sustainLevel, releaseTime, 4.);
                 asr @=> currNode;
-
-                // Run asr input and option processing
-                spork ~ asr.processInputs() @=> Shred @ asrProcessInputsShred;
-                spork ~ asr.processOptions() @=> Shred @ asrProcessOptionsShred;
-                asr.addShreds([asrProcessInputsShred, asrProcessOptionsShred]);
             } else if (nodeClassName == ADSRNode.typeOf().name()) {
                 nodeData.getFloat("attackTime")::second => dur attackTime;
                 nodeData.getFloat("decayTime")::second  => dur decayTime;
@@ -685,11 +609,6 @@ public class NodeManager {
                 nodeData.getFloat("releaseTime")::second  => dur releaseTime;
                 ADSRNode adsr(attackTime, decayTime, sustainLevel, releaseTime, 4.);
                 adsr @=> currNode;
-
-                // Run adsr input and options processing
-                spork ~ adsr.processInputs() @=> Shred @ adsrProcessInputsShred;
-                spork ~ adsr.processOptions() @=> Shred @ adsrProcessOptionsShred;
-                adsr.addShreds([adsrProcessInputsShred, adsrProcessOptionsShred]);
             } else if (nodeClassName == ScaleTuningNode.typeOf().name()) {
                 nodeData.getStr("tuningFilename") => string tuningFilename;
                 nodeData.getInt("degreeOffset") => int degreeOffset;
@@ -698,21 +617,11 @@ public class NodeManager {
 
                 // Set tuning
                 scaleTuning.setTuning(tuningFilename);
-
-                // Tuning processing
-                spork ~ scaleTuning.processOptions() @=> Shred @ scaleTuningProcessOptionsShred;
-                spork ~ scaleTuning.processNumberBoxUpdates() @=> Shred @ scaleTuningNumberBoxShred;
-                spork ~ scaleTuning.handleButtonClickEvent() @=> Shred @ scaleTuningClickEventShred;
-                scaleTuning.addShreds([scaleTuningProcessOptionsShred, scaleTuningNumberBoxShred, scaleTuningClickEventShred]);
             } else if (nodeClassName == EDOTuningNode.typeOf().name()) {
                 nodeData.getInt("scaleSize") => int scaleSize;
                 nodeData.getInt("degreeOffset") => int degreeOffset;
                 EDOTuningNode edoTuning(scaleSize, degreeOffset);
                 edoTuning @=> currNode;
-
-                // Tuning options processing
-                spork ~ edoTuning.processOptions() @=> Shred @ edoTuningProcessOptionsShred;
-                edoTuning.addShreds([edoTuningProcessOptionsShred]);
             }
 
             // Set attributes relevant to all nodes

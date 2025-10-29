@@ -133,6 +133,11 @@ public class DelayNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        this.addShreds([processInputsShred, processOptionsShred]);
     }
 
     fun void setDelay(dur delay) {

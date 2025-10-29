@@ -137,6 +137,10 @@ public class WavefolderNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
+        this.addShreds([processInputsShred]);
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {

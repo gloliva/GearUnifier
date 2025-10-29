@@ -386,6 +386,12 @@ public class MidiInNode extends MidiNode {
         // Update all box positions
         // Must be done after all boxes are connected to the node
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processMidi() @=> Shred @ processMidiShred;
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
+        spork ~ this.processNumberBoxUpdates() @=> Shred @ processNumberBoxShred;
+        this.addShreds([processMidiShred, processInputsShred, processNumberBoxShred]);
     }
 
     fun void synthMode(int mode) {

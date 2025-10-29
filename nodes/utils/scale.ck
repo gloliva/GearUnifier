@@ -194,6 +194,10 @@ public class ScaleNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        this.addShreds([processOptionsShred]);
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
