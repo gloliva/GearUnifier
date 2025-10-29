@@ -860,6 +860,11 @@ public class NodeManager {
                     // Check if mouse is over this node's name box
                     node.mouseOverNameBox(mouseWorldPos) => int nodeNameHover;
                     if (nodeNameHover) {
+                        // Unhighlight previous selected node
+                        if (this.currSelectedNode != null) {
+                            this.currSelectedNode.unselectNode();
+                        }
+
                         1 => this.nodeSelected;
                         nodeIdx => this.currSelectedNodeIdx;
                         node @=> this.currSelectedNode;
