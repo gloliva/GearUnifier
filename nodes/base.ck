@@ -17,8 +17,9 @@ public class NodeType {
     21 => static int OSC_OUT;
 
     // Sequencing
-    40 => static int SEQUENCER;
-    41 => static int TRANSPORT;
+    400 => static int SEQUENCER;
+    401 => static int TRANSPORT;
+    402 => static int COMPOSE;
 
     // Effects
     50 => static int WAVEFOLDER;
@@ -1120,7 +1121,7 @@ public class ButtonBox extends ContentBox {
         // Initialize buttons
         (this.contentBox.scaY() - 1) / 2. => float startPosY;
         for (int idx; idx < numStartButtons; idx++) {
-            Button button(Std.itoa(idx + 1), 0.75 * xScale, 0.5);
+            Button button(Std.itoa(idx + 1), 0.5 * xScale, 0.5);
             startPosY + (idx * -1) => button.posY;
 
             button --> this;
@@ -1133,6 +1134,49 @@ public class ButtonBox extends ContentBox {
 
         // Connections
         this.contentBox --> this;
+    }
+
+    fun void addButton() {
+        // Update contentBox scale
+        this.buttons.size() + 1 => this.contentBox.scaY;
+
+        // Add and connect new button
+        Button button(Std.itoa(this.buttons.size() + 1), 0.5 * this.contentBox.scaX(), 0.5);
+        button --> this;
+        this.buttons << button;
+
+        // Reposition Buttons
+        this.updateButtonPos();
+
+        // Update position of content boxes
+        (this.parent()$Node).updatePos();
+    }
+
+    fun void removeButton() {
+        if (this.buttons.size() == 1) return;
+
+        // Remove button from screen
+        this.buttons[-1] @=> Button button;
+        this.buttons.popBack();
+        button --< this;
+
+        // Update contentBox scale
+        this.buttons.size() => this.contentBox.scaY;
+
+        // Reposition Buttons
+        this.updateButtonPos();
+
+        // Update position of content boxes
+        (this.parent()$Node).updatePos();
+    }
+
+    fun void updateButtonPos() {
+        (this.contentBox.scaY() - 1) / 2. => float startPosY;
+
+        for (int idx; idx < this.buttons.size(); idx++) {
+            this.buttons[idx] @=> Button button;
+            startPosY + (idx * -1) => button.posY;
+        }
     }
 
     fun int mouseOverButtons(vec3 mouseWorldPos) {

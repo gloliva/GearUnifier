@@ -5,7 +5,7 @@
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
-@import {"sequencer.ck", "tuning.ck", "transport.ck"}
+@import {"compose.ck", "sequencer.ck", "tuning.ck", "transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck"}
 
@@ -155,6 +155,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 SequencerNode sequencer();
                 this.addNode(sequencer);
+            } else if (addNodeEvent.nodeType == NodeType.COMPOSE) {
+                ComposeNode compose(3);
+                this.addNode(compose);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
                 this.addNode(transport);
@@ -584,6 +587,10 @@ public class NodeManager {
                     }
                     sequencer.sequences << currSequence;
                 }
+            } else if (nodeClassName == ComposeNode.typeOf().name()) {
+                nodeData.getInt("numButtons") => int numButtons;
+                ComposeNode compose(numButtons, 4.);
+                compose @=> currNode;
             } else if (nodeClassName == TransportNode.typeOf().name()) {
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;
@@ -1069,6 +1076,34 @@ public class NodeManager {
                             1 => this.numberBoxSelected;
                             numberBoxIdx => this.currNumberBoxIdx;
                         }
+
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
+                    }
+
+                    // Check if clicking on a node's button modifier box
+                    node.mouseOverButtonModifierBox(mouseWorldPos) => int overNodeButtonModifier;
+                    if (overNodeButtonModifier && node.nodeButtonModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                        node.nodeButtonModifierBox.mouseOverModifiers(mouseWorldPos) => int buttonModifier;
+                        if (buttonModifier == IOModifierBox.ADD) {
+                            node.nodeButtonBox.addButton();
+                        } else if (buttonModifier == IOModifierBox.REMOVE) {
+                            node.nodeButtonBox.removeButton();
+                        }
+
+                        // Found the node that was clicked on, can exit early
+                        nodeIdx => clickedNodeIdx;
+                        break;
+                    }
+
+                    // Check if clicking on a node's button box
+                    int nodeButtonBoxInteractedWith;
+                    node.mouseOverButtonBox(mouseWorldPos) => int overNodeButtonBox;
+                    if (overNodeButtonBox && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
+                        <<< "Clicked on Node Button Box" >>>;
+                        node.nodeButtonBox.mouseOverButtons(mouseWorldPos) => int buttonClickedIdx;
+                        <<< "Clicked on button:", buttonClickedIdx >>>;
 
                         // Found the node that was clicked on, can exit early
                         nodeIdx => clickedNodeIdx;

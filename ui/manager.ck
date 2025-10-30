@@ -117,7 +117,7 @@ public class UIManager {
     }
 
     fun void setSequencerUI() {
-        new DropdownMenu([new Enum(0, "Sequencer"), new Enum(1, "Transport")]) @=> this.sequencerMenu;
+        this.createDropdownMenu(["Sequencer", "Compose", "Transport"]) @=> this.sequencerMenu;
 
         // Set name and scale
         this.sequencerMenu.setSelectedName("Sequencer");
@@ -450,7 +450,8 @@ public class UIManager {
 
                         // Handle Node type for Sequencer
                         NodeType.SEQUENCER => int nodeType;
-                        if (menuEntry.id == 1) NodeType.TRANSPORT => nodeType;
+                        if (menuEntry.id == 1) NodeType.COMPOSE => nodeType;
+                        if (menuEntry.id == 2) NodeType.TRANSPORT => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
