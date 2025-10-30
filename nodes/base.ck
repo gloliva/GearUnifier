@@ -45,6 +45,8 @@ public class Node extends ClickableGGen {
     IOBox @ nodeInputsBox;
     IOModifierBox @ nodeOutputsModifierBox;
     IOBox @ nodeOutputsBox;
+    IOModifierBox @ nodeButtonModifierBox;
+    ButtonBox @ nodeButtonBox;
     VisibilityBox @ nodeVisibilityBox;
 
     fun void setNodeID(string nodeID) {
@@ -90,6 +92,8 @@ public class Node extends ClickableGGen {
         this.mouseOverInputsBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
         this.mouseOverOutputsModifierBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
         this.mouseOverOutputsBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverButtonModifierBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
+        this.mouseOverButtonBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
         this.mouseOverVisibilityBox(mouseWorldPos) || mouseIsOver => mouseIsOver;
 
         return mouseIsOver;
@@ -123,6 +127,16 @@ public class Node extends ClickableGGen {
     fun int mouseOverOutputsBox(vec3 mouseWorldPos) {
         if (this.nodeOutputsBox == null) return false;
         return this.mouseOverBox(mouseWorldPos, [this.nodeOutputsBox, this.nodeOutputsBox.contentBox]);
+    }
+
+    fun int mouseOverButtonModifierBox(vec3 mouseWorldPos) {
+        if (this.nodeButtonModifierBox == null) return false;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeButtonModifierBox, this.nodeButtonModifierBox.contentBox]);
+    }
+
+    fun int mouseOverButtonBox(vec3 mouseWorldPos) {
+        if (this.nodeButtonBox == null) return false;
+        return this.mouseOverBox(mouseWorldPos, [this.nodeButtonBox, this.nodeButtonBox.contentBox]);
     }
 
     fun int mouseOverVisibilityBox(vec3 mouseWorldPos) {
@@ -199,6 +213,32 @@ public class Node extends ClickableGGen {
         this.updatePos();
     }
 
+    fun void hideButtonBox() {
+        if (this.nodeButtonBox == null) return;
+
+        if (this.nodeButtonModifierBox != null) {
+            this.nodeButtonModifierBox --< this;
+            0 => this.nodeButtonModifierBox.active;
+        }
+
+        this.nodeButtonBox --< this;
+        0 => this.nodeButtonBox.active;
+        this.updatePos();
+    }
+
+    fun void showButtonBox() {
+        if (this.nodeButtonBox == null) return;
+
+        if (this.nodeButtonModifierBox != null) {
+            this.nodeButtonModifierBox --> this;
+            1 => this.nodeButtonModifierBox.active;
+        }
+
+        this.nodeButtonBox --> this;
+        1 => this.nodeButtonBox.active;
+        this.updatePos();
+    }
+
     fun void selectNode() {
         if (this.nodeNameBox != null) {
             Color.RED => this.nodeNameBox.contentBox.color;
@@ -261,6 +301,14 @@ public class Node extends ClickableGGen {
 
         if (this.nodeOutputsBox != null && this.nodeOutputsBox.active) {
             boxes << this.nodeOutputsBox;
+        }
+
+        if (this.nodeButtonModifierBox != null && this.nodeButtonModifierBox.active) {
+            boxes << this.nodeButtonModifierBox;
+        }
+
+        if (this.nodeButtonBox != null && this.nodeButtonBox.active) {
+            boxes << this.nodeButtonBox;
         }
 
         if (this.nodeVisibilityBox != null && this.nodeVisibilityBox.active) {
@@ -1054,6 +1102,49 @@ public class OptionsBox extends ContentBox {
 
     fun void handleNotClickedOn() {
         <<< "ERROR: Override the handleNotClickedOn function for Child Nodes" >>>;
+    }
+}
+
+
+public class ButtonBox extends ContentBox {
+    // Contents
+    Button buttons[0];
+
+    fun @construct(int numStartButtons, float xScale) {
+        // Scale
+        @(xScale, numStartButtons, 0.2) => this.contentBox.sca;
+
+        // Color
+        Color.GRAY => this.contentBox.color;
+
+        // Initialize buttons
+        (this.contentBox.scaY() - 1) / 2. => float startPosY;
+        for (int idx; idx < numStartButtons; idx++) {
+            Button button(Std.itoa(idx + 1), 0.75 * xScale, 0.5);
+            startPosY + (idx * -1) => button.posY;
+
+            button --> this;
+            this.buttons << button;
+        }
+
+        // Names
+        "ButtonsBox" => this.name;
+        "Content Box" => this.contentBox.name;
+
+        // Connections
+        this.contentBox --> this;
+    }
+
+    fun int mouseOverButtons(vec3 mouseWorldPos) {
+        this.parent()$Node @=> Node parentNode;
+
+        // Go through each button
+        for (int idx; idx < this.buttons.size(); idx++) {
+            this.buttons[idx] @=> Button currButton;
+            if (parentNode.mouseOverBox(mouseWorldPos, [this, currButton, currButton.box])) return idx + 1;
+        }
+
+        return 0;
     }
 }
 
