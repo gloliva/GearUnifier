@@ -1,9 +1,12 @@
 @import {"../events.ck", "../utils.ck"}
+@import "../ui/composeBox.ck"
 @import "base.ck"
 @import "HashMap"
 
 
 public class ComposeNode extends Node {
+    ComposeBox composeBoxes[0];
+
     fun @construct() {
         ComposeNode(1, 4.);
     }
@@ -27,6 +30,13 @@ public class ComposeNode extends Node {
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
 
+        // Add compose boxes
+        for (int idx; idx < numStartButtons; idx++) {
+            ComposeBox composeBox("Scene " + (idx + 1), 13, 13);
+            composeBox.setID(this.nodeID + " " + composeBox.headerName);
+            this.composeBoxes << composeBox;
+        }
+
         // Scale
         @(0.25, 0.25, 1.) => this.sca;
 
@@ -38,6 +48,28 @@ public class ComposeNode extends Node {
 
         // Update position
         this.updatePos();
+    }
+
+    fun void addButton() {
+        this.nodeButtonBox.addButton();
+        ComposeBox composeBox("Scene " + (this.composeBoxes.size() + 1), 13, 13);
+        composeBox.setID(this.nodeID + " " + composeBox.headerName);
+        this.composeBoxes << composeBox;
+    }
+
+    fun void removeButton() {
+        this.nodeButtonBox.removeButton();
+        this.composeBoxes.popBack();
+    }
+
+    fun void handleButtonPress(int buttonIdx) {
+        this.composeBoxes[buttonIdx] @=> ComposeBox currComposeBox;
+
+        if (!currComposeBox.active) {
+            1 => currComposeBox.active;
+        } else {
+            0 => currComposeBox.active;
+        }
     }
 
     fun HashMap serialize() {

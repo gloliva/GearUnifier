@@ -19,6 +19,10 @@ public class BorderedBox extends GGen {
     }
 
     fun @construct(string nameText, float xScale, float yScale) {
+        BorderedBox(nameText, Color.GRAY, xScale, yScale);
+    }
+
+    fun @construct(string nameText, vec3 color, float xScale, float yScale) {
         // Scale and Position
         this.setScale(xScale, yScale);
 
@@ -26,7 +30,7 @@ public class BorderedBox extends GGen {
         nameText => this.text.text;
 
         // Color
-        Color.GRAY => this.box.color;
+        color => this.box.color;
         @(3., 3., 3., 1.) => this.text.color;
 
         Color.BLACK => this.leftBorder.color;
@@ -78,6 +82,10 @@ public class BorderedBox extends GGen {
 
     fun void setName(string n) {
         n => this.text.text;
+    }
+
+    fun void setColor(vec3 color) {
+        color => this.box.color;
     }
 }
 

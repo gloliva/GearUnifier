@@ -386,6 +386,18 @@ public class Node extends ClickableGGen {
         <<< "ERROR: Override the removeJack function for Child Nodes" >>>;
     }
 
+    fun void addButton() {
+        <<< "ERROR: Override the addButton function for Child Nodes" >>>;
+    }
+
+    fun void removeButton() {
+        <<< "ERROR: Override the removeButton function for Child Nodes" >>>;
+    }
+
+    fun void handleButtonPress(int buttonIdx) {
+        <<< "ERROR: Override the handleButtonPress function for Child Nodes" >>>;
+    }
+
     fun HashMap serialize() {
         <<< "ERROR: Override the serialize function for Child Nodes" >>>;
         return null;
@@ -1185,10 +1197,10 @@ public class ButtonBox extends ContentBox {
         // Go through each button
         for (int idx; idx < this.buttons.size(); idx++) {
             this.buttons[idx] @=> Button currButton;
-            if (parentNode.mouseOverBox(mouseWorldPos, [this, currButton, currButton.box])) return idx + 1;
+            if (parentNode.mouseOverBox(mouseWorldPos, [this, currButton, currButton.box])) return idx;
         }
 
-        return 0;
+        return -1;
     }
 }
 

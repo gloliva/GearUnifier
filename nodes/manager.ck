@@ -1,7 +1,7 @@
 // Imports
 @import "../saveHandler.ck"
 @import "../events.ck"
-@import {"../ui/menu.ck", "../ui/popupBox.ck"}
+@import {"../ui/composeBox.ck", "../ui/menu.ck", "../ui/popupBox.ck"}
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
@@ -46,6 +46,11 @@ public class NodeManager {
     int connectionSelected;
     int currSelectedConnectionIdx;
     Connection @ currSelectedConnection;
+
+    // Compose Boxes
+    ComposeBox composeBoxesOnScreen[0];
+    ComposeBox @ currSelectedComposeBox;
+    ComposeBox @ currHeldComposeBox;
 
     // Available Midi Devices
     Enum midiInDevices[0];
@@ -729,6 +734,11 @@ public class NodeManager {
         // Menus
         0 => this.menuOpen;
         null => this.currMenu;
+
+        // Clear composer boxes
+        this.composeBoxesOnScreen.clear();
+        null => this.currSelectedComposeBox;
+        null => this.currHeldComposeBox;
     }
 
     fun void run() {
@@ -755,7 +765,9 @@ public class NodeManager {
                     if (this.popupMenu.mouseOverButton(mouseWorldPos)) {
                         this.popupMenu.button.clickOn();
                         me.yield();
-                        <<< "Button clicked on" >>>;
+
+                        // Break early
+                        GG.nextFrame() => now;
                         continue;
                     }
                 }
@@ -854,6 +866,41 @@ public class NodeManager {
                     this.currMenu.collapse();
                     0 => this.menuOpen;
                     null => this.currMenu;
+                }
+
+                // Check if clicking on an on-screen ComposeBox
+                -1 => int composeBoxClickedOn;
+                for (int boxIdx; boxIdx < this.composeBoxesOnScreen.size(); boxIdx++) {
+                    this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
+
+                    // Exiting out of ComposeBox window
+                    if (composeBox.mouseOverClose(mouseWorldPos)) {
+                        0 => composeBox.active;
+                        composeBox --< GG.scene();
+                        this.composeBoxesOnScreen.popOut(boxIdx);
+                        1 => composeBoxClickedOn;
+                        break;
+                    }
+
+                    // Clicking in the content section of a ComposeBox
+                    if (composeBox.mouseOverContentBox(mouseWorldPos)) {
+                        composeBox @=> this.currSelectedComposeBox;
+                    }
+
+                    // Click anywhere on a ComposeBox
+                    if (composeBox.mouseOverComposeBox(mouseWorldPos)) {
+                        1 => composeBoxClickedOn;
+                        break;
+                    }
+                }
+
+                // Break early if compose box clicked on
+                if (composeBoxClickedOn != -1) {
+                    GG.nextFrame() => now;
+                    continue;
+                // If ComposeBox is selected but not clicked on, remove the selected box
+                } else {
+                    null => this.currSelectedComposeBox;
                 }
 
                 // click in node
@@ -1087,9 +1134,9 @@ public class NodeManager {
                     if (overNodeButtonModifier && node.nodeButtonModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                         node.nodeButtonModifierBox.mouseOverModifiers(mouseWorldPos) => int buttonModifier;
                         if (buttonModifier == IOModifierBox.ADD) {
-                            node.nodeButtonBox.addButton();
+                            node.addButton();
                         } else if (buttonModifier == IOModifierBox.REMOVE) {
-                            node.nodeButtonBox.removeButton();
+                            node.removeButton();
                         }
 
                         // Found the node that was clicked on, can exit early
@@ -1101,9 +1148,29 @@ public class NodeManager {
                     int nodeButtonBoxInteractedWith;
                     node.mouseOverButtonBox(mouseWorldPos) => int overNodeButtonBox;
                     if (overNodeButtonBox && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        <<< "Clicked on Node Button Box" >>>;
                         node.nodeButtonBox.mouseOverButtons(mouseWorldPos) => int buttonClickedIdx;
-                        <<< "Clicked on button:", buttonClickedIdx >>>;
+                        if (buttonClickedIdx != -1) {
+                            node.handleButtonPress(buttonClickedIdx);
+
+                            // Handle ComposeNode adding ComposeBox to the screen
+                            if (Type.of(node).name() == ComposeNode.typeOf().name()) {
+                                (node$ComposeNode).composeBoxes[buttonClickedIdx] @=> ComposeBox composeBox;
+                                if (composeBox.active) {
+                                    composeBox --> GG.scene();
+                                    this.composeBoxesOnScreen << composeBox;
+                                } else {
+                                    composeBox --< GG.scene();
+                                    int boxIdx;
+                                    for (int idx; idx < this.composeBoxesOnScreen.size(); idx++) {
+                                        if (this.composeBoxesOnScreen[idx].ID == composeBox.ID) {
+                                            idx => boxIdx;
+                                            break;
+                                        }
+                                    }
+                                    this.composeBoxesOnScreen.popOut(boxIdx);
+                                }
+                            }
+                        }
 
                         // Found the node that was clicked on, can exit early
                         nodeIdx => clickedNodeIdx;
@@ -1246,6 +1313,22 @@ public class NodeManager {
                         }
                     }
                 }
+
+                // Check if clicking on an on-screen compose box
+                if (this.currHeldComposeBox == null) {
+                    for (int boxIdx; boxIdx < this.composeBoxesOnScreen.size(); boxIdx++) {
+                        this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
+                        if (composeBox.mouseOverHeader(mouseWorldPos)) {
+                            composeBox @=> this.currHeldComposeBox;
+                            break;
+                        }
+                    }
+                }
+
+                // Move compose box if its being held down
+                if (this.currHeldComposeBox != null && !this.nodeHeld) {
+                    this.currHeldComposeBox.translate(mouseWorldDelta);
+                }
             }
 
             // Check if mouse left click is released
@@ -1262,6 +1345,11 @@ public class NodeManager {
                     -1 => this.currHeldNodeIdx;
                     0 => this.nodeHeld;
                     null => this.currHeldNode;
+                }
+
+                // If a compose box was being held to move it, stop tracking it
+                if (this.currHeldComposeBox != null) {
+                    null => this.currHeldComposeBox;
                 }
             }
 
