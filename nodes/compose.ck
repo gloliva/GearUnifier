@@ -1,4 +1,5 @@
 @import {"../events.ck", "../utils.ck"}
+@import "../sequencer/composer.ck"
 @import "../ui/composeBox.ck"
 @import "base.ck"
 @import "HashMap"

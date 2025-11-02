@@ -882,6 +882,12 @@ public class NodeManager {
                         break;
                     }
 
+                    // Clicking on a ComposeBox button
+                    composeBox.mouseOverButtons(mouseWorldPos) => int buttonIdx;
+                    if (buttonIdx) {
+                        composeBox.handleButtonPress(buttonIdx);
+                    }
+
                     // Clicking in the content section of a ComposeBox
                     if (composeBox.mouseOverContentBox(mouseWorldPos)) {
                         composeBox @=> this.currSelectedComposeBox;
