@@ -5,7 +5,8 @@
 @import "audio.ck"
 @import "base.ck"
 @import "midi.ck"
-@import {"compose.ck", "sequencer.ck", "tuning.ck", "transport.ck"}
+@import "tuning.ck"
+@import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck"}
 

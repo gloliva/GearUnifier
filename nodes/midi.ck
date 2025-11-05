@@ -15,7 +15,8 @@
 @import "../sequencer/recorder.ck"
 @import "../ui/menu.ck"
 @import "../events.ck"
-@import {"base.ck", "sequencer.ck", "tuning.ck"}
+@import "sequencing/sequencer.ck"
+@import {"base.ck", "tuning.ck"}
 @import "HashMap"
 
 

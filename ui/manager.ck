@@ -117,10 +117,10 @@ public class UIManager {
     }
 
     fun void setSequencerUI() {
-        this.createDropdownMenu(["Sequencer", "Compose", "Transport"]) @=> this.sequencerMenu;
+        this.createDropdownMenu(["Sequencer", "Composer", "Transport"]) @=> this.sequencerMenu;
 
         // Set name and scale
-        this.sequencerMenu.setSelectedName("Sequencer");
+        this.sequencerMenu.setSelectedName("Sequencing");
         this.sequencerMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.sequencerMenu.sca;
