@@ -1,6 +1,6 @@
-@import "../utils.ck"
-@import {"../sequencer/base.ck", "../sequencer/recorder.ck"}
-@import "base.ck"
+@import "../../utils.ck"
+@import {"../../sequencer/base.ck", "../../sequencer/recorder.ck"}
+@import "../base.ck"
 @import "HashMap"
 @import "smuck"
 

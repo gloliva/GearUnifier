@@ -1,7 +1,7 @@
-@import "../events.ck"
-@import "../utils.ck"
-@import "../ui/textBox.ck"
-@import "base.ck"
+@import "../../events.ck"
+@import "../../utils.ck"
+@import "../../ui/textBox.ck"
+@import "../base.ck"
 @import "HashMap"
 
 
