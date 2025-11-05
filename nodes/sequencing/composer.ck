@@ -33,7 +33,7 @@ public class ComposeNode extends Node {
 
         // Add compose boxes
         for (int idx; idx < numStartButtons; idx++) {
-            ComposeBox composeBox("Scene " + (idx + 1), 13, 13);
+            ComposeBox composeBox("Scene " + (idx + 1), 18, 13);
             composeBox.setID(this.nodeID + " " + composeBox.headerName);
             this.composeBoxes << composeBox;
         }
@@ -53,7 +53,7 @@ public class ComposeNode extends Node {
 
     fun void addButton() {
         this.nodeButtonBox.addButton();
-        ComposeBox composeBox("Scene " + (this.composeBoxes.size() + 1), 13, 13);
+        ComposeBox composeBox("Scene " + (this.composeBoxes.size() + 1), 18, 13);
         composeBox.setID(this.nodeID + " " + composeBox.headerName);
         this.composeBoxes << composeBox;
     }

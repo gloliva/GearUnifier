@@ -36,6 +36,9 @@ public class ComposeBox extends ClickableGGen {
     string headerName;
     int active;
 
+    // smuck measures
+    ezMeasure measures[];
+
     fun @construct(string headerName, float xScale, float yScale) {
         headerName => this.headerName;
 
@@ -151,6 +154,8 @@ public class ComposeBox extends ClickableGGen {
             measure.print();
         }
 
+        // set measures
+        measures @=> this.measures;
     }
 
     fun void addTextLine(string text) {
@@ -174,7 +179,13 @@ public class ComposeBox extends ClickableGGen {
     }
 
     fun void resetTextLines() {
+        for (int idx; idx < this.lines.size(); idx++) {
+            this.lineNumbers[idx] --< this;
+            this.lines[idx] --< this;
+        }
 
+        this.lineNumbers.reset();
+        this.lines.reset();
     }
 
     fun void updateTextPos() {
