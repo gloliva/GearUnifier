@@ -18,11 +18,11 @@ public class ComposeNode extends Node {
 
     fun @construct(int numStartButtons, float xScale) {
         // Set node ID and name
-        "Compose Node" => this.name;
+        "Composer Node" => this.name;
         this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
 
         // Node name box
-        new NameBox("Compose", xScale) @=> this.nodeNameBox;
+        new NameBox("Composer", xScale) @=> this.nodeNameBox;
 
         // Create button box
         new IOModifierBox(xScale) @=> this.nodeButtonModifierBox;
