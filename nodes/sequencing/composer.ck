@@ -1,7 +1,9 @@
 @import {"../../events.ck", "../../utils.ck"}
 @import {"../../sequencer/composer.ck", "../../sequencer/instrument.ck"}
+@import {"../tuning.ck", "../../tuning/base.ck"}
 @import "../../ui/composeBox.ck"
 @import "../base.ck"
+@import "player.ck"
 @import "HashMap"
 @import "smuck"
 
@@ -41,6 +43,10 @@ public class ComposerNode extends Node {
     -1 => int activeScene;
     ezPart part;
     ComposerInstrument @ instrument;
+    ScorePlayerNode @ scorePlayer;
+
+    // Outs
+    Step outs[];
 
     fun @construct() {
         ComposerNode(1, 4.);
@@ -56,6 +62,13 @@ public class ComposerNode extends Node {
 
         // Set instrument
         new ComposerInstrument(defaultTuning) @=> this.instrument;
+
+        // Set outs
+        [
+            this.instrument.pitch,
+            this.instrument.gate,
+            this.instrument.envOut,
+        ] @=> this.outs;
 
         // Set node ID and name
         "Composer Node" => this.name;
@@ -75,7 +88,7 @@ public class ComposerNode extends Node {
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(2, this.outputTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
         this.nodeOutputsBox.setOutput(ComposerOutputType.PITCH, 0, this.instrument.pitch);
-        this.nodeOutputsBox.setOutput(ComposerOutputType.ENVELOPE, 1, this.instrument.env);
+        this.nodeOutputsBox.setOutput(ComposerOutputType.ENVELOPE, 1, this.instrument.envOut);
 
         // Create button box
         new IOModifierBox(xScale) @=> this.nodeButtonModifierBox;
@@ -106,6 +119,40 @@ public class ComposerNode extends Node {
 
         // Update position
         this.updatePos();
+
+        // Shreds
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
+        this.addShreds([processInputsShred]);
+    }
+
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "Composer Connect: No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
+
+        if (dataType == ComposerInputType.PLAYER.id) {
+            if (Type.of(outputNode).name() == ScorePlayerNode.typeOf().name()) {
+                <<< "Connecting a ScorePlayer Node" >>>;
+                (outputNode)$ScorePlayerNode @=> this.scorePlayer;
+                if (this.activeScene != -1) {
+                    this.scorePlayer.setPart(this.nodeID, this.part, this.instrument);
+                }
+            }
+        } else if (dataType == ComposerInputType.TUNING.id) {
+            if (Type.of(outputNode).name() == ScaleTuningNode.typeOf().name()) {
+                <<< "Connecting a Tuning File Node" >>>;
+                this.instrument.setTuning((outputNode$ScaleTuningNode).tuning);
+            } else if (Type.of(outputNode).name() == EDOTuningNode.typeOf().name()) {
+                <<< "Connecting an EDO Tuning Node" >>>;
+                this.instrument.setTuning((outputNode$EDOTuningNode).tuning);
+            }
+        }
+    }
+
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
+
     }
 
     fun void addButton() {
@@ -127,6 +174,50 @@ public class ComposerNode extends Node {
             1 => currComposeBox.active;
         } else {
             0 => currComposeBox.active;
+        }
+    }
+
+    fun void processInputs() {
+        while (this.nodeActive) {
+            for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
+                // Check if this input jack has an associated data type
+                this.nodeInputsBox.getDataTypeMapping(idx) => int dataType;
+                if (dataType == -1) continue;
+
+                // Get UGen connected to this input jack
+                this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
+                if (ugen == null) continue;
+
+                // Input value from ugen
+                this.getValueFromUGen(ugen) => float value;
+
+                // Change scenes by input values
+                if (dataType == ComposerInputType.SET_SCENE.id) {
+                    value$int => int sceneIdx;
+                    if (sceneIdx < 0 || sceneIdx >= this.composeBoxes.size()) {
+                        <<< "ERROR: Trying to set scene #", sceneIdx, "for number of scenes:", this.composeBoxes.size() >>>;
+                        continue;
+                    }
+
+                    // Check if already set to incoming value
+                    if (sceneIdx == this.activeScene) continue;
+
+                    this.composeBoxes[sceneIdx].measures @=> ezMeasure measures[];
+
+                    // Check that there are parsed measures
+                    if (measures == null) {
+                        <<< "IDK what to do here" >>>;  // TODO: some kind of error handling
+                    }
+
+                    // Set the measures for this part
+                    <<< "Setting new active scene:", sceneIdx >>>;
+                    sceneIdx => this.activeScene;
+                    this.part.measures(measures);
+                } else if (dataType == ComposerInputType.QUEUE_SCENE.id) {
+
+                }
+            }
+            10::ms => now;
         }
     }
 

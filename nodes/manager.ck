@@ -6,7 +6,7 @@
 @import "base.ck"
 @import "midi.ck"
 @import "tuning.ck"
-@import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/transport.ck"}
+@import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck"}
 
@@ -164,6 +164,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.COMPOSE) {
                 ComposerNode compose(3);
                 this.addNode(compose);
+            } else if (addNodeEvent.nodeType == NodeType.SCORE_PLAYER) {
+                ScorePlayerNode scorePlayer();
+                this.addNode(scorePlayer);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
                 this.addNode(transport);
@@ -798,6 +801,10 @@ public class NodeManager {
                         ioBox.parent()$Node @=> Node node;
 
                         if (ioBox.ioType == IOType.INPUT) {
+                            if (node.nodeInputsBox != null) {
+                                node.nodeInputsBox.setDataTypeMapping(this.currMenu.getSelectedEntry(), this.currMenu.menuIdx);
+                            }
+
                             // MIDI nodes
                             if (Type.of(node).name() == MidiInNode.typeOf().name()) {
                                 node$MidiInNode @=> MidiInNode midiIn;
@@ -859,6 +866,9 @@ public class NodeManager {
 
                                 // Add new mapping
                                 midiIn.outputDataTypeIdx(newSelection, voiceIdx, this.currMenu.menuIdx);
+                            } else if (Type.of(node).name() == ComposerNode.typeOf().name()) {
+                                node$ComposerNode @=> ComposerNode composerNode;
+                                composerNode.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, composerNode.outs[newSelection.id]);
                             }
                         }
                     }

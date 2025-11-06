@@ -44,6 +44,7 @@ public class MidiDataType {
     new Enum(3, "Velocity") @=> static Enum VELOCITY;
     new Enum(4, "Aftertouch") @=> static Enum AFTERTOUCH;
     new Enum(5, "CC") @=> static Enum CC;
+    new Enum(6, "Note") @=> static Enum NOTE;
 
     [
         MidiDataType.PITCH,
@@ -52,10 +53,11 @@ public class MidiDataType {
         MidiDataType.VELOCITY,
         MidiDataType.AFTERTOUCH,
         MidiDataType.CC,
+        MidiDataType.NOTE,
     ] @=> static Enum allTypes[];
 
     [
-        0, 0, 0, 0, 0, 1,
+        0, 0, 0, 0, 0, 1, 0,
     ] @=> static int includeNumberEntry[];
 }
 
@@ -533,7 +535,6 @@ public class MidiInNode extends MidiNode {
         } else if (dataType == MidiInputType.TUNING.id) {
             if (Type.of(outputNode).name() == ScaleTuningNode.typeOf().name()) {
                 <<< "Connecting a Tuning File Node" >>>;
-                // outputNode$TuningFileNode
                 (outputNode$ScaleTuningNode).tuning @=> this.tuning;
             } else if (Type.of(outputNode).name() == EDOTuningNode.typeOf().name()) {
                 <<< "Connecting an EDO Tuning Node" >>>;
@@ -713,6 +714,10 @@ public class MidiInNode extends MidiNode {
             // Velocity out
             this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
             if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[velocityOutIdx].next;
+
+            // Raw Note out
+            this.outputDataTypeIdx(MidiDataType.NOTE, 0) => int noteOutIdx;
+            if (noteOutIdx != -1) noteNumber => this.nodeOutputsBox.outs[noteOutIdx].next;
 
             // Set processed status
             1 => midiProcessed;

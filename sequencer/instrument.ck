@@ -9,11 +9,14 @@ public class ComposerInstrument extends ezInstrument {
     // Outputs
     Step pitch(0.);
     Step gate(0.);
+    Step envOut(0.);
     Envelope env;
 
     fun @construct(Tuning tuning) {
+        this.env => blackhole;
         this.setTuning(tuning);
         this.numVoices(1);
+        spork ~ updateOut(); // TODO: Fix this by removing this shred when ComposerNode is removed
     }
 
     fun void setTuning(Tuning tuning) {
@@ -50,5 +53,12 @@ public class ComposerInstrument extends ezInstrument {
 
         this.env.ramp(releaseTime, releaseLevel);
         releaseTime => now;
+    }
+
+    fun void updateOut() {
+        while (true) {
+            this.env.value() => this.envOut.next;
+            10::ms => now;
+        }
     }
 }

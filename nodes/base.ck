@@ -20,6 +20,7 @@ public class NodeType {
     400 => static int SEQUENCER;
     401 => static int TRANSPORT;
     402 => static int COMPOSE;
+    403 => static int SCORE_PLAYER;
 
     // Effects
     50 => static int WAVEFOLDER;
