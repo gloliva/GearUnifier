@@ -40,6 +40,7 @@ public class Node extends ClickableGGen {
     1 => int nodeActive;
     Shred activeShreds[0];
 
+    // Node Content Components
     NameBox @ nodeNameBox;
     OptionsBox @ nodeOptionsBox;
     IOModifierBox @ nodeInputsModifierBox;
@@ -49,6 +50,10 @@ public class Node extends ClickableGGen {
     IOModifierBox @ nodeButtonModifierBox;
     ButtonBox @ nodeButtonBox;
     VisibilityBox @ nodeVisibilityBox;
+
+    // IO Options
+    Enum inputTypes[];
+    Enum outputTypes[];
 
     fun void setNodeID(string nodeID) {
         nodeID => this.nodeID;
@@ -379,11 +384,47 @@ public class Node extends ClickableGGen {
     }
 
     fun void addJack(int ioType) {
-        <<< "ERROR: Override the addJack function for Child Nodes" >>>;
+        if (ioType == IOType.INPUT) {
+            if (this.inputTypes == null) {
+                <<< "ERROR: Trying to add an Input jack but inputTypes is not set" >>>;
+                return;
+            } else if (this.nodeInputsBox == null) {
+                <<< "ERROR: Trying to add an Input jack but nodeInputsBox is not set" >>>;
+                return;
+            }
+            this.nodeInputsBox.addJack(this.inputTypes);
+        } else if (ioType == IOType.OUTPUT) {
+            if (this.outputTypes == null) {
+                <<< "ERROR: Trying to add an Input jack but outputTypes is not set" >>>;
+                return;
+            } else if (this.nodeOutputsBox == null) {
+                <<< "ERROR: Trying to add an Input jack but nodeOutputsBox is not set" >>>;
+                return;
+            }
+            this.nodeOutputsBox.addJack(this.outputTypes);
+        } else {
+            <<< "ERROR: Unknown IOType with value:", ioType >>>;
+        }
+        this.updatePos();
     }
 
     fun void removeJack(int ioType) {
-        <<< "ERROR: Override the removeJack function for Child Nodes" >>>;
+        if (ioType == IOType.INPUT) {
+            if (this.nodeInputsBox == null) {
+                <<< "ERROR: Trying to remove an Input jack but nodeInputsBox is not set" >>>;
+                return;
+            }
+            this.nodeInputsBox.removeJack();
+        } else if (ioType == IOType.OUTPUT) {
+            if (this.nodeOutputsBox == null) {
+                <<< "ERROR: Trying to remove an Input jack but nodeOutputsBox is not set" >>>;
+                return;
+            }
+            this.nodeOutputsBox.removeJack();
+        } else {
+            <<< "ERROR: Unknown IOType with value:", ioType >>>;
+        }
+        this.updatePos();
     }
 
     fun void addButton() {
@@ -782,6 +823,36 @@ public class IOBox extends ContentBox {
 
         // Connect boxes to IO box
         this.contentBox --> this;
+    }
+
+    fun void setInput(Enum dataType, int jackIdx) {
+        if (this.ioType != IOType.INPUT) {
+            <<< "ERROR: Trying to set an input on an Output box." >>>;
+            return;
+        } else if (jackIdx > this.jacks.size() || jackIdx > this.menus.size()) {
+            <<< "ERROR: Jack idx", jackIdx, "greater than Jack/Menu size of", this.jacks.size() >>>;
+            return;
+        }
+
+        // Update the Menu Entry
+        this.menus[jackIdx].updateSelectedEntry(dataType.id);
+        this.setDataTypeMapping(dataType, jackIdx);
+    }
+
+    fun void setOutput(Enum dataType, int jackIdx, UGen out) {
+        if (this.ioType != IOType.OUTPUT) {
+            <<< "ERROR: Trying to set an output on an Input box." >>>;
+            return;
+        } else if (jackIdx > this.jacks.size() || jackIdx > this.menus.size()) {
+            <<< "ERROR: Jack idx", jackIdx, "greater than Jack/Menu size of", this.jacks.size() >>>;
+            return;
+        }
+
+        // Update the Menu Entry
+        this.menus[jackIdx].updateSelectedEntry(dataType.id);
+
+        // Set out UGen
+        this.jacks[jackIdx].setUgen(out);
     }
 
     fun void setDataTypeMapping(Enum dataType, int jackIdx) {

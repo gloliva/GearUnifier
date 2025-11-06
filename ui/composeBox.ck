@@ -148,6 +148,10 @@ public class ComposeBox extends ClickableGGen {
             return;
         }
 
+        for (ComposeTextError warning : this.parser.warnings) {
+            <<< "Line", warning.lineNumber, "WARNING:", warning.errorMsg >>>;
+        }
+
         this.succeedParseColor();
         <<< "Parsed good! Number of measures", measures.size() >>>;
         for (ezMeasure measure : measures) {

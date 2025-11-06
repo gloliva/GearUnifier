@@ -162,7 +162,7 @@ public class NodeManager {
                 SequencerNode sequencer();
                 this.addNode(sequencer);
             } else if (addNodeEvent.nodeType == NodeType.COMPOSE) {
-                ComposeNode compose(3);
+                ComposerNode compose(3);
                 this.addNode(compose);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
@@ -593,9 +593,9 @@ public class NodeManager {
                     }
                     sequencer.sequences << currSequence;
                 }
-            } else if (nodeClassName == ComposeNode.typeOf().name()) {
+            } else if (nodeClassName == ComposerNode.typeOf().name()) {
                 nodeData.getInt("numButtons") => int numButtons;
-                ComposeNode compose(numButtons, 4.);
+                ComposerNode compose(numButtons, 4.);
                 compose @=> currNode;
             } else if (nodeClassName == TransportNode.typeOf().name()) {
                 nodeData.getFloat("tempo") => float tempo;
@@ -1159,9 +1159,9 @@ public class NodeManager {
                         if (buttonClickedIdx != -1) {
                             node.handleButtonPress(buttonClickedIdx);
 
-                            // Handle ComposeNode adding ComposeBox to the screen
-                            if (Type.of(node).name() == ComposeNode.typeOf().name()) {
-                                (node$ComposeNode).composeBoxes[buttonClickedIdx] @=> ComposeBox composeBox;
+                            // Handle ComposerNode adding ComposeBox to the screen
+                            if (Type.of(node).name() == ComposerNode.typeOf().name()) {
+                                (node$ComposerNode).composeBoxes[buttonClickedIdx] @=> ComposeBox composeBox;
                                 if (composeBox.active) {
                                     composeBox --> GG.scene();
                                     this.composeBoxesOnScreen << composeBox;
