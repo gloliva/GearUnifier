@@ -46,7 +46,7 @@ public class ComposerNode extends Node {
     ScorePlayerNode @ scorePlayer;
 
     // Outs
-    Step outs[];
+    UGen outs[];
 
     fun @construct() {
         ComposerNode(1, 4.);
@@ -67,7 +67,7 @@ public class ComposerNode extends Node {
         [
             this.instrument.pitch,
             this.instrument.gate,
-            this.instrument.envOut,
+            this.instrument.env,
         ] @=> this.outs;
 
         // Set node ID and name
@@ -88,7 +88,7 @@ public class ComposerNode extends Node {
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(2, this.outputTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
         this.nodeOutputsBox.setOutput(ComposerOutputType.PITCH, 0, this.instrument.pitch);
-        this.nodeOutputsBox.setOutput(ComposerOutputType.ENVELOPE, 1, this.instrument.envOut);
+        this.nodeOutputsBox.setOutput(ComposerOutputType.ENVELOPE, 1, this.instrument.env);
 
         // Create button box
         new IOModifierBox(xScale) @=> this.nodeButtonModifierBox;
@@ -122,7 +122,7 @@ public class ComposerNode extends Node {
 
         // Shreds
         spork ~ this.processInputs() @=> Shred @ processInputsShred;
-        this.addShreds([processInputsShred]);
+        this.addShreds([this.instrument.envUpdateShred, processInputsShred]);
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {

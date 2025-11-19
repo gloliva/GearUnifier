@@ -49,7 +49,7 @@ while (true) {
     GG.nextFrame() => now;
 
     // UI
-    // if (UI.begin("SMUG")) {
+    // if (UI.begin("GUMS")) {
     //     // show a UI display of the current scenegraph
     //     UI.scenegraph(GG.scene());
     // }

@@ -639,6 +639,7 @@ public class Jack extends GGen {
     }
 
     fun void removeUgen() {
+        // TODO: set ugen to null here?
         Color.BLACK => this.jack.color;
         0 => this.isConnected;
     }
@@ -881,6 +882,15 @@ public class IOBox extends ContentBox {
         }
 
         -1 => this.dataMap[jackIdx];
+    }
+
+    fun UGen getJackUGen(int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index", jackIdx, "is out of bounds for Jack Length", this.jacks.size() >>>;
+            return null;
+        }
+
+        return this.jacks[jackIdx].ugen;
     }
 
     fun int hasNumberBox(int ioEntryIdx) {
