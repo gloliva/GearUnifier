@@ -150,6 +150,24 @@ public class ComposerNode extends Node {
         }
     }
 
+    fun void setComposeBoxFromFile(int boxIdx, string filePath) {
+        if (boxIdx < 0 || boxIdx > this.composeBoxes.size()) {
+            <<< "ERROR: Trying to set a ComposeBox with idx", boxIdx >>>;
+            return;
+        }
+
+        this.composeBoxes[boxIdx].openComposeTextFile(filePath);
+    }
+
+    fun void setActiveScene(int sceneId) {
+        if (sceneId < 0 || sceneId > this.composeBoxes.size()) {
+            <<< "ERROR: Trying to set the active scene to:", sceneId, ". Number of scenes:", this.composeBoxes.size() >>>;
+            return;
+        }
+
+        this.updateMeasures(sceneId, 1);
+    }
+
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
         this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
         if (dataType == -1) {
@@ -177,7 +195,26 @@ public class ComposerNode extends Node {
     }
 
     fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "Composer Disconnect: No data type mapping for jack", inputJackIdx, "how did this happen...?" >>>;
+            return;
+        }
 
+        // Disconnect a ScorePlayerNode
+        if (dataType == ComposerInputType.PLAYER.id) {
+            if (this.scorePlayer != null) {
+                // If a current score is being played, stop the score
+                if (this.scorePlayer.isPlaying()) this.scorePlayer.stop();
+
+                // Disconnect
+                null => this.scorePlayer;
+            }
+        // Disconnect a ScalaTuningNode or EDOTuningNode
+        } else if (dataType == ComposerInputType.TUNING.id) {
+            // Reset to default 12-TET tuning
+            this.instrument.setTuning(new EDO(12, -48));
+        }
     }
 
     fun void addButton() {
@@ -253,6 +290,18 @@ public class ComposerNode extends Node {
 
         // Button data
         data.set("numButtons", this.nodeButtonBox.buttons.size());
+
+        // Score data
+        data.set("activeScene", this.activeScene);
+
+        // ComposeBox data
+        HashMap filePathData;
+        for (int boxIdx; boxIdx < this.composeBoxes.size(); boxIdx++) {
+            this.composeBoxes[boxIdx] @=> ComposeBox composeBox;
+            filePathData.set(boxIdx, composeBox.openedFilePath);
+        }
+
+        data.set("filePathData", filePathData);
 
         return data;
     }

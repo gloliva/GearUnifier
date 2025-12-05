@@ -35,7 +35,7 @@ public class ScorePlayerNode extends Node {
     ezScorePlayer scorePlayer;
 
     // State management
-    0 => int isPlaying;
+    0 => int isRunning;
     0 => int isStopped;
 
     fun @construct() {
@@ -83,6 +83,22 @@ public class ScorePlayerNode extends Node {
         this.addShreds([processInputsShred]);
     }
 
+    fun int isPlaying() {
+        return this.scorePlayer.isPlaying();
+    }
+
+    fun void play() {
+        this.scorePlayer.play();
+    }
+
+    fun void stop() {
+        this.scorePlayer.stop();
+    }
+
+    fun void loop(int val) {
+        val => this.scorePlayer.loop;
+    }
+
     fun void setPart(string nodeID, ezPart part, ezInstrument instrument) {
         // Store a mapping from NodeID --> part and NodeID --> instrument
         part @=> this.partsMap[nodeID];
@@ -122,28 +138,29 @@ public class ScorePlayerNode extends Node {
                 // Input value from ugen
                 this.getValueFromUGen(ugen) => float value;
 
-                // Change scenes by input values
+                // Check if score has finished playing
                 0 => int scoreFinished;
                 this.scorePlayer.endPos() - this.scorePlayer.pos() => float beatsRemaining;
                 if (beatsRemaining <= 0.) 1 => scoreFinished;
-                // <<< "Current Pos", this.scorePlayer.pos(), "End Pos", this.scorePlayer.endPos(), "Score finished?", scoreFinished, "Score playing?", this.scorePlayer.isPlaying(), "Beats remaining", beatsRemaining >>>;
+
+                // Handle inputs
                 if (dataType == ScorePlayerInputType.RUN.id) {
-                    if (value > 0. && !this.isPlaying && !this.isStopped && !scoreFinished) {
+                    if (value > 0. && !this.isRunning && !this.isStopped && !scoreFinished) {
                         <<< "Score Player: Play" >>>;
                         this.scorePlayer.play();
-                        1 => this.isPlaying;
-                    } else if (value > 0. && !this.isPlaying && !this.isStopped && scoreFinished) {
+                        1 => this.isRunning;
+                    } else if (value > 0. && !this.isRunning && !this.isStopped && scoreFinished) {
                         <<< "Score Player: Playing from Beginning" >>>;
                         this.scorePlayer.startPos() => this.scorePlayer.pos;
                         this.scorePlayer.play();
-                        1 => this.isPlaying;
-                    } else if (value <= 0. && this.isPlaying && this.scorePlayer.isPlaying() && !this.isStopped && !scoreFinished) {
+                        1 => this.isRunning;
+                    } else if (value <= 0. && this.isRunning && this.scorePlayer.isPlaying() && !this.isStopped && !scoreFinished) {
                         <<< "Score Player: Pause" >>>;
                         this.scorePlayer.pause();
-                        0 => this.isPlaying;
-                    } else if (value <= 0. && this.isPlaying && (this.isStopped || scoreFinished || !this.scorePlayer.isPlaying())) {
+                        0 => this.isRunning;
+                    } else if (value <= 0. && this.isRunning && (this.isStopped || scoreFinished || !this.scorePlayer.isPlaying())) {
                         <<< "Score Player: Reset Play" >>>;
-                        0 => this.isPlaying;
+                        0 => this.isRunning;
                     }
                 } else if (dataType == ScorePlayerInputType.STOP.id) {
                     if (value > 0. && !this.isStopped && !scoreFinished) {
@@ -172,5 +189,15 @@ public class ScorePlayerNode extends Node {
             }
             10::ms => now;
         }
+    }
+
+    fun HashMap serialize() {
+        HashMap data;
+        this.serialize(data);
+
+        // Player data
+        data.set("loop", this.scorePlayer.loop());
+
+        return data;
     }
 }

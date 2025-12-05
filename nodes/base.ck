@@ -462,6 +462,17 @@ public class Node extends ClickableGGen {
 
         if (this.nodeInputsBox != null) {
             data.set("inputsActive", this.nodeInputsBox.active);
+            data.set("numInputs", this.nodeInputsBox.numJacks);
+
+            if (this.nodeInputsBox.hasMenus) {
+                // Input menu data
+                HashMap inputMenuData;
+                for (int idx; idx < this.nodeInputsBox.menus.size(); idx++) {
+                    this.nodeInputsBox.menus[idx] @=> DropdownMenu menu;
+                    inputMenuData.set(idx, menu.getSelectedEntry().id);
+                }
+                data.set("inputMenuData", inputMenuData);
+            }
         }
 
         if (this.nodeOutputsBox != null) {

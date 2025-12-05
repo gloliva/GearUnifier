@@ -600,6 +600,57 @@ public class NodeManager {
                 nodeData.getInt("numButtons") => int numButtons;
                 ComposerNode compose(numButtons, 4.);
                 compose @=> currNode;
+
+                // Handle inputs
+                nodeData.getInt("numInputs") => int numInputs;
+                repeat(numInputs - compose.nodeInputsBox.numJacks) {
+                    compose.addJack(IOType.INPUT);
+                }
+
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+
+                for (int inputMenuIdx; inputMenuIdx < inputMenuDataKeys.size(); inputMenuIdx++) {
+                    inputMenuData.getInt(inputMenuIdx) => int inputType;
+                    compose.nodeInputsBox.setInput(ComposerInputType.allTypes[inputType], inputMenuIdx);
+                }
+
+                // Load compose text files
+                nodeData.get("filePathData")$HashMap @=> HashMap filePathData;
+                filePathData.intKeys() @=> int filePathDataKeys[];
+                filePathDataKeys.sort();
+
+                for (int filePathIdx; filePathIdx < filePathDataKeys.size(); filePathIdx++) {
+                    filePathData.getStr(filePathIdx) => string filePath;
+                    if (filePath != "") {
+                        compose.setComposeBoxFromFile(filePathIdx, filePath);
+                    }
+                }
+
+                // Set active scene
+                nodeData.getInt("activeScene") => int activeScene;
+                compose.setActiveScene(activeScene);
+            } else if (nodeClassName == ScorePlayerNode.typeOf().name()) {
+                nodeData.getInt("loop") => int loop;
+                ScorePlayerNode scorePlayer();
+                loop => scorePlayer.loop;
+                scorePlayer @=> currNode;
+
+                // Handle inputs
+                nodeData.getInt("numInputs") => int numInputs;
+                repeat(numInputs - scorePlayer.nodeInputsBox.numJacks) {
+                    scorePlayer.addJack(IOType.INPUT);
+                }
+
+                nodeData.get("inputMenuData")$HashMap @=> HashMap inputMenuData;
+                inputMenuData.intKeys() @=> int inputMenuDataKeys[];
+                inputMenuDataKeys.sort();
+
+                for (int inputMenuIdx; inputMenuIdx < inputMenuDataKeys.size(); inputMenuIdx++) {
+                    inputMenuData.getInt(inputMenuIdx) => int inputType;
+                    scorePlayer.nodeInputsBox.setInput(ScorePlayerInputType.allTypes[inputType], inputMenuIdx);
+                }
             } else if (nodeClassName == TransportNode.typeOf().name()) {
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;

@@ -118,8 +118,7 @@ public class ComposeBox extends ClickableGGen {
         } else if (buttonIdx == this.OPEN) {
             GG.openFileDialog(null) => string filePath;
             if (filePath != null) {
-                filePath => this.openedFilePath;
-                this.openComposeTextFile(this.openedFilePath);
+                this.openComposeTextFile(filePath);
             }
         }
     }
@@ -132,6 +131,9 @@ public class ComposeBox extends ClickableGGen {
             cherr <= "ERROR: Unable to open file with name " <= filePath <= " for reading." <= IO.nl();
             return;
         }
+
+        // If no errors, set this as openedFile
+        filePath => this.openedFilePath;
 
         string fileLines[0];
 
