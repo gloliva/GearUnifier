@@ -29,18 +29,23 @@ public class ComposeBox extends ClickableGGen {
     GText lines[0];
     GCube cursor;
     int topLineIdx;
-    25 => int maxLinesOnScreen;
+    23 => int maxLinesOnScreen;
 
     // Parameters
     string ID;
     string headerName;
     int active;
+    int _good;
+
+    // Events
+    ComposeBoxUpdateEvent @ updateSceneEvent;
 
     // smuck measures
     ezMeasure measures[];
 
-    fun @construct(string headerName, float xScale, float yScale) {
+    fun @construct(string headerName, ComposeBoxUpdateEvent updateSceneEvent, float xScale, float yScale) {
         headerName => this.headerName;
+        updateSceneEvent @=> this.updateSceneEvent;
 
         // Create content boxes
         new BorderedBox(headerName, Color.BLACK, xScale, 1.) @=> this.header;
@@ -101,6 +106,10 @@ public class ComposeBox extends ClickableGGen {
         id => this.ID;
     }
 
+    fun int good() {
+        return this._good;
+    }
+
     fun void handleButtonPress(int buttonIdx) {
         if (buttonIdx == this.SAVE_AS) {
             <<< "SAVE AS" >>>;
@@ -142,6 +151,7 @@ public class ComposeBox extends ClickableGGen {
         this.parser.parse() @=> ezMeasure measures[];
 
         if (!this.parser.good()) {
+            0 => this._good;
             this.failParseColor();
             <<< "Error on line", this.parser.error.lineNumber >>>;
             <<< "ERROR:", this.parser.error.errorMsg >>>;
@@ -152,6 +162,7 @@ public class ComposeBox extends ClickableGGen {
             <<< "Line", warning.lineNumber, "WARNING:", warning.errorMsg >>>;
         }
 
+        1 => this._good;
         this.succeedParseColor();
         <<< "Parsed good! Number of measures", measures.size() >>>;
         for (ezMeasure measure : measures) {
@@ -160,17 +171,21 @@ public class ComposeBox extends ClickableGGen {
 
         // set measures
         measures @=> this.measures;
+        this.updateSceneEvent.signal();
     }
 
     fun void addTextLine(string text) {
-        GText lineNumber;
-        this.lineNumbers << lineNumber;
+        int showLine;
+        if (this.lineNumbers.size() - this.topLineIdx < this.maxLinesOnScreen) {
+            1 => showLine;
+        }
 
+        GText lineNumber;
         Std.itoa(this.lineNumbers.size()) => lineNumber.text;
         0.11 => lineNumber.posZ;
         @(0.45, 0.45, 1.) => lineNumber.sca;
         @(0.1, 0.1, 0.1) => lineNumber.color;
-        lineNumber --> this;
+        this.lineNumbers << lineNumber;
 
         GText line;
         text => line.text;
@@ -179,13 +194,18 @@ public class ComposeBox extends ClickableGGen {
         Color.BLACK => line.color;
         @(0., 0.5) => line.controlPoints;
         this.lines << line;
-        line --> this;
+
+        if (showLine) {
+            lineNumber --> this;
+            line --> this;
+        }
     }
 
     fun void resetTextLines() {
-        for (int idx; idx < this.lines.size(); idx++) {
-            this.lineNumbers[idx] --< this;
-            this.lines[idx] --< this;
+        Math.min(this.lines.size() - this.topLineIdx, this.maxLinesOnScreen) => int numLines;
+        for (this.topLineIdx => int currLine; currLine < (this.topLineIdx + numLines); currLine++) {
+            this.lineNumbers[currLine] --< this;
+            this.lines[currLine] --< this;
         }
 
         this.lineNumbers.reset();

@@ -45,6 +45,9 @@ public class ComposerNode extends Node {
     ComposerInstrument @ instrument;
     ScorePlayerNode @ scorePlayer;
 
+    // Events
+    ComposeBoxUpdateEvent updateSceneEvent;
+
     // Outs
     UGen outs[];
 
@@ -99,7 +102,7 @@ public class ComposerNode extends Node {
 
         // Add compose boxes
         for (int idx; idx < numStartButtons; idx++) {
-            ComposeBox composeBox("Scene " + (idx + 1), 18, 13);
+            ComposeBox composeBox("Scene " + (idx + 1), this.updateSceneEvent, 18, 13);
             composeBox.setID(this.nodeID + " " + composeBox.headerName);
             this.composeBoxes << composeBox;
         }
@@ -121,8 +124,30 @@ public class ComposerNode extends Node {
         this.updatePos();
 
         // Shreds
+        spork ~ this.processComposeBoxUpdates() @=> Shred @ processComposeBoxShreds;
         spork ~ this.processInputs() @=> Shred @ processInputsShred;
-        this.addShreds([this.instrument.envUpdateShred, processInputsShred]);
+        this.addShreds([this.instrument.envUpdateShred, processComposeBoxShreds, processInputsShred]);
+    }
+
+    fun void updateMeasures(int sceneId) {
+        this.updateMeasures(sceneId, 0);
+    }
+
+    fun void updateMeasures(int sceneId, int updateActiveScene) {
+        <<< "Updating scene:", sceneId >>>;
+        this.composeBoxes[sceneId].measures @=> ezMeasure measures[];
+
+        // Check that there are parsed measures
+        if (measures == null) {
+            <<< "IDK what to do here" >>>;  // TODO: some kind of error handling
+            return;
+        }
+
+        if (updateActiveScene) sceneId => this.activeScene;
+        this.part.measures(measures);
+        if (this.scorePlayer != null) {
+            this.scorePlayer.setPart(this.nodeID, this.part, this.instrument);
+        }
     }
 
     fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
@@ -157,7 +182,7 @@ public class ComposerNode extends Node {
 
     fun void addButton() {
         this.nodeButtonBox.addButton();
-        ComposeBox composeBox("Scene " + (this.composeBoxes.size() + 1), 18, 13);
+        ComposeBox composeBox("Scene " + (this.composeBoxes.size() + 1), this.updateSceneEvent, 18, 13);
         composeBox.setID(this.nodeID + " " + composeBox.headerName);
         this.composeBoxes << composeBox;
     }
@@ -174,6 +199,18 @@ public class ComposerNode extends Node {
             1 => currComposeBox.active;
         } else {
             0 => currComposeBox.active;
+        }
+    }
+
+    fun void processComposeBoxUpdates() {
+        while (this.nodeActive) {
+            this.updateSceneEvent => now;
+
+            this.updateSceneEvent.sceneId => int sceneId;
+            if (sceneId != this.activeScene) continue;
+            if (!this.composeBoxes[sceneId].good()) continue;
+
+            this.updateMeasures(sceneId);
         }
     }
 
@@ -201,18 +238,7 @@ public class ComposerNode extends Node {
 
                     // Check if already set to incoming value
                     if (sceneIdx == this.activeScene) continue;
-
-                    this.composeBoxes[sceneIdx].measures @=> ezMeasure measures[];
-
-                    // Check that there are parsed measures
-                    if (measures == null) {
-                        <<< "IDK what to do here" >>>;  // TODO: some kind of error handling
-                    }
-
-                    // Set the measures for this part
-                    <<< "Setting new active scene:", sceneIdx >>>;
-                    sceneIdx => this.activeScene;
-                    this.part.measures(measures);
+                    this.updateMeasures(sceneIdx, 1);
                 } else if (dataType == ComposerInputType.QUEUE_SCENE.id) {
 
                 }

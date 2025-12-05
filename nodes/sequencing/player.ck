@@ -126,7 +126,7 @@ public class ScorePlayerNode extends Node {
                 0 => int scoreFinished;
                 this.scorePlayer.endPos() - this.scorePlayer.pos() => float beatsRemaining;
                 if (beatsRemaining <= 0.) 1 => scoreFinished;
-                <<< "Current Pos", this.scorePlayer.pos(), "End Pos", this.scorePlayer.endPos(), "Score finished?", scoreFinished, "Score playing?", this.scorePlayer.isPlaying(), "Beats remaining", beatsRemaining >>>;
+                // <<< "Current Pos", this.scorePlayer.pos(), "End Pos", this.scorePlayer.endPos(), "Score finished?", scoreFinished, "Score playing?", this.scorePlayer.isPlaying(), "Beats remaining", beatsRemaining >>>;
                 if (dataType == ScorePlayerInputType.RUN.id) {
                     if (value > 0. && !this.isPlaying && !this.isStopped && !scoreFinished) {
                         <<< "Score Player: Play" >>>;
@@ -137,11 +137,11 @@ public class ScorePlayerNode extends Node {
                         this.scorePlayer.startPos() => this.scorePlayer.pos;
                         this.scorePlayer.play();
                         1 => this.isPlaying;
-                    } else if (value <= 0. && this.isPlaying && !this.isStopped && !scoreFinished) {
+                    } else if (value <= 0. && this.isPlaying && this.scorePlayer.isPlaying() && !this.isStopped && !scoreFinished) {
                         <<< "Score Player: Pause" >>>;
                         this.scorePlayer.pause();
                         0 => this.isPlaying;
-                    } else if (value <= 0. && this.isPlaying && (this.isStopped || scoreFinished)) {
+                    } else if (value <= 0. && this.isPlaying && (this.isStopped || scoreFinished || !this.scorePlayer.isPlaying())) {
                         <<< "Score Player: Reset Play" >>>;
                         0 => this.isPlaying;
                     }
@@ -157,6 +157,16 @@ public class ScorePlayerNode extends Node {
                     } else if (value <= 0. && this.isStopped) {
                         <<< "Score Player: Reset Stop" >>>;
                         0 => this.isStopped;
+                    }
+                } else if (dataType == ScorePlayerInputType.RATE.id) {
+
+                } else if (dataType == ScorePlayerInputType.LOOP.id) {
+                    if (value > 0. && !this.scorePlayer.loop()) {
+                        <<< "Score Player: Enabling Loop" >>>;
+                        1 => this.scorePlayer.loop;
+                    } else if (value <= 0. && this.scorePlayer.loop()) {
+                        <<< "Score Player: Disabling Loop" >>>;
+                        0 => this.scorePlayer.loop;
                     }
                 }
             }

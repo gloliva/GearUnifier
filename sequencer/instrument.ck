@@ -11,10 +11,10 @@ public class ComposerInstrument extends ezInstrument {
     Step pitch(0.);
     Step gate(0.);
     Step env(0.);
-    Line line;
+    Envelope line;
 
     // Envelope Handling
-    0 => int inNoteOnPhase;
+    string activeNote;
 
     // Shreds
     Shred @ envUpdateShred;
@@ -46,12 +46,12 @@ public class ComposerInstrument extends ezInstrument {
         // Set note gate
         1. => this.gate.next;
 
-        // // Trigger Envelope
-        // spork ~ this.triggerAttack(attackTime, decayTime, note.velocity());
-        1 => this.inNoteOnPhase;
-        this.line.keyOn(note.velocity(), attackTime) => now;
-        // this.line.keyOn(releaseLevel, releaseTime) => now;
-        0 => this.inNoteOnPhase;
+        // Set active note
+        Std.itoa(note.pitch()$int) + Std.itoa(octave) => this.activeNote;
+
+        // Trigger Envelope
+        <<< "Attack time", attackTime >>>;
+        this.line.ramp(attackTime, note.velocity()) => now;
     }
 
     fun void noteOff(ezNote note, int voice) {
@@ -62,7 +62,7 @@ public class ComposerInstrument extends ezInstrument {
         note.data() @=> float data[];
         if (data.size() < 5) {
             <<< "Not enough data to extract, data size is", data.size(), "turning note off" >>>;
-            // this.triggerRelease(0::second, 0.);
+            this.triggerRelease(0::second, 0.);
             return;
         }
 
@@ -73,29 +73,31 @@ public class ComposerInstrument extends ezInstrument {
         data[4] => float releaseLevel;
 
 
-        <<< "Pitch OFF", note.pitch(), "Release time", releaseTime, "Release level", releaseLevel >>>;
+        // <<< "Pitch OFF", note.pitch(), "Release time", releaseTime, "Release level", releaseLevel >>>;
 
         // Trigger Envelope
-        if (!this.inNoteOnPhase) {
+        Std.itoa(note.pitch()$int) + Std.itoa(octave) => string currNote;
+        if (currNote == this.activeNote) {
+            <<< "Trigger release now" >>>;
             this.triggerRelease(releaseTime, releaseLevel);
         }
     }
 
     fun void triggerAttack(dur attackTime, dur decayTime, float sustainLevel) {
         // Attack
-        this.line.keyOn(sustainLevel, attackTime) => now;
+        // this.line.keyOn(sustainLevel, attackTime) => now;
         // attackTime => now;
     }
 
     fun void triggerRelease(dur releaseTime, float releaseLevel) {
         <<< "Release env", releaseTime, releaseLevel >>>;
-        this.line.keyOn(releaseLevel, releaseTime) => now;
+        this.line.ramp(releaseTime, releaseLevel) => now;
         <<< "End of release" >>>;
     }
 
     fun void updateOut() {
         while (true) {
-            this.line.last() => this.env.next;
+            this.line.value() => this.env.next;
             1::ms => now;
         }
     }

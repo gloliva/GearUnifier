@@ -56,3 +56,13 @@ public class MoveCameraEvent extends Event {
         y => this.translateY;
     }
 }
+
+
+// SEQUENCING EVENTS
+public class ComposeBoxUpdateEvent extends Event {
+    int sceneId;
+
+    fun void set(int sceneId) {
+        sceneId => this.sceneId;
+    }
+}
