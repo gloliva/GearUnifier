@@ -41,6 +41,7 @@ public class ComposerNode extends Node {
 
     // smuck score parameters
     -1 => int activeScene;
+    -1 => int queuedScene;
     ezPart part;
     ComposerInstrument @ instrument;
     ScorePlayerNode @ scorePlayer;
@@ -126,7 +127,8 @@ public class ComposerNode extends Node {
         // Shreds
         spork ~ this.processComposeBoxUpdates() @=> Shred @ processComposeBoxShreds;
         spork ~ this.processInputs() @=> Shred @ processInputsShred;
-        this.addShreds([this.instrument.envUpdateShred, processComposeBoxShreds, processInputsShred]);
+        spork ~ this.processSceneChanges() @=> Shred @ processSceneChangesShred;
+        this.addShreds([this.instrument.envUpdateShred, processComposeBoxShreds, processInputsShred, processSceneChangesShred]);
     }
 
     fun void updateMeasures(int sceneId) {
@@ -214,6 +216,9 @@ public class ComposerNode extends Node {
         } else if (dataType == ComposerInputType.TUNING.id) {
             // Reset to default 12-TET tuning
             this.instrument.setTuning(new EDO(12, -48));
+        // Otherwise remove UGen from jack
+        } else {
+            this.nodeInputsBox.removeJackUGen(inputJackIdx);
         }
     }
 
@@ -259,7 +264,7 @@ public class ComposerNode extends Node {
                 if (dataType == -1) continue;
 
                 // Get UGen connected to this input jack
-                this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
+                this.nodeInputsBox.getJackUGen(idx) @=> UGen ugen;
                 if (ugen == null) continue;
 
                 // Input value from ugen
@@ -277,10 +282,33 @@ public class ComposerNode extends Node {
                     if (sceneIdx == this.activeScene) continue;
                     this.updateMeasures(sceneIdx, 1);
                 } else if (dataType == ComposerInputType.QUEUE_SCENE.id) {
+                    value$int => int sceneIdx;
+                    if (sceneIdx < 0 || sceneIdx >= this.composeBoxes.size()) {
+                        <<< "ERROR: Trying to queue scene #", sceneIdx, "for number of scenes:", this.composeBoxes.size() >>>;
+                        continue;
+                    }
 
+                    // Skip if already queued or running
+                    if (sceneIdx == this.queuedScene || sceneIdx == this.activeScene) continue;
+
+                    // Queue the scene
+                    sceneIdx => this.queuedScene;
                 }
             }
             10::ms => now;
+        }
+    }
+
+    fun void processSceneChanges() {
+        while (this.nodeActive) {
+            if (this.scorePlayer != null) {
+                // Check if there's a queued scene + score player isn't playing
+                if (!this.scorePlayer.isPlaying() && this.queuedScene != -1) {
+                    this.setActiveScene(this.queuedScene);
+                    -1 => this.queuedScene;
+                }
+            }
+            1::ms => now;
         }
     }
 

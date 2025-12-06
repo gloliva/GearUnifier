@@ -122,6 +122,9 @@ public class ScorePlayerNode extends Node {
         this.score.parts(parts);
         this.scorePlayer.score(this.score);
         this.scorePlayer.instruments(instruments);
+
+        // Reset player variables
+        0 => this.isRunning;
     }
 
     fun void processInputs() {

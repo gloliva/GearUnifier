@@ -904,6 +904,18 @@ public class IOBox extends ContentBox {
         return this.jacks[jackIdx].ugen;
     }
 
+    fun void removeJackUGen(int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Trying to remove jack UGen, jack index", jackIdx, "is out of bounds for number of jacks", this.jacks.size() >>>;
+            return;
+        }
+
+        // Set jack UGen to NULL and reset jack
+        this.jacks[jackIdx] @=> Jack jack;
+        jack.removeUgen();
+        null @=> jack.ugen;
+    }
+
     fun int hasNumberBox(int ioEntryIdx) {
         if (ioEntryIdx >= this.dataMap.size() || ioEntryIdx < 0) {
             <<< "ERROR: IO entry index out of bounds" >>>;
