@@ -1,5 +1,4 @@
 @import "../tuning/base.ck"
-@import "Line"
 @import "smuck"
 
 
@@ -50,7 +49,6 @@ public class ComposerInstrument extends ezInstrument {
         Std.itoa(note.pitch()$int) + Std.itoa(octave) => this.activeNote;
 
         // Trigger Envelope
-        <<< "Attack time", attackTime >>>;
         this.line.ramp(attackTime, note.velocity()) => now;
     }
 
@@ -72,13 +70,9 @@ public class ComposerInstrument extends ezInstrument {
         data[3]::samp => dur releaseTime;
         data[4] => float releaseLevel;
 
-
-        // <<< "Pitch OFF", note.pitch(), "Release time", releaseTime, "Release level", releaseLevel >>>;
-
         // Trigger Envelope
         Std.itoa(note.pitch()$int) + Std.itoa(octave) => string currNote;
         if (currNote == this.activeNote) {
-            <<< "Trigger release now" >>>;
             this.triggerRelease(releaseTime, releaseLevel);
         }
     }
@@ -90,9 +84,7 @@ public class ComposerInstrument extends ezInstrument {
     }
 
     fun void triggerRelease(dur releaseTime, float releaseLevel) {
-        <<< "Release env", releaseTime, releaseLevel >>>;
         this.line.ramp(releaseTime, releaseLevel) => now;
-        <<< "End of release" >>>;
     }
 
     fun void updateOut() {

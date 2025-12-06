@@ -650,7 +650,7 @@ public class Jack extends GGen {
     }
 
     fun void removeUgen() {
-        // TODO: set ugen to null here?
+        null @=> this.ugen;
         Color.BLACK => this.jack.color;
         0 => this.isConnected;
     }
@@ -913,7 +913,6 @@ public class IOBox extends ContentBox {
         // Set jack UGen to NULL and reset jack
         this.jacks[jackIdx] @=> Jack jack;
         jack.removeUgen();
-        null @=> jack.ugen;
     }
 
     fun int hasNumberBox(int ioEntryIdx) {
