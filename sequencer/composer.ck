@@ -17,12 +17,16 @@ public class ComposeTextToken {
     "<" => static string START_SEQ;
     ">" => static string END_SEQ;
     "!" => static string OPTION;
+    "#" => static string COMMENT;
+    "(" => static string START_ENV;
+    ")" => static string END_ENV;
     "o" => static string OCTAVE;
     "a" => static string ATTACK;
     "d" => static string DECAY;
-    "s" => static string SUSTAIN;
     "r" => static string RELEASE;
-    "rl" => static string RELEASE_LEVEL;
+    "e" => static string ENVELOPE;
+    "\"" => static string REPEAT;
+    "::" => static string DURATION;
 }
 
 
@@ -108,7 +112,10 @@ public class ComposeTextParser {
                 tokenizer.next() => token;
 
                 // Check if starting a new sequence
-                if (token == ComposeTextToken.START_SEQ) {
+                if (token.substring(0, 1) == ComposeTextToken.COMMENT) {
+                    <<< "Skipping comment on line", lineIdx + 1 >>>;
+                    break;
+                } else if (token == ComposeTextToken.START_SEQ) {
                     // Check if already in a sequence
                     if (measureOpen) {
                         "Attempting to start a new sequence in the middle of an active sequence." => string errorMsg;
@@ -267,7 +274,18 @@ public class ComposeTextParser {
                     noteOnset => note.onset;
                     noteOnset + beat => noteOnset;
 
-                    // Parse optional parameters (e.g. ADSR values)
+                    // Envelope parameters
+                    EnvelopePair envPairs[0];
+                    EnvelopePair @ currPair;
+                    EnvelopePair @ attackPair;
+                    EnvelopePair @ decayPair;
+                    EnvelopePair @ releasePair;
+
+                    string tokenType;
+                    0 => int envelopePairOpen;
+                    int numPairs;
+
+                    // Parse optional parameters (e.g. Octave register + Envelope values)
                     while (tokenizer.more()) {
                         tokenizer.next() => token;
 
@@ -286,70 +304,89 @@ public class ComposeTextParser {
                                 return null;
                             }
 
-                        } else if (token.substring(0, 1).lower() == ComposeTextToken.ATTACK) {
-                            token.substring(1) => string attackToken;
-                            this.parseDuration(attackToken, lineIdx) => attackTime;
-
-                            // Set previous attackTime
-                            attackTime => prevAttackTime;
-
-                            if ((attackTime / 1::samp) < 0.) {
-                                "Could not parse Attack time parameter with value: " + attackToken => string errorMsg;
-                                new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
-                                return null;
-                            }
-                        } else if (token.substring(0, 1).lower() == ComposeTextToken.DECAY) {
-                            token.substring(1) => string decayToken;
-                            this.parseDuration(decayToken, lineIdx) => decayTime;
-
-                            // Set previous attackTime
-                            decayTime => prevDecayTime;
-
-                            if ((decayTime / 1::samp) < 0.) {
-                                "Could not parse Decay time parameter with value: " + decayToken => string errorMsg;
-                                new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
-                                return null;
-                            }
-                        } else if (token.substring(0, 1).lower() == ComposeTextToken.SUSTAIN) {
-                            token.substring(1) => string sustainToken;
-                            sustainToken.toFloat() => sustain;
-
-                            // Set previous sustain
-                            sustain => prevSustain;
-
-                            // Make sure conversion was successful
-                            if (sustain == 0. && sustainToken.charAt(0) != "0".charAt(0)) {
-                                "Could not parse Sustain parameter with value: " + sustainToken => string errorMsg;
+                        } else if (
+                                token.substring(0, 1).lower() == ComposeTextToken.ENVELOPE ||
+                                token.substring(0, 1).lower() == ComposeTextToken.ATTACK ||
+                                token.substring(0, 1).lower() == ComposeTextToken.DECAY ||
+                                token.substring(0, 1).lower() == ComposeTextToken.RELEASE
+                            ) {
+                            // Make sure an envelope pair isn't already open
+                            if (envelopePairOpen) {
+                                "Trying to parse an Envelope pair while one is already open" => string errorMsg;
                                 new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
                                 return null;
                             }
 
-                        } else if (token.substring(0, 1).lower() == ComposeTextToken.RELEASE && token.substring(0, 2).lower() != ComposeTextToken.RELEASE_LEVEL) {
-                            token.substring(1) => string releaseToken;
-                            this.parseDuration(releaseToken, lineIdx) => releaseTime;
-
-                            // Set previous sustain
-                            releaseTime => prevReleaseTime;
-
-                            if ((releaseTime / 1::samp) < 0.) {
-                                "Could not parse Release time parameter with value: " + releaseToken => string errorMsg;
+                            // Make sure the syntax is correct
+                            if (token.length() < 2 || token.substring(1, 1) != ComposeTextToken.START_ENV) {
+                                "Trying to parse first value in Envelope pair but missing ( token" => string errorMsg;
                                 new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
                                 return null;
                             }
-                        // Check if Release Level parameter
-                        } else if (token.substring(0, 2).lower() == ComposeTextToken.RELEASE_LEVEL) {
-                            token.substring(2) => string releaseLevelToken;
-                            releaseLevelToken.toFloat() => releaseLevel;
 
-                            // Set previous sustain
-                            releaseLevel => prevReleaseLevel;
+                            // Create a new Envelope Pair and parse env time
+                            token.substring(2) => string rampTimeToken;
 
-                            // Make sure conversion was successful
-                            if (releaseLevel == 0. && releaseLevelToken.charAt(0) != "0".charAt(0)) {
-                                "Could not parse Release Level parameter with value: " + releaseLevelToken => string errorMsg;
+                            // Check if Smuckish value or duration value
+                            if (this.isSmuckishRhythm(rampTimeToken)) {
+                                Smuckish.rhythms(rampTimeToken)[0] => float numBeats;
+                                new EnvelopePair(numBeats) @=> currPair;
+
+                            } else {
+                                this.parseDuration(rampTimeToken, lineIdx) => dur rampTime;
+                                new EnvelopePair(rampTime) @=> currPair;
+                            }
+
+                            // Open pair
+                            token.substring(0, 1).lower() => tokenType;
+                            1 => envelopePairOpen;
+
+                        } else {
+                            if (!envelopePairOpen) {
+                                "Unknown token + not in an Envelope pair" => string errorMsg;
                                 new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
                                 return null;
                             }
+
+                            if (token.substring(token.length() - 1, 1) != ComposeTextToken.END_ENV) {
+                                "Trying to parse second value in Envelope pair but missing ) token at the end" => string errorMsg;
+                                new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
+                                return null;
+                            }
+
+                            token.substring(0, token.length() - 1) => string rampValueToken;
+                            rampValueToken.toFloat() => float rampValue;
+
+                            // Makre sure conversion was successful
+                            if (rampValue == 0. && rampValueToken.charAt(0) != "0".charAt(0)) {
+                                "Could not parse Envelope pair 2nd token with value: " + rampValueToken => string errorMsg;
+                                new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
+                                return null;
+                            }
+
+                            // Complete current pair
+                            currPair.set(rampValue);
+                            numPairs + 1 => numPairs;
+
+                            // Determine what to set based on token type
+                            if (tokenType == ComposeTextToken.ENVELOPE) {
+                                envPairs << currPair;
+                            } else if (tokenType == ComposeTextToken.ATTACK) {
+                                currPair @=> attackPair;
+                            } else if (tokenType == ComposeTextToken.DECAY) {
+                                currPair @=> decayPair;
+                            } else if (tokenType == ComposeTextToken.RELEASE) {
+                                currPair @=> releasePair;
+                            } else {
+                                "Unknown token type" + tokenType + " when closing Envelope pair" => string errorMsg;
+                                new ComposeTextError(lineIdx + 1, errorMsg) @=> this.error;
+                                return null;
+                            }
+
+                            // Close pair
+                            0 => envelopePairOpen;
+                            "" => tokenType;
+                            null @=> currPair;
                         }
                     }
 
@@ -394,27 +431,61 @@ public class ComposeTextParser {
                         }
                     }
 
-                    if (releaseLevel == -1) {
-                        if (prevReleaseLevel == -1) {
-                            ComposeTextDefault.RELEASE_LEVEL => releaseLevel;
+                    // Add additional note data: octave and Envelope values
+                    [octave$float, numPairs$float] @=> float data[];
+
+                    if (attackPair != null) {
+                        data << attackPair.rhythmType;
+
+                        if (attackPair.rhythmType == RhythmType.SMUCKISH) {
+                            data << attackPair.numBeats;
                         } else {
-                            prevReleaseLevel => releaseLevel;
+                            data << (attackPair.rampTime / 1::samp);
+                        }
+
+                        data << attackPair.rampValue;
+                    }
+
+                    if (decayPair != null) {
+                        data << decayPair.rhythmType;
+
+                        if (decayPair.rhythmType == RhythmType.SMUCKISH) {
+                            data << decayPair.numBeats;
+                        } else {
+                            data << (decayPair.rampTime / 1::samp);
+                        }
+
+                        data << decayPair.rampValue;
+                    }
+
+                    if (envPairs.size() > 0) {
+                        for (EnvelopePair pair : envPairs) {
+                            data << pair.rhythmType;
+
+                            if (pair.rhythmType == RhythmType.SMUCKISH) {
+                                data << pair.numBeats;
+                            } else {
+                                data << (pair.rampTime / 1::samp);
+                            }
+
+                            data << pair.rampValue;
                         }
                     }
 
-                    // Velocity data
-                    sustain => note.velocity;
+                    if (releasePair != null) {
+                        data << releasePair.rhythmType;
 
-                    // Add additional note data, octave, ADR values, and release level
-                    [
-                        octave$float,
-                        attackTime / 1::samp,
-                        decayTime / 1::samp,
-                        releaseTime / 1::samp,
-                        releaseLevel,
-                    ] @=> float data[];
+                        if (releasePair.rhythmType == RhythmType.SMUCKISH) {
+                            data << releasePair.numBeats;
+                        } else {
+                            data << (releasePair.rampTime / 1::samp);
+                        }
+
+                        data << releasePair.rampValue;
+                    }
+
+                    // Set data and add note
                     data => note.data;
-
                     currMeasure.add(note);
                 }
             }
@@ -429,6 +500,10 @@ public class ComposeTextParser {
 
         // finished parsing, return measures
         return measures;
+    }
+
+    fun int isSmuckishRhythm(string token) {
+        return token.find(ComposeTextToken.DURATION) == -1;
     }
 
     fun dur parseDuration(string token, int lineIdx) {

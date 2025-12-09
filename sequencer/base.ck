@@ -37,3 +37,43 @@ public class Sequence {
         }
     }
 }
+
+
+public class RhythmType {
+    0 => static int SMUCKISH;
+    1 => static int DURATION;
+}
+
+
+public class EnvelopePair {
+    float numBeats;
+    dur rampTime;
+    float rampValue;
+    int rhythmType;
+
+    fun @construct(dur rampTime) {
+        rampTime => this.rampTime;
+        RhythmType.DURATION => this.rhythmType;
+    }
+
+    fun @construct(float numBeats) {
+        numBeats => this.numBeats;
+        RhythmType.SMUCKISH => this.rhythmType;
+    }
+
+    fun @construct(dur rampTime, float rampValue) {
+        rampTime => this.rampTime;
+        rampValue => this.rampValue;
+        RhythmType.DURATION => this.rhythmType;
+    }
+
+    fun @construct(float numBeats, float rampValue) {
+        numBeats => this.numBeats;
+        rampValue => this.rampValue;
+        RhythmType.SMUCKISH => this.rhythmType;
+    }
+
+    fun void set(float rampValue) {
+        rampValue => this.rampValue;
+    }
+}

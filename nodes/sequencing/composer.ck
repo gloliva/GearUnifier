@@ -181,6 +181,10 @@ public class ComposerNode extends Node {
             if (Type.of(outputNode).name() == ScorePlayerNode.typeOf().name()) {
                 <<< "Connecting a ScorePlayer Node" >>>;
                 (outputNode)$ScorePlayerNode @=> this.scorePlayer;
+                if (this.instrument != null) {
+                    this.instrument.setScorePlayer(this.scorePlayer.scorePlayer);
+                }
+
                 if (this.activeScene != -1) {
                     this.scorePlayer.setPart(this.nodeID, this.part, this.instrument);
                 }
