@@ -10,12 +10,14 @@
 
 public class ComposerInputType {
     new Enum(0, "Player") @=> static Enum PLAYER;
-    new Enum(1, "Set Scene") @=> static Enum SET_SCENE;
-    new Enum(2, "Queue Scene") @=> static Enum QUEUE_SCENE;
-    new Enum(3, "Tuning") @=> static Enum TUNING;
+    new Enum(1, "Scene Num") @=> static Enum SCENE_NUM;
+    new Enum(2, "Set Scene") @=> static Enum SET_SCENE;
+    new Enum(3, "Queue Scene") @=> static Enum QUEUE_SCENE;
+    new Enum(4, "Tuning") @=> static Enum TUNING;
 
     [
         ComposerInputType.PLAYER,
+        ComposerInputType.SCENE_NUM,
         ComposerInputType.SET_SCENE,
         ComposerInputType.QUEUE_SCENE,
         ComposerInputType.TUNING,
@@ -39,12 +41,18 @@ public class ComposerOutputType {
 public class ComposerNode extends Node {
     ComposeBox composeBoxes[0];
 
-    // smuck score parameters
+    // Scenes
     -1 => int activeScene;
     -1 => int queuedScene;
+    -1 => int sceneNumInput;
+    0 => int setSceneTrigger;
+    0 => int queueSceneTrigger;
+
+    // smuck score parameters
     ezPart part;
     ComposerInstrument @ instrument;
     ScorePlayerNode @ scorePlayer;
+
 
     // Events
     ComposeBoxUpdateEvent updateSceneEvent;
@@ -275,28 +283,50 @@ public class ComposerNode extends Node {
                 this.getValueFromUGen(ugen) => float value;
 
                 // Change scenes by input values
-                if (dataType == ComposerInputType.SET_SCENE.id) {
-                    value$int => int sceneIdx;
-                    if (sceneIdx < 0 || sceneIdx >= this.composeBoxes.size()) {
-                        <<< "ERROR: Trying to set scene #", sceneIdx, "for number of scenes:", this.composeBoxes.size() >>>;
+                if (dataType == ComposerInputType.SCENE_NUM.id) {
+                    value$int => int sceneNum;
+                    if (sceneNum < 0 || sceneNum >= this.composeBoxes.size()) {
+                        <<< "ERROR: Trying to set scene #", sceneNum, "for number of scenes:", this.composeBoxes.size() >>>;
                         continue;
                     }
 
-                    // Check if already set to incoming value
-                    if (sceneIdx == this.activeScene) continue;
-                    this.updateMeasures(sceneIdx, 1);
+                    if (sceneNum != this.sceneNumInput) sceneNum => this.sceneNumInput;
+                } else if (dataType == ComposerInputType.SET_SCENE.id) {
+                    value$int => int triggerValue;
+
+                    // Reset to 0.
+                    if (triggerValue < 1.) {
+                        0 => this.setSceneTrigger;
+                        continue;
+                    }
+
+                    // Only trigger if value not already high
+                    if (triggerValue >= 1. && this.setSceneTrigger == 1) continue;
+
+                    1 => this.setSceneTrigger;
+                    if (this.sceneNumInput < 0.) {
+                        <<< "ERROR: Trying to set a negative scene", this.sceneNumInput >>>;
+                        continue;
+                    }
+
+                    this.updateMeasures(this.sceneNumInput, 1);
                 } else if (dataType == ComposerInputType.QUEUE_SCENE.id) {
-                    value$int => int sceneIdx;
-                    if (sceneIdx < 0 || sceneIdx >= this.composeBoxes.size()) {
-                        <<< "ERROR: Trying to queue scene #", sceneIdx, "for number of scenes:", this.composeBoxes.size() >>>;
+                    value$int => int triggerValue;
+
+                    // Reset to 0.
+                    if (triggerValue < 1.) {
+                        0 => this.queueSceneTrigger;
                         continue;
                     }
 
-                    // Skip if already queued or running
-                    if (sceneIdx == this.queuedScene || sceneIdx == this.activeScene) continue;
+                    // Only trigger if value not already high
+                    if (triggerValue >= 1. && this.queueSceneTrigger == 1) continue;
+
+                    // Skip if already queued
+                    if (this.sceneNumInput == this.queuedScene) continue;
 
                     // Queue the scene
-                    sceneIdx => this.queuedScene;
+                    this.sceneNumInput => this.queuedScene;
                 }
             }
             10::ms => now;

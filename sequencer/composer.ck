@@ -45,11 +45,6 @@ public class ComposeTextDuration {
 
 public class ComposeTextDefault {
     4 => static int OCTAVE;
-    25::ms => static dur ATTACK;
-    0::ms => static dur DECAY;
-    0.5 => static float SUSTAIN;
-    25::ms => static dur RELEASE;
-    0. => static float RELEASE_LEVEL;
 }
 
 
@@ -97,11 +92,6 @@ public class ComposeTextParser {
 
         // Optional information tracking
         -1 => int prevOctave;
-        -1. => float prevSustain;
-        (-1)::samp => dur prevAttackTime;
-        (-1)::samp => dur prevDecayTime;
-        (-1)::samp => dur prevReleaseTime;
-        -1. => float prevReleaseLevel;
 
         for (int lineIdx; lineIdx < this.lines.size(); lineIdx++) {
             this.lines[lineIdx] => string currLine;
@@ -154,11 +144,7 @@ public class ComposeTextParser {
 
                     // Reset note information tracking
                     -1 => prevOctave;
-                    -1. => prevSustain;
-                    (-1)::samp => prevAttackTime;
-                    (-1)::samp => prevDecayTime;
-                    (-1)::samp => prevReleaseTime;
-                    -1. => prevReleaseLevel;
+
                 // Check if parsing an option
                 } else if (token == ComposeTextToken.OPTION) {
                     // Make sure there is an active measure
@@ -243,12 +229,8 @@ public class ComposeTextParser {
 
                     // Optional information
                     -1 => int octave;
-                    -1. => float sustain;
-                    (-1)::samp => dur attackTime;
-                    (-1)::samp => dur decayTime;
-                    (-1)::samp => dur releaseTime;
-                    -1. => float releaseLevel;
 
+                    // Print out note information
                     ezNote note();
 
                     // first token is scale degree
@@ -396,38 +378,6 @@ public class ComposeTextParser {
                             ComposeTextDefault.OCTAVE => octave;
                         } else {
                             prevOctave => octave;
-                        }
-                    }
-
-                    if (attackTime / 1::samp == -1) {
-                        if (prevAttackTime / 1::samp == -1) {
-                            ComposeTextDefault.ATTACK => attackTime;
-                        } else {
-                            prevAttackTime => attackTime;
-                        }
-                    }
-
-                    if (decayTime / 1::samp == -1) {
-                        if (prevDecayTime / 1::samp == -1) {
-                            ComposeTextDefault.DECAY => decayTime;
-                        } else {
-                            prevDecayTime => decayTime;
-                        }
-                    }
-
-                    if (sustain == -1) {
-                        if (prevSustain == -1) {
-                            ComposeTextDefault.SUSTAIN => sustain;
-                        } else {
-                            prevSustain => sustain;
-                        }
-                    }
-
-                    if (releaseTime / 1::samp == -1) {
-                        if (prevReleaseTime / 1::samp == -1) {
-                            ComposeTextDefault.RELEASE => releaseTime;
-                        } else {
-                            prevReleaseTime => releaseTime;
                         }
                     }
 

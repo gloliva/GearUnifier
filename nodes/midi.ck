@@ -727,6 +727,7 @@ public class MidiInNode extends MidiNode {
             msg.data3 => int velocity;
 
             // Remove note from held notes
+            this.heldNotes[-1] => int prevNote;
             for (this.heldNotes.size() - 1 => int idx; idx >= 0; idx-- ) {
                 if (this.heldNotes[idx] == noteNumber) {
                     this.heldNotes.popOut(idx);
@@ -753,12 +754,13 @@ public class MidiInNode extends MidiNode {
 
             // Otherwise go back to previously held note
             } else {
+                this.heldNotes[-1] => int currNote;
                 this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(this.heldNotes[-1]) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(currNote) => this.nodeOutputsBox.outs[pitchOutIdx].next;
 
                 // Resend Trigger for previously held note
                 this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-                if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
+                if (triggerOutIdx != -1 && currNote != prevNote) spork ~ this.sendTrigger(triggerOutIdx);
             }
 
             // Set processed status
