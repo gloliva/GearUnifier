@@ -157,6 +157,7 @@ public class ComposerNode extends Node {
         this.part.measures(measures);
         if (this.scorePlayer != null) {
             this.scorePlayer.setPart(this.nodeID, this.part, this.instrument);
+            this.scorePlayer.resetPos();
         }
     }
 

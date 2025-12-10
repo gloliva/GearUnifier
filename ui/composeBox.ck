@@ -183,7 +183,7 @@ public class ComposeBox extends ClickableGGen {
         }
 
         GText lineNumber;
-        Std.itoa(this.lineNumbers.size()) => lineNumber.text;
+        Std.itoa(this.lineNumbers.size() + 1) => lineNumber.text;
         0.11 => lineNumber.posZ;
         @(0.45, 0.45, 1.) => lineNumber.sca;
         @(0.1, 0.1, 0.1) => lineNumber.color;

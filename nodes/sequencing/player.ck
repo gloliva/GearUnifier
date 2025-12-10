@@ -95,6 +95,10 @@ public class ScorePlayerNode extends Node {
         this.scorePlayer.stop();
     }
 
+    fun void resetPos() {
+        this.scorePlayer.startPos() => this.scorePlayer.pos;
+    }
+
     fun void loop(int val) {
         val => this.scorePlayer.loop;
     }
