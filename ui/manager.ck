@@ -69,7 +69,13 @@ public class UIManager {
     }
 
     fun void setAudioUI() {
-        new DropdownMenu([new Enum(0, "Audio In"), new Enum(1, "Audio Out")]) @=> this.audioMenu;
+        new DropdownMenu(
+            [
+                new Enum(0, "Audio In"),
+                new Enum(1, "Audio Out"),
+                new Enum(2, "Ambisonics Panner"),
+            ]
+        ) @=> this.audioMenu;
 
         // Set name and scale
         this.audioMenu.setSelectedName("Audio");
@@ -360,6 +366,7 @@ public class UIManager {
                         // Handle Node type for Audio In and Out
                         NodeType.AUDIO_IN => int nodeType;
                         if (menuEntry.id == 1) NodeType.AUDIO_OUT => nodeType;
+                        if (menuEntry.id == 2) NodeType.AMB_PANNER => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }

@@ -9,8 +9,9 @@ public class NodeType {
     1 => static int MIDI_OUT;
 
     // Audio
-    10 => static int AUDIO_IN;
-    11 => static int AUDIO_OUT;
+    100 => static int AUDIO_IN;
+    101 => static int AUDIO_OUT;
+    102 => static int AMB_PANNER;
 
     // OSC
     20 => static int OSC_IN;
@@ -862,7 +863,9 @@ public class IOBox extends ContentBox {
         }
 
         // Update the Menu Entry
-        this.menus[jackIdx].updateSelectedEntry(dataType.id);
+        if (this.menus.size() > 0) {
+            this.menus[jackIdx].updateSelectedEntry(dataType.id);
+        }
 
         // Set out UGen
         this.jacks[jackIdx].setUgen(out);

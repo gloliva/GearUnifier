@@ -4,7 +4,6 @@
 @import "HashMap"
 @import "smuck"
 
-
 public class SequencerInputType {
     new Enum(0, "Run") @=> static Enum RUN;
     new Enum(1, "Record") @=> static Enum RECORD;

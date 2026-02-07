@@ -2,10 +2,8 @@
 @import "../saveHandler.ck"
 @import "../events.ck"
 @import {"../ui/composeBox.ck", "../ui/menu.ck", "../ui/popupBox.ck"}
-@import "audio.ck"
 @import "base.ck"
-@import "midi.ck"
-@import "tuning.ck"
+@import {"ambisonics.ck", "audio.ck", "midi.ck", "tuning.ck"}
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck"}
@@ -149,6 +147,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_OUT) {
                 AudioOutNode audioOut(dac.channels());
                 this.addNode(audioOut);
+            } else if (addNodeEvent.nodeType == NodeType.AMB_PANNER) {
+                AmbPannerNode ambPanner();
+                this.addNode(ambPanner);
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder);
