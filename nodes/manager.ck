@@ -460,6 +460,31 @@ public class NodeManager {
             } else if (nodeClassName == AudioOutNode.typeOf().name()) {
                 AudioOutNode audioOut(dac.channels());
                 audioOut @=> currNode;
+            } else if (nodeClassName == AmbPannerNode.typeOf().name()) {
+                // Instantiate node
+                nodeData.getInt("order") => int order;
+                nodeData.getInt("numInputs") => int numInputs;
+                AmbPannerNode ambPanner(order, numInputs, 4.);
+                ambPanner @=> currNode;
+
+                // Handle input data type mappings and menu selections
+                nodeData.get("inputMenuData") @=> HashMap inputMenuData;
+                for (int idx; idx < inputMenuData.intKeys().size(); idx++) {
+                    <<< "should be fine right? Idx", idx >>>;
+                    inputMenuData.getInt(idx) => int ambPannerInputTypeIdx;
+
+                    // Skip if no mapping
+                    if (ambPannerInputTypeIdx == -1) continue;
+
+                    // Get ambPanner input type
+                    AmbPannerInputType.allTypes[ambPannerInputTypeIdx] @=> Enum ambPannerInputType;
+
+                    // Update menu selection
+                    ambPanner.nodeInputsBox.menus[idx].updateSelectedEntry(ambPannerInputTypeIdx);
+
+                    // Update input data type mapping
+                    ambPanner.nodeInputsBox.setDataTypeMapping(ambPannerInputType, idx);
+                }
             } else if (nodeClassName == WavefolderNode.typeOf().name()) {
                 // Instantiate node
                 nodeData.getInt("numInputs") => int numInputs;

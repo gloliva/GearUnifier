@@ -115,10 +115,10 @@ public class AmbPannerNode extends Node {
     Patch @ elePatch;
 
     fun @construct() {
-        AmbPannerNode(3, 4.);
+        AmbPannerNode(3, 1, 4.);
     }
 
-    fun @construct(int order, float xScale) {
+    fun @construct(int order, int numInputs, float xScale) {
         order => this.order;
 
         // Instantiate panner
@@ -144,7 +144,7 @@ public class AmbPannerNode extends Node {
         // Create inputs box
         AmbPannerInputType.allTypes @=> this.inputTypes;
         new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
-        new IOBox(1, this.inputTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        new IOBox(numInputs, this.inputTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
         this.nodeInputsBox.setInput(AmbPannerInputType.WAVE_IN, 0);
 
         // Create outputs box
