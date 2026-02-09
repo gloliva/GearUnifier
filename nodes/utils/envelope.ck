@@ -251,8 +251,7 @@ public class ASRNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         data.set("attackTime", this.attackTime / 1::second);
         data.set("sustainLevel", this.sustainLevel);
@@ -501,8 +500,7 @@ public class ADSRNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         data.set("attackTime", this.adsr.attackTime() / 1::second);
         data.set("decayTime", this.adsr.decayTime() / 1::second);

@@ -25,8 +25,7 @@ public class AudioNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
         data.set("ioType", this.ioType);
 
         if (this.nodeInputsBox != null) {

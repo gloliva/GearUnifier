@@ -790,8 +790,7 @@ public class MidiInNode extends MidiNode {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         // Midi Data
         data.set("channel", this.channel);

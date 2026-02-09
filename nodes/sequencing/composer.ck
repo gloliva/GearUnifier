@@ -348,8 +348,7 @@ public class ComposerNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         // Button data
         data.set("numButtons", this.nodeButtonBox.buttons.size());

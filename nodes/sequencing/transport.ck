@@ -155,8 +155,7 @@ public class TransportNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         data.set("tempo", this.tempo);
         data.set("beatDiv", this.beatDiv);

@@ -224,8 +224,7 @@ public class ScaleTuningNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         data.set("tuningFilename", this.tuningFilename);
         data.set("degreeOffset", this.degreeOffset);
@@ -373,8 +372,7 @@ public class EDOTuningNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         data.set("scaleSize", this.scaleSize);
         data.set("degreeOffset", this.degreeOffset);

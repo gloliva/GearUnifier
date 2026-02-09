@@ -250,8 +250,7 @@ public class AmbPannerNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         // Panner data
         data.set("order", this.order);

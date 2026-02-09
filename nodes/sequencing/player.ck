@@ -199,8 +199,7 @@ public class ScorePlayerNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         // Player data
         data.set("loop", this.scorePlayer.loop());

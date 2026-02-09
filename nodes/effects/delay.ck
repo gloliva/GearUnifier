@@ -247,8 +247,7 @@ public class DelayNode extends Node {
     }
 
     fun HashMap serialize() {
-        HashMap data;
-        this.serialize(data);
+        super.serialize() @=> HashMap data;
 
         // Node data
         data.set("numInputs", this.nodeInputsBox.numJacks);
