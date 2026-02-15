@@ -513,8 +513,15 @@ public class MidiInNode extends MidiNode {
             0 => int idx;
             for (int idx; idx < this.heldNotes.size(); idx++) {
                 this.heldNotes[idx] => int note;
+
+                // Pitch out
                 this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
                 if (pitchOutIdx != -1) this.tuning.cv(note) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+
+                // Trigger out
+                this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
+                if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
+
                 this.beat()::second => now;
             }
         }
@@ -708,8 +715,9 @@ public class MidiInNode extends MidiNode {
             if (gateOutIdx != -1) 1. => this.nodeOutputsBox.outs[gateOutIdx].next;
 
             // Trigger out
+            // Don't send trigger from NOTE_ON messages when in ARP mode
             this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-            if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
+            if (triggerOutIdx != -1 && this.synthMode() != SynthMode.ARP.id) spork ~ this.sendTrigger(triggerOutIdx);
 
             // Velocity out
             this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
@@ -758,9 +766,9 @@ public class MidiInNode extends MidiNode {
                 this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
                 if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(currNote) => this.nodeOutputsBox.outs[pitchOutIdx].next;
 
-                // Resend Trigger for previously held note
+                // Resend Trigger for previously held note for MONO and POLY modes
                 this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-                if (triggerOutIdx != -1 && currNote != prevNote) spork ~ this.sendTrigger(triggerOutIdx);
+                if (triggerOutIdx != -1 && currNote != prevNote && this.synthMode() != SynthMode.ARP.id) spork ~ this.sendTrigger(triggerOutIdx);
             }
 
             // Set processed status
