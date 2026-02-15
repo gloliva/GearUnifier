@@ -70,9 +70,21 @@ public class NodeManager {
         GWindow.files() @=> this.droppedFilePaths;
     }
 
+    fun void recomputeLayers() {
+        for (int idx; idx < this.numNodes; idx++) {
+            this.nodesOnScreen[idx] @=> Node node;
+
+            if (node.layer() == 0) continue;
+            -1 * (this.numNodes - idx) => node.layer;
+        }
+    }
+
     fun void addNode(Node node) {
         this.nodesOnScreen << node;
         this.numNodes++;
+
+        // Handle node layering
+        this.recomputeLayers();
 
         // Add to scene
         node --> GG.scene();
@@ -132,6 +144,9 @@ public class NodeManager {
 
         // Remove from scene
         node --< GG.scene();
+
+        // Handle node layering
+        this.recomputeLayers();
     }
 
     fun void addNodeHandler(AddNodeEvent addNodeEvent) {
@@ -1002,7 +1017,8 @@ public class NodeManager {
                 0 => int connectionCompletedThisFrame;
 
                 // Check if clicking on an on-screen Node
-                for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
+                // for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
+                for (this.numNodes - 1 => int nodeIdx; nodeIdx >= 0; nodeIdx--) {
                     this.nodesOnScreen[nodeIdx] @=> Node node;
 
                     // Check if mouse is over this node's name box
