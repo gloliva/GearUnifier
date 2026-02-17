@@ -99,7 +99,7 @@ public class TransportNode extends Node {
         new NameBox("Transport", xScale) @=> this.nodeNameBox;
 
         // Create options box
-        new TransportOptionsBox(["Tempo", "Beat Mult"], xScale) @=> this.nodeOptionsBox;
+        new TransportOptionsBox(["Tempo", "Beat X"], xScale) @=> this.nodeOptionsBox;
         (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(tempo));
         (this.nodeOptionsBox$TransportOptionsBox).beatDivEntryBox.set(beatDiv);
 

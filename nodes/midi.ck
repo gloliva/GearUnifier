@@ -777,7 +777,7 @@ public class MidiInNode extends MidiNode {
         } else if (this.checkMidiStatus(midiStatus, MidiMessage.POLYPHONIC_AFTERTOUCH, this.channel)) {
             this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
             if (aftertouchOutIdx != -1 && msg.data2 == this.heldNotes[-1]) {
-                Std.scalef(msg.data3, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+                Std.scalef(msg.data3, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
             }
 
             // Set processed status
