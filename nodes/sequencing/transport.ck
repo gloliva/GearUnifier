@@ -7,9 +7,11 @@
 
 public class TransportOutputType {
     new Enum(0, "Beat") @=> static Enum BEAT;
+    new Enum(1, "Clock Out") @=> static Enum CLOCK;
 
     [
         TransportOutputType.BEAT,
+        TransportOutputType.CLOCK,
     ] @=> static Enum allTypes[];
 }
 
@@ -18,6 +20,7 @@ public class TransportOptionsBox extends OptionsBox {
     // Number Entry Boxes
     NumberEntryBox @ tempoEntryBox;
     NumberEntryBox @ beatDivEntryBox;
+    NumberEntryBox @ PPQNEntryBox;
 
     // Events
     UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
@@ -28,6 +31,7 @@ public class TransportOptionsBox extends OptionsBox {
         // Handle Number Entry Boxes
         new NumberEntryBox(3, 0, NumberBoxType.INT, 2.) @=> this.tempoEntryBox;
         new NumberEntryBox(6, 1, NumberBoxType.FLOAT, 2.) @=> this.beatDivEntryBox;
+        new NumberEntryBox(3, 2, NumberBoxType.INT, 2.) @=> this.PPQNEntryBox;
 
         // Set Events
         this.tempoEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
@@ -36,14 +40,17 @@ public class TransportOptionsBox extends OptionsBox {
         // Position
         @(0.75, this.optionNames[0].posY(), 0.201) => this.tempoEntryBox.pos;
         @(0.75, this.optionNames[1].posY(), 0.201) => this.beatDivEntryBox.pos;
+        @(0.75, this.optionNames[2].posY(), 0.201) => this.PPQNEntryBox.pos;
 
         // Name
         "Tempo NumberEntryBox" => this.tempoEntryBox.name;
         "Beat Divider NumberEntryBox" => this.beatDivEntryBox.name;
+        "PPQN NumberEntryBox" => this.PPQNEntryBox.name;
 
         // Connections
         this.tempoEntryBox --> this;
         this.beatDivEntryBox --> this;
+        this.PPQNEntryBox --> this;
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {
@@ -68,6 +75,13 @@ public class TransportOptionsBox extends OptionsBox {
             return true;
         }
 
+        // Check if PPQN clicked on
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.PPQNEntryBox, this.PPQNEntryBox.box])) {
+            1 => entryBoxSelected;
+            this.PPQNEntryBox @=> this.selectedEntryBox;
+            return true;
+        }
+
         return false;
     }
 }
@@ -76,7 +90,7 @@ public class TransportOptionsBox extends OptionsBox {
 public class TransportNode extends Node {
     float tempo;
     float beatDiv;
-
+    24 => int PPQN;
 
     fun @construct() {
         TransportNode(120., 1., 4.);
@@ -99,16 +113,16 @@ public class TransportNode extends Node {
         new NameBox("Transport", xScale) @=> this.nodeNameBox;
 
         // Create options box
-        new TransportOptionsBox(["Tempo", "Beat X"], xScale) @=> this.nodeOptionsBox;
+        new TransportOptionsBox(["Tempo", "Beat X", "PPQN"], xScale) @=> this.nodeOptionsBox;
         (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(tempo));
         (this.nodeOptionsBox$TransportOptionsBox).beatDivEntryBox.set(beatDiv);
+        (this.nodeOptionsBox$TransportOptionsBox).PPQNEntryBox.set(this.PPQN);
 
         // Create outputs box
+        TransportOutputType.allTypes @=> this.outputTypes;
+        new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(1, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
-        this.nodeOutputsBox.menus[0].updateSelectedEntry(TransportOutputType.BEAT.id);
-
-        // Set Step Ugen to jack output for sending Beat information
-        this.nodeOutputsBox.jacks[0].setUgen(this.nodeOutputsBox.outs[0]);
+        this.nodeOutputsBox.setOutput(TransportOutputType.BEAT, 0);
         this.getBeat() => this.nodeOutputsBox.outs[TransportOutputType.BEAT.id].next;
 
         // Create visibility box
@@ -120,6 +134,7 @@ public class TransportNode extends Node {
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
+        this.nodeOutputsModifierBox --> this;
         this.nodeOutputsBox --> this;
         this.nodeVisibilityBox --> this;
 
@@ -128,11 +143,35 @@ public class TransportNode extends Node {
 
         // Shreds
         spork ~ this.processOptions() @=> Shred @ processOptionsShred;
-        this.addShreds([processOptionsShred]);
+        spork ~ this.outputClock() @=> Shred @ outputClockShred;
+        this.addShreds([processOptionsShred, outputClockShred]);
     }
 
     fun float getBeat() {
         return ((60. / this.tempo) / this.beatDiv);
+    }
+
+    fun dur pulseDur() {
+        return (60. / (this.tempo * this.PPQN))::second;
+    }
+
+    fun int getSPP(int sr) {
+        (sr * 60.) / (this.tempo * this.PPQN) => float spp;
+        return Math.max(2, Std.ftoi(spp + 0.5));
+    }
+
+    fun void outputClock() {
+        while (this.nodeActive) {
+            if (this.nodeOutputsBox.outs.size() > TransportOutputType.CLOCK.id)
+                0.45 => this.nodeOutputsBox.outs[TransportOutputType.CLOCK.id].next;
+
+            (30.0 / (this.tempo * this.PPQN))::second => now;
+
+            if (this.nodeOutputsBox.outs.size() > TransportOutputType.CLOCK.id)
+                0.0 => this.nodeOutputsBox.outs[TransportOutputType.CLOCK.id].next;
+
+            (30.0 / (this.tempo * this.PPQN))::second => now;
+        }
     }
 
     fun void processOptions() {
@@ -148,6 +187,8 @@ public class TransportNode extends Node {
                 numberBoxFloatValue => this.tempo;
             } else if (numberBoxIdx == 1) {
                 numberBoxFloatValue => this.beatDiv;
+            } else if (numberBoxIdx == 2) {
+                numberBoxFloatValue$int => this.PPQN;
             }
 
             this.getBeat() => this.nodeOutputsBox.outs[TransportOutputType.BEAT.id].next;

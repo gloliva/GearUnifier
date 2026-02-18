@@ -725,7 +725,7 @@ public class IOBox extends ContentBox {
     NumberEntryBox numberBoxes[0];
 
     // Data handling
-    Step outs[0];
+    Step outs[0];  // TODO: outs are all messed up. Instead of having an out per jack, have it per Output TYPE
     int dataMap[0];
 
     // IO Type
@@ -849,6 +849,14 @@ public class IOBox extends ContentBox {
         this.setDataTypeMapping(dataType, jackIdx);
     }
 
+    fun void setOutput(Enum dataType, int jackIdx) {
+        if (jackIdx > this.outs.size()) {
+            <<< "ERROR: No Out UGen provided and Jack idx", jackIdx, "greater than Outputs size:", this.outs.size() >>>;
+        }
+
+        this.setOutput(dataType, jackIdx, this.outs[jackIdx]);
+    }
+
     fun void setOutput(Enum dataType, int jackIdx, UGen out) {
         if (this.ioType != IOType.OUTPUT) {
             <<< "ERROR: Trying to set an output on an Input box." >>>;
@@ -892,6 +900,14 @@ public class IOBox extends ContentBox {
         }
 
         -1 => this.dataMap[jackIdx];
+    }
+
+    fun int getJackIdxFromDataType(Enum dataType) {
+        for (int jackIdx; jackIdx < this.dataMap.size(); jackIdx++) {
+            if (this.dataMap[jackIdx] == dataType.id) return jackIdx;
+        }
+
+        return -1;
     }
 
     fun UGen getJackUGen(int jackIdx) {

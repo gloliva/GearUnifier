@@ -943,6 +943,9 @@ public class NodeManager {
 
                                 // Add new mapping
                                 midiIn.outputDataTypeIdx(newSelection, voiceIdx, this.currMenu.menuIdx);
+                            } else if (Type.of(node).name() == TransportNode.typeOf().name()) {
+                                node$TransportNode @=> TransportNode transportNode;
+                                transportNode.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, transportNode.nodeOutputsBox.outs[newSelection.id]);
                             } else if (Type.of(node).name() == ComposerNode.typeOf().name()) {
                                 node$ComposerNode @=> ComposerNode composerNode;
                                 composerNode.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, composerNode.outs[newSelection.id]);
