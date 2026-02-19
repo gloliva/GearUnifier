@@ -101,10 +101,10 @@ public class TransportNode extends Node {
     }
 
     fun @construct(float tempo, float beatDiv, float xScale) {
-        TransportNode(tempo, beatDiv, 24, xScale);
+        TransportNode(1, tempo, beatDiv, 24, xScale);
     }
 
-    fun @construct(float tempo, float beatDiv, int ppqn, float xScale) {
+    fun @construct(int numOutputs, float tempo, float beatDiv, int ppqn, float xScale) {
         // Initialize tempo variables
         tempo => this.tempo;
         beatDiv => this.beatDiv;
@@ -126,8 +126,7 @@ public class TransportNode extends Node {
         // Create outputs box
         TransportOutputType.allTypes @=> this.outputTypes;
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
-        new IOBox(1, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
-        this.nodeOutputsBox.setOutput(TransportOutputType.BEAT, 0);
+        new IOBox(numOutputs, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
         this.getBeat() => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
 
         // Create visibility box
@@ -194,9 +193,19 @@ public class TransportNode extends Node {
     fun HashMap serialize() {
         super.serialize() @=> HashMap data;
 
+        // Option data
         data.set("tempo", this.tempo);
         data.set("beatDiv", this.beatDiv);
         data.set("PPQN", this.PPQN);
+
+        // Get output data
+        HashMap outputMenuData;
+        for (int idx; idx < this.nodeOutputsBox.menus.size(); idx++) {
+            // Menu data
+            this.nodeOutputsBox.menus[idx] @=> DropdownMenu menu;
+            outputMenuData.set(idx, menu.getSelectedEntry().id);
+        }
+        data.set("outputMenuData", outputMenuData);
 
         return data;
     }

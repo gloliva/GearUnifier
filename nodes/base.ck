@@ -472,6 +472,7 @@ public class Node extends ClickableGGen {
 
         if (this.nodeOutputsBox != null) {
             data.set("outputsActive", this.nodeOutputsBox.active);
+            data.set("numOutputs", this.nodeOutputsBox.numJacks);
         }
 
         return data;

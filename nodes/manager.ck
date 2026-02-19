@@ -440,9 +440,6 @@ public class NodeManager {
 
                     MidiOutputType.allTypes[midiOutputTypeIdx] @=> Enum midiOutputType;
 
-                    // Update menu selection
-                    midiIn.nodeOutputsBox.menus[idx].updateSelectedEntry(midiOutputTypeIdx);
-
                     // Handle number entry box if needed
                     0 => int voiceIdx;
                     if (midiIn.nodeOutputsBox.hasNumberBox(midiOutputType.id)) {
@@ -678,11 +675,23 @@ public class NodeManager {
                     scorePlayer.nodeInputsBox.setInput(ScorePlayerInputType.allTypes[inputType], inputMenuIdx);
                 }
             } else if (nodeClassName == TransportNode.typeOf().name()) {
+                nodeData.getInt("numOutputs") => int numOutputs;
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;
                 nodeData.getInt("PPQN") => int ppqn;
-                TransportNode transport(tempo, beatDiv, ppqn, 4.);
+                TransportNode transport(numOutputs, tempo, beatDiv, ppqn, 4.);
                 transport @=> currNode;
+
+                // Handle output data type mappings and menu selections
+                nodeData.get("outputMenuData")$HashMap @=> HashMap outputMenuData;
+                for (int outputMenuIdx; outputMenuIdx < outputMenuData.intKeys().size(); outputMenuIdx++) {
+                    outputMenuData.getInt(outputMenuIdx) => int dataTypeIdx;
+                    if (dataTypeIdx == -1) continue;
+
+                    TransportOutputType.allTypes[dataTypeIdx] @=> Enum outputType;
+                    transport.nodeOutputsBox.setOutput(outputType, outputMenuIdx);
+                }
+
             } else if (nodeClassName == ScaleNode.typeOf().name()) {
                 nodeData.getFloat("inLow") => float inLow;
                 nodeData.getFloat("inHigh") => float inHigh;
@@ -782,6 +791,7 @@ public class NodeManager {
     }
 
     fun void clearScreen() {
+        // TODO: disconnect UGens from the DAC!
         <<< "Clearing screen" >>>;
         for (Connection conn : this.nodeConnections) {
             conn.deleteWire();
