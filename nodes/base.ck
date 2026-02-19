@@ -858,15 +858,15 @@ public class IOBox extends ContentBox {
         return this._outs[key];
     }
 
-    fun int hasOut(int outIdx) {
-        return this.hasOut(outIdx, 0);
+    fun int hasOutput(int outIdx) {
+        return this.hasOutput(outIdx, 0);
     }
 
-    fun int hasOut(Enum dataType, int voiceIdx) {
-        return this.hasOut(dataType.id, voiceIdx);
+    fun int hasOutput(Enum dataType, int voiceIdx) {
+        return this.hasOutput(dataType.id, voiceIdx);
     }
 
-    fun int hasOut(int outIdx, int voiceIdx) {
+    fun int hasOutput(int outIdx, int voiceIdx) {
         this.outputKey(outIdx, voiceIdx) => string key;
         return this._outs.isInMap(key);
     }

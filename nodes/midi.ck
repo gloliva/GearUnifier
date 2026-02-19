@@ -415,7 +415,7 @@ public class MidiInNode extends MidiNode {
 
         // if latch is turned off, and there are no held notes, turn off gate
         if (latchSetting == 0 && this.heldNotes.size() == 0) {
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.GATE, 0))
                 0. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
         }
     }
@@ -464,7 +464,7 @@ public class MidiInNode extends MidiNode {
 
     fun void clear() {
         this.heldNotes.reset();
-        if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+        if (this.nodeOutputsBox.hasOutput(MidiOutputType.GATE, 0))
             0. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
     }
 
@@ -475,11 +475,11 @@ public class MidiInNode extends MidiNode {
                 this.heldNotes[idx] => int note;
 
                 // Pitch out
-                if (this.nodeOutputsBox.hasOut(MidiOutputType.PITCH, 0))
+                if (this.nodeOutputsBox.hasOutput(MidiOutputType.PITCH, 0))
                     this.tuning.cv(note) => this.nodeOutputsBox.outs(MidiOutputType.PITCH).next;
 
                 // Trigger out
-                if (this.nodeOutputsBox.hasOut(MidiOutputType.TRIGGER, 0))
+                if (this.nodeOutputsBox.hasOutput(MidiOutputType.TRIGGER, 0))
                     spork ~ this.sendTrigger();
 
                 this.beat()::second => now;
@@ -658,7 +658,7 @@ public class MidiInNode extends MidiNode {
             msg.data3 => int velocity;
 
             // Pitch out
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.PITCH, 0)) {
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.PITCH, 0)) {
                 if (this.synthMode() == SynthMode.MONO.id) {
                     this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs(MidiOutputType.PITCH).next;
                 } else if (this.synthMode() == SynthMode.ARP.id) {
@@ -667,20 +667,20 @@ public class MidiInNode extends MidiNode {
             }
 
             // Gate out
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.GATE, 0))
                 1. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
 
             // Trigger out
             // Don't send trigger from NOTE_ON messages when in ARP mode
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.TRIGGER, 0) && this.synthMode() != SynthMode.ARP.id)
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.TRIGGER, 0) && this.synthMode() != SynthMode.ARP.id)
                 spork ~ this.sendTrigger();
 
             // Velocity out
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.VELOCITY, 0))
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.VELOCITY, 0))
                 Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs(MidiOutputType.VELOCITY).next;
 
             // Raw Note out
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.NOTE, 0))
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.NOTE, 0))
                 noteNumber => this.nodeOutputsBox.outs(MidiOutputType.NOTE).next;
 
             // Set processed status
@@ -704,26 +704,26 @@ public class MidiInNode extends MidiNode {
                 // Only turn off gate if latch is off
                 if (this.latch() == 0) {
                     // Turn off gate
-                    if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+                    if (this.nodeOutputsBox.hasOutput(MidiOutputType.GATE, 0))
                         0. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
 
                     // Turn off aftertouch
-                    if (this.nodeOutputsBox.hasOut(MidiOutputType.AFTERTOUCH, 0))
+                    if (this.nodeOutputsBox.hasOutput(MidiOutputType.AFTERTOUCH, 0))
                         0. => this.nodeOutputsBox.outs(MidiOutputType.AFTERTOUCH).next;
 
                     // Turn off velocity
-                    if (this.nodeOutputsBox.hasOut(MidiOutputType.VELOCITY, 0))
+                    if (this.nodeOutputsBox.hasOutput(MidiOutputType.VELOCITY, 0))
                         0. => this.nodeOutputsBox.outs(MidiOutputType.VELOCITY).next;
                 }
 
             // Otherwise go back to previously held note
             } else {
                 this.heldNotes[-1] => int currNote;
-                if (this.nodeOutputsBox.hasOut(MidiOutputType.PITCH, 0) && this.synthMode() == SynthMode.MONO.id)
+                if (this.nodeOutputsBox.hasOutput(MidiOutputType.PITCH, 0) && this.synthMode() == SynthMode.MONO.id)
                     this.tuning.cv(currNote) => this.nodeOutputsBox.outs(MidiOutputType.PITCH).next;
 
                 // Resend Trigger for previously held note for MONO and POLY modes
-                 if (this.nodeOutputsBox.hasOut(MidiOutputType.TRIGGER, 0) && currNote != prevNote && this.synthMode() != SynthMode.ARP.id)
+                 if (this.nodeOutputsBox.hasOutput(MidiOutputType.TRIGGER, 0) && currNote != prevNote && this.synthMode() != SynthMode.ARP.id)
                     spork ~ this.sendTrigger();
             }
 
@@ -731,7 +731,7 @@ public class MidiInNode extends MidiNode {
             1 => midiProcessed;
         // Polyphonic aftertouch
         } else if (this.checkMidiStatus(midiStatus, MidiMessage.POLYPHONIC_AFTERTOUCH, this.channel)) {
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.AFTERTOUCH, 0) && msg.data2 == this.heldNotes[-1]) {
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.AFTERTOUCH, 0) && msg.data2 == this.heldNotes[-1]) {
                 Std.scalef(msg.data3, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs(MidiOutputType.AFTERTOUCH).next;
             }
 
@@ -742,7 +742,7 @@ public class MidiInNode extends MidiNode {
             msg.data2 => int controllerNumber;
             msg.data3 => int controllerData;
 
-            if (this.nodeOutputsBox.hasOut(MidiOutputType.CC, controllerNumber))
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.CC, controllerNumber))
                 Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs(MidiOutputType.CC, controllerNumber).next;
 
             // Set processed status
