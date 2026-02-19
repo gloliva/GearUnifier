@@ -69,6 +69,17 @@ public class AudioOutNode extends AudioNode {
 
         ugen =< dac.chan(inputJackIdx);
     }
+
+    fun void deactivateNode() {
+        // Remove ugens connected to the DAC
+        for (int jackIdx; jackIdx < this.nodeInputsBox.jacks.size(); jackIdx++) {
+            this.nodeInputsBox.jacks[jackIdx] @=> Jack jack;
+            if (jack.ugen != null) {
+                jack.ugen =< dac.chan(jackIdx);
+            }
+        }
+        super.deactivateNode();
+    }
 }
 
 
