@@ -90,7 +90,7 @@ public class TransportOptionsBox extends OptionsBox {
 public class TransportNode extends Node {
     float tempo;
     float beatDiv;
-    24 => int PPQN;
+    int PPQN;
 
     fun @construct() {
         TransportNode(120., 1., 4.);
@@ -101,9 +101,14 @@ public class TransportNode extends Node {
     }
 
     fun @construct(float tempo, float beatDiv, float xScale) {
+        TransportNode(tempo, beatDiv, 24, xScale);
+    }
+
+    fun @construct(float tempo, float beatDiv, int ppqn, float xScale) {
         // Initialize tempo variables
         tempo => this.tempo;
         beatDiv => this.beatDiv;
+        ppqn => this.PPQN;
 
         // Set node ID and name
         "Transport Node" => this.name;
@@ -116,14 +121,14 @@ public class TransportNode extends Node {
         new TransportOptionsBox(["Tempo", "Beat X", "PPQN"], xScale) @=> this.nodeOptionsBox;
         (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(tempo));
         (this.nodeOptionsBox$TransportOptionsBox).beatDivEntryBox.set(beatDiv);
-        (this.nodeOptionsBox$TransportOptionsBox).PPQNEntryBox.set(this.PPQN);
+        (this.nodeOptionsBox$TransportOptionsBox).PPQNEntryBox.set(ppqn);
 
         // Create outputs box
         TransportOutputType.allTypes @=> this.outputTypes;
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(1, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
         this.nodeOutputsBox.setOutput(TransportOutputType.BEAT, 0);
-        this.getBeat() => this.nodeOutputsBox.outs[TransportOutputType.BEAT.id].next;
+        this.getBeat() => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
 
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -152,25 +157,16 @@ public class TransportNode extends Node {
     }
 
     fun dur pulseDur() {
-        return (60. / (this.tempo * this.PPQN))::second;
-    }
-
-    fun int getSPP(int sr) {
-        (sr * 60.) / (this.tempo * this.PPQN) => float spp;
-        return Math.max(2, Std.ftoi(spp + 0.5));
+        return (30.0 / (this.tempo * this.PPQN))::second;
     }
 
     fun void outputClock() {
         while (this.nodeActive) {
-            if (this.nodeOutputsBox.outs.size() > TransportOutputType.CLOCK.id)
-                0.45 => this.nodeOutputsBox.outs[TransportOutputType.CLOCK.id].next;
+            0.5 => this.nodeOutputsBox.outs(TransportOutputType.CLOCK).next;
+            this.pulseDur() => now;
 
-            (30.0 / (this.tempo * this.PPQN))::second => now;
-
-            if (this.nodeOutputsBox.outs.size() > TransportOutputType.CLOCK.id)
-                0.0 => this.nodeOutputsBox.outs[TransportOutputType.CLOCK.id].next;
-
-            (30.0 / (this.tempo * this.PPQN))::second => now;
+            0.0 => this.nodeOutputsBox.outs(TransportOutputType.CLOCK).next;
+            this.pulseDur() => now;
         }
     }
 
@@ -191,7 +187,7 @@ public class TransportNode extends Node {
                 numberBoxFloatValue$int => this.PPQN;
             }
 
-            this.getBeat() => this.nodeOutputsBox.outs[TransportOutputType.BEAT.id].next;
+            this.getBeat() => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
         }
     }
 
@@ -200,6 +196,7 @@ public class TransportNode extends Node {
 
         data.set("tempo", this.tempo);
         data.set("beatDiv", this.beatDiv);
+        data.set("PPQN", this.PPQN);
 
         return data;
     }

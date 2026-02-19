@@ -435,24 +435,24 @@ public class NodeManager {
                 outputMenuData.intKeys() @=> int outputMenuDataKeys[];
                 outputMenuDataKeys.sort();
                 for (int idx; idx < outputMenuDataKeys.size(); idx++) {
-                    outputMenuData.getInt(idx) => int midiDataTypeIdx;
-                    if (midiDataTypeIdx == -1) continue;
+                    outputMenuData.getInt(idx) => int midiOutputTypeIdx;
+                    if (midiOutputTypeIdx == -1) continue;
 
-                    MidiDataType.allTypes[midiDataTypeIdx] @=> Enum midiDataType;
+                    MidiOutputType.allTypes[midiOutputTypeIdx] @=> Enum midiOutputType;
 
                     // Update menu selection
-                    midiIn.nodeOutputsBox.menus[idx].updateSelectedEntry(midiDataTypeIdx);
+                    midiIn.nodeOutputsBox.menus[idx].updateSelectedEntry(midiOutputTypeIdx);
 
                     // Handle number entry box if needed
                     0 => int voiceIdx;
-                    if (midiIn.nodeOutputsBox.hasNumberBox(midiDataType.id)) {
+                    if (midiIn.nodeOutputsBox.hasNumberBox(midiOutputType.id)) {
                         midiIn.nodeOutputsBox.showNumberBox(idx);
                         outputNumberBoxData.getInt(idx) => voiceIdx;
                         midiIn.nodeOutputsBox.numberBoxes[idx].set(voiceIdx);
                     }
 
-                    // Update output data type mapping
-                    midiIn.outputDataTypeIdx(midiDataType, voiceIdx, idx);
+                    // Update output
+                    midiIn.nodeOutputsBox.setOutput(midiOutputType, idx, midiIn.nodeOutputsBox.outs(midiOutputType, voiceIdx));
                 }
             } else if (nodeClassName == AudioInNode.typeOf().name()) {
                 AudioInNode audioIn(adc.channels());
@@ -680,7 +680,8 @@ public class NodeManager {
             } else if (nodeClassName == TransportNode.typeOf().name()) {
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;
-                TransportNode transport(tempo, beatDiv, 4.);
+                nodeData.getInt("PPQN") => int ppqn;
+                TransportNode transport(tempo, beatDiv, ppqn, 4.);
                 transport @=> currNode;
             } else if (nodeClassName == ScaleNode.typeOf().name()) {
                 nodeData.getFloat("inLow") => float inLow;
@@ -930,8 +931,6 @@ public class NodeManager {
                         } else if (ioBox.ioType == IOType.OUTPUT) {
                             if (Type.of(node).name() == MidiInNode.typeOf().name()) {
                                 node$MidiInNode @=> MidiInNode midiIn;
-                                // Remove old mapping
-                                midiIn.removeOutputDataTypeMapping(previousSelection, 0);
 
                                 // Check if number entry box is needed
                                 0 => int voiceIdx;
@@ -941,11 +940,11 @@ public class NodeManager {
                                     midiIn.nodeOutputsBox.hideNumberBox(this.currMenu.menuIdx);
                                 }
 
-                                // Add new mapping
-                                midiIn.outputDataTypeIdx(newSelection, voiceIdx, this.currMenu.menuIdx);
+                                // Add output
+                                midiIn.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, midiIn.nodeOutputsBox.outs(newSelection, voiceIdx));
                             } else if (Type.of(node).name() == TransportNode.typeOf().name()) {
                                 node$TransportNode @=> TransportNode transportNode;
-                                transportNode.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, transportNode.nodeOutputsBox.outs[newSelection.id]);
+                                transportNode.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, transportNode.nodeOutputsBox.outs(newSelection));
                             } else if (Type.of(node).name() == ComposerNode.typeOf().name()) {
                                 node$ComposerNode @=> ComposerNode composerNode;
                                 composerNode.nodeOutputsBox.setOutput(newSelection, this.currMenu.menuIdx, composerNode.outs[newSelection.id]);

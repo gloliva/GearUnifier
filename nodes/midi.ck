@@ -37,7 +37,7 @@ public class MidiMessage {
 }
 
 
-public class MidiDataType {
+public class MidiOutputType {
     new Enum(0, "Pitch") @=> static Enum PITCH;
     new Enum(1, "Gate") @=> static Enum GATE;
     new Enum(2, "Trigger") @=> static Enum TRIGGER;
@@ -47,13 +47,13 @@ public class MidiDataType {
     new Enum(6, "Note") @=> static Enum NOTE;
 
     [
-        MidiDataType.PITCH,
-        MidiDataType.GATE,
-        MidiDataType.TRIGGER,
-        MidiDataType.VELOCITY,
-        MidiDataType.AFTERTOUCH,
-        MidiDataType.CC,
-        MidiDataType.NOTE,
+        MidiOutputType.PITCH,
+        MidiOutputType.GATE,
+        MidiOutputType.TRIGGER,
+        MidiOutputType.VELOCITY,
+        MidiOutputType.AFTERTOUCH,
+        MidiOutputType.CC,
+        MidiOutputType.NOTE,
     ] @=> static Enum allTypes[];
 
     [
@@ -342,9 +342,6 @@ public class MidiInNode extends MidiNode {
     // Beat
     float _beat;
 
-    // Data handling
-    int midiDataTypeToOut[0];
-
     // Sequencing
     SequencerNode @ sequencer;
 
@@ -374,7 +371,7 @@ public class MidiInNode extends MidiNode {
 
         // Create Outputs IO box
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
-        new IOBox(numStartJacks, MidiDataType.allTypes, MidiDataType.includeNumberEntry, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+        new IOBox(numStartJacks, MidiOutputType.allTypes, MidiOutputType.includeNumberEntry, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
         this.nodeOutputsBox.setNumberBoxUpdateEvent(this.updateNumberEntryBoxEvent);
 
         // Parent class constructor
@@ -418,8 +415,8 @@ public class MidiInNode extends MidiNode {
 
         // if latch is turned off, and there are no held notes, turn off gate
         if (latchSetting == 0 && this.heldNotes.size() == 0) {
-            this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-            if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+                0. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
         }
     }
 
@@ -435,43 +432,9 @@ public class MidiInNode extends MidiNode {
         return this._beat;
     }
 
-    fun void outputDataTypeIdx(Enum midiDataType, int voiceIdx, int outIdx) {
-        // Update midi data type to output idx
-        Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
-        outIdx => this.midiDataTypeToOut[key];
-
-        // Add Step output to Jack
-        this.nodeOutputsBox.jacks[outIdx].setUgen(this.nodeOutputsBox.outs[outIdx]);
-    }
-
-    fun int outputDataTypeIdx(Enum midiDataType, int voiceIdx) {
-        Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
-
-        if (this.midiDataTypeToOut.isInMap(key)) {
-            return this.midiDataTypeToOut[key];
-        }
-
-        return -1;
-    }
-
-    fun void removeOutputDataTypeMapping(Enum midiDataType, int voiceIdx) {
-        Std.itoa(midiDataType.id) + Std.itoa(voiceIdx) => string key;
-        this.midiDataTypeToOut.erase(key);
-    }
-
-    fun void removeOutputDataTypeMappingByOutIdx(Enum midiDataType, int outIdx) {
-        for (int idx; idx < this.midiDataTypeToOut.size(); idx++) {
-            Std.itoa(midiDataType.id) + Std.itoa(idx) => string key;
-            if (this.midiDataTypeToOut.isInMap(key) && this.midiDataTypeToOut[key] == outIdx) {
-                this.midiDataTypeToOut.erase(key);
-                break;
-            }
-        }
-    }
-
     fun void addJack(int ioType) {
         if (ioType == IOType.OUTPUT) {
-            this.nodeOutputsBox.addJack(MidiDataType.allTypes);
+            this.nodeOutputsBox.addJack(MidiOutputType.allTypes);
 
             // Update new menu with Event
             this.nodeOutputsBox.numberBoxes[-1].setUpdateEvent(this.updateNumberEntryBoxEvent);
@@ -485,9 +448,6 @@ public class MidiInNode extends MidiNode {
     fun void removeJack(int ioType) {
         if (ioType == IOType.OUTPUT) {
             this.nodeOutputsBox.removeJack() @=> Enum removedMenuSelection;
-
-            // Remove OutputDataType mapping
-            this.removeOutputDataTypeMapping(removedMenuSelection, 0);
         } else if (ioType == IOType.INPUT) {
             this.nodeInputsBox.removeJack() @=> Enum removedMenuSelection;
         }
@@ -495,17 +455,17 @@ public class MidiInNode extends MidiNode {
 
     }
 
-    fun void sendTrigger(int triggerOutIdx) {
+    fun void sendTrigger() {
         // Send a short trigger signal
-        1. => this.nodeOutputsBox.outs[triggerOutIdx].next;
+        1. => this.nodeOutputsBox.outs(MidiOutputType.TRIGGER).next;
         5::ms => now;
-        0. => this.nodeOutputsBox.outs[triggerOutIdx].next;
+        0. => this.nodeOutputsBox.outs(MidiOutputType.TRIGGER).next;
     }
 
     fun void clear() {
         this.heldNotes.reset();
-        this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-        if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+        if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+            0. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
     }
 
     fun void arpeggiate() {
@@ -515,12 +475,12 @@ public class MidiInNode extends MidiNode {
                 this.heldNotes[idx] => int note;
 
                 // Pitch out
-                this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                if (pitchOutIdx != -1) this.tuning.cv(note) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                if (this.nodeOutputsBox.hasOut(MidiOutputType.PITCH, 0))
+                    this.tuning.cv(note) => this.nodeOutputsBox.outs(MidiOutputType.PITCH).next;
 
                 // Trigger out
-                this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-                if (triggerOutIdx != -1) spork ~ this.sendTrigger(triggerOutIdx);
+                if (this.nodeOutputsBox.hasOut(MidiOutputType.TRIGGER, 0))
+                    spork ~ this.sendTrigger();
 
                 this.beat()::second => now;
             }
@@ -622,12 +582,9 @@ public class MidiInNode extends MidiNode {
             this.nodeOutputsBox.menus[numberBoxIdx] @=> DropdownMenu menu;
             menu.getSelectedEntry() @=> Enum selectedEntry;
 
-            // Remove old mapping
-            this.removeOutputDataTypeMappingByOutIdx(selectedEntry, numberBoxIdx);
-
             // Update output data type mapping
             <<< "Updating output data type mapping ", selectedEntry.name, numberBoxValue, numberBoxIdx >>>;
-            this.outputDataTypeIdx(selectedEntry, numberBoxValue, numberBoxIdx);
+            this.nodeOutputsBox.setOutput(selectedEntry, numberBoxIdx, this.nodeOutputsBox.outs(selectedEntry, numberBoxValue));
         }
     }
 
@@ -701,31 +658,30 @@ public class MidiInNode extends MidiNode {
             msg.data3 => int velocity;
 
             // Pitch out
-            this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-            if (pitchOutIdx != -1) {
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.PITCH, 0)) {
                 if (this.synthMode() == SynthMode.MONO.id) {
-                    this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                    this.tuning.cv(noteNumber) => this.nodeOutputsBox.outs(MidiOutputType.PITCH).next;
                 } else if (this.synthMode() == SynthMode.ARP.id) {
                     if (this.heldNotes.size() == 1) spork ~ this.arpeggiate();
                 }
             }
 
             // Gate out
-            this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-            if (gateOutIdx != -1) 1. => this.nodeOutputsBox.outs[gateOutIdx].next;
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+                1. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
 
             // Trigger out
             // Don't send trigger from NOTE_ON messages when in ARP mode
-            this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-            if (triggerOutIdx != -1 && this.synthMode() != SynthMode.ARP.id) spork ~ this.sendTrigger(triggerOutIdx);
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.TRIGGER, 0) && this.synthMode() != SynthMode.ARP.id)
+                spork ~ this.sendTrigger();
 
             // Velocity out
-            this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-            if (velocityOutIdx != -1) Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[velocityOutIdx].next;
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.VELOCITY, 0))
+                Std.scalef(velocity, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs(MidiOutputType.VELOCITY).next;
 
             // Raw Note out
-            this.outputDataTypeIdx(MidiDataType.NOTE, 0) => int noteOutIdx;
-            if (noteOutIdx != -1) noteNumber => this.nodeOutputsBox.outs[noteOutIdx].next;
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.NOTE, 0))
+                noteNumber => this.nodeOutputsBox.outs(MidiOutputType.NOTE).next;
 
             // Set processed status
             1 => midiProcessed;
@@ -748,36 +704,35 @@ public class MidiInNode extends MidiNode {
                 // Only turn off gate if latch is off
                 if (this.latch() == 0) {
                     // Turn off gate
-                    this.outputDataTypeIdx(MidiDataType.GATE, 0) => int gateOutIdx;
-                    if (gateOutIdx != -1) 0. => this.nodeOutputsBox.outs[gateOutIdx].next;
+                    if (this.nodeOutputsBox.hasOut(MidiOutputType.GATE, 0))
+                        0. => this.nodeOutputsBox.outs(MidiOutputType.GATE).next;
 
                     // Turn off aftertouch
-                    this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
-                    if (aftertouchOutIdx != -1) 0. => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+                    if (this.nodeOutputsBox.hasOut(MidiOutputType.AFTERTOUCH, 0))
+                        0. => this.nodeOutputsBox.outs(MidiOutputType.AFTERTOUCH).next;
 
                     // Turn off velocity
-                    this.outputDataTypeIdx(MidiDataType.VELOCITY, 0) => int velocityOutIdx;
-                    if (velocityOutIdx != -1) 0. => this.nodeOutputsBox.outs[velocityOutIdx].next;
+                    if (this.nodeOutputsBox.hasOut(MidiOutputType.VELOCITY, 0))
+                        0. => this.nodeOutputsBox.outs(MidiOutputType.VELOCITY).next;
                 }
 
             // Otherwise go back to previously held note
             } else {
                 this.heldNotes[-1] => int currNote;
-                this.outputDataTypeIdx(MidiDataType.PITCH, 0) => int pitchOutIdx;
-                if (pitchOutIdx != -1 && this.synthMode() == SynthMode.MONO.id) this.tuning.cv(currNote) => this.nodeOutputsBox.outs[pitchOutIdx].next;
+                if (this.nodeOutputsBox.hasOut(MidiOutputType.PITCH, 0) && this.synthMode() == SynthMode.MONO.id)
+                    this.tuning.cv(currNote) => this.nodeOutputsBox.outs(MidiOutputType.PITCH).next;
 
                 // Resend Trigger for previously held note for MONO and POLY modes
-                this.outputDataTypeIdx(MidiDataType.TRIGGER, 0) => int triggerOutIdx;
-                if (triggerOutIdx != -1 && currNote != prevNote && this.synthMode() != SynthMode.ARP.id) spork ~ this.sendTrigger(triggerOutIdx);
+                 if (this.nodeOutputsBox.hasOut(MidiOutputType.TRIGGER, 0) && currNote != prevNote && this.synthMode() != SynthMode.ARP.id)
+                    spork ~ this.sendTrigger();
             }
 
             // Set processed status
             1 => midiProcessed;
         // Polyphonic aftertouch
         } else if (this.checkMidiStatus(midiStatus, MidiMessage.POLYPHONIC_AFTERTOUCH, this.channel)) {
-            this.outputDataTypeIdx(MidiDataType.AFTERTOUCH, 0) => int aftertouchOutIdx;
-            if (aftertouchOutIdx != -1 && msg.data2 == this.heldNotes[-1]) {
-                Std.scalef(msg.data3, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs[aftertouchOutIdx].next;
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.AFTERTOUCH, 0) && msg.data2 == this.heldNotes[-1]) {
+                Std.scalef(msg.data3, 0, 127, 0., 0.5) => this.nodeOutputsBox.outs(MidiOutputType.AFTERTOUCH).next;
             }
 
             // Set processed status
@@ -787,8 +742,8 @@ public class MidiInNode extends MidiNode {
             msg.data2 => int controllerNumber;
             msg.data3 => int controllerData;
 
-            this.outputDataTypeIdx(MidiDataType.CC, controllerNumber) => int ccOutIdx;
-            if (ccOutIdx != -1) Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs[ccOutIdx].next;
+            if (this.nodeOutputsBox.hasOut(MidiOutputType.CC, controllerNumber))
+                Std.scalef(controllerData, 0, 127, -0.5, 0.5) => this.nodeOutputsBox.outs(MidiOutputType.CC, controllerNumber).next;
 
             // Set processed status
             // 1 => midiProcessed;

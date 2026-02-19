@@ -725,7 +725,7 @@ public class IOBox extends ContentBox {
     NumberEntryBox numberBoxes[0];
 
     // Data handling
-    Step outs[0];  // TODO: outs are all messed up. Instead of having an out per jack, have it per Output TYPE
+    Step _outs[0];
     int dataMap[0];
 
     // IO Type
@@ -799,7 +799,6 @@ public class IOBox extends ContentBox {
 
             // Add jack to list
             this.jacks << jack;
-            this.outs << out;
 
             // Connect jack to IO box
             jack --> this;
@@ -835,6 +834,42 @@ public class IOBox extends ContentBox {
         this.contentBox --> this;
     }
 
+    fun string outputKey(int dataTypeIdx, int voiceIdx) {
+        return Std.itoa(dataTypeIdx) + "-" + Std.itoa(voiceIdx);
+    }
+
+    fun Step outs(Enum dataType) {
+        return this.outs(dataType.id, 0);
+    }
+
+    fun Step outs(Enum dataType, int voiceIdx) {
+        return this.outs(dataType.id, voiceIdx);
+    }
+
+    fun Step outs(int outIdx, int voiceIdx) {
+        this.outputKey(outIdx, voiceIdx) => string key;
+
+        // If new output, add to map
+        if (!this._outs.isInMap(key)) {
+            new Step(0.) @=> this._outs[key];
+        }
+
+        return this._outs[key];
+    }
+
+    fun int hasOut(int outIdx) {
+        return this.hasOut(outIdx, 0);
+    }
+
+    fun int hasOut(Enum dataType, int voiceIdx) {
+        return this.hasOut(dataType.id, voiceIdx);
+    }
+
+    fun int hasOut(int outIdx, int voiceIdx) {
+        this.outputKey(outIdx, voiceIdx) => string key;
+        return this._outs.isInMap(key);
+    }
+
     fun void setInput(Enum dataType, int jackIdx) {
         if (this.ioType != IOType.INPUT) {
             <<< "ERROR: Trying to set an input on an Output box." >>>;
@@ -850,11 +885,7 @@ public class IOBox extends ContentBox {
     }
 
     fun void setOutput(Enum dataType, int jackIdx) {
-        if (jackIdx > this.outs.size()) {
-            <<< "ERROR: No Out UGen provided and Jack idx", jackIdx, "greater than Outputs size:", this.outs.size() >>>;
-        }
-
-        this.setOutput(dataType, jackIdx, this.outs[jackIdx]);
+        this.setOutput(dataType, jackIdx, this.outs(dataType));
     }
 
     fun void setOutput(Enum dataType, int jackIdx, UGen out) {
@@ -996,7 +1027,6 @@ public class IOBox extends ContentBox {
 
         // Add objects to lists
         this.jacks << jack;
-        this.outs << out;
 
         // Jack Connection
         jack --> this;
@@ -1048,7 +1078,6 @@ public class IOBox extends ContentBox {
         // Remove objects from lists
         this.jacks.popBack();
         this.menus.popBack();
-        this.outs.popBack();
         this.numberBoxes.popBack();
 
         // Update Jack and Menu Y Pos
