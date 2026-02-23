@@ -84,8 +84,8 @@ public class DelayNode extends Node {
 
     fun @construct(int numInputs, float xScale) {
         // Set node ID and name
-        "Delay Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Delay-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Delay", xScale) @=> this.nodeNameBox;

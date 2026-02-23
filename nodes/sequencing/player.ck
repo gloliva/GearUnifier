@@ -44,8 +44,8 @@ public class ScorePlayerNode extends Node {
 
     fun @construct(float xScale) {
         // Set node ID and name
-        "ScorePlayer Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "ScorePlayer-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("ScorePlayer", xScale) @=> this.nodeNameBox;

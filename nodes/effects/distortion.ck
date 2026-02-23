@@ -308,8 +308,8 @@ public class DistortionNode extends Node {
 
     fun @construct(int numInputs, float xScale) {
         // Set node ID and name
-        "Distortion Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Distortion-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Distortion", xScale) @=> this.nodeNameBox;

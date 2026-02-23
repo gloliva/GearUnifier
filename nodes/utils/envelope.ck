@@ -116,8 +116,8 @@ public class ASRNode extends Node {
         releaseTime => this.releaseTime;
 
         // Set node ID and name
-        "ASR Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "ASR-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("ASR", xScale) @=> this.nodeNameBox;
@@ -362,8 +362,8 @@ public class ADSRNode extends Node {
         this.adsr.set(attackTime, decayTime, sustainLevel, releaseTime);
 
         // Set node ID and name
-        "ADSR Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "ADSR-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("ADSR", xScale) @=> this.nodeNameBox;

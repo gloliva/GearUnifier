@@ -107,8 +107,8 @@ public class ScaleTuningNode extends Node {
         degreeOffset => this.degreeOffset;
 
         // Set node ID and name
-        "Scale Tuning Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Scale-Tuning-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Scale Tuning", xScale) @=> this.nodeNameBox;
@@ -314,8 +314,8 @@ public class EDOTuningNode extends Node {
         new EDO(this.scaleSize, this.degreeOffset) @=> this.tuning;
 
         // Set node ID and name
-        "EDO Tuning Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "EDO-Tuning-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("EDO Tuning", xScale) @=> this.nodeNameBox;

@@ -11,8 +11,8 @@ public class AudioNode extends Node {
         IOType.toString(type) => this.ioType;
 
         // Set Node ID
-        "Audio " + this.ioType + " Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Audio-" + this.ioType + "-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Audio " + this.ioType, 2.) @=> this.nodeNameBox;

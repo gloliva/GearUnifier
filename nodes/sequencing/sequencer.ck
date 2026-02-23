@@ -37,8 +37,8 @@ public class SequencerNode extends Node {
 
     fun @construct(int numInputs, float xScale) {
         // Set node ID and name
-        "Sequencer Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Sequencer-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Sequencer", xScale) @=> this.nodeNameBox;

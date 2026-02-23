@@ -156,8 +156,8 @@ public class ScaleNode extends Node {
         outHigh => this.scale.setOutHigh;
 
         // Set node ID and name
-        "Scale Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Scale-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Scale", xScale) @=> this.nodeNameBox;

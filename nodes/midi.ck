@@ -300,10 +300,10 @@ public class MidiNode extends Node {
         @(0.25, 0.25, 1.) => this.sca;
 
         // Names
-        name + " " + this.ioType + " Channel " + this.channel => this.name;
+        name + "-" + this.ioType + "-Channel-" + this.channel => this.name;
 
         // Set ID
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        this.setNodeID();
 
         // Connections
         this.nodeNameBox --> this;

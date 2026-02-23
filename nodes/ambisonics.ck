@@ -132,8 +132,8 @@ public class AmbPannerNode extends Node {
         this.elePatch => blackhole;
 
         // Set node ID and name
-        "AmbPanner Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "AmbPanner-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("AmbPanner", xScale) @=> this.nodeNameBox;

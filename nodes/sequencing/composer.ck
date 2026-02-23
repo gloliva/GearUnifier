@@ -83,8 +83,8 @@ public class ComposerNode extends Node {
         ] @=> this.outs;
 
         // Set node ID and name
-        "Composer Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Composer-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Composer", xScale) @=> this.nodeNameBox;

@@ -111,8 +111,8 @@ public class TransportNode extends Node {
         ppqn => this.PPQN;
 
         // Set node ID and name
-        "Transport Node" => this.name;
-        this.name() + " ID " + Std.itoa(Math.random()) => this.nodeID;
+        "Transport-Node" => this.name;
+        this.setNodeID();
 
         // Node name box
         new NameBox("Transport", xScale) @=> this.nodeNameBox;
