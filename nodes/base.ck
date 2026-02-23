@@ -1,6 +1,6 @@
 @import {"../ui/base.ck", "../ui/menu.ck", "../ui/textBox.ck"}
 @import {"../base.ck", "../events.ck"}
-@import "HashMap"
+@import {"HashMap", "UUID"}
 
 
 public class NodeType {
@@ -56,6 +56,10 @@ public class Node extends ClickableGGen {
     // IO Options
     Enum inputTypes[];
     Enum outputTypes[];
+
+    fun void setNodeID() {
+        this.name() + "-" + UUID.uuid4() => this.nodeID;
+    }
 
     fun void setNodeID(string nodeID) {
         nodeID => this.nodeID;
@@ -356,7 +360,7 @@ public class Node extends ClickableGGen {
         }
     }
 
-    fun float getValueFromUGen(UGen ugen) {
+    fun static float getValueFromUGen(UGen ugen) {
         // Value can be from a audio rate UGen (which uses last()),
         // a control rate UGen (which uses next()),
         // or an envelope UGen (which uses value())
@@ -1106,14 +1110,13 @@ public class IOBox extends ContentBox {
     }
 
     fun void setJackColor() {
-        this.parent()$Node @=> Node parentNode;
-        while (parentNode.nodeActive) {
+        while (true) {
             for (Jack jack : this.jacks) {
                 if (!jack.isConnected || jack.ugen == null) {
                     continue;
                 }
 
-                parentNode.getValueFromUGen(jack.ugen) => float voltage;
+                Node.getValueFromUGen(jack.ugen) => float voltage;
 
                 0. => float hue;
                 1. => float saturation;
