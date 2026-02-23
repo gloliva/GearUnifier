@@ -70,22 +70,17 @@ public class Node extends ClickableGGen {
     fun void deactivateNode() {
         for (Shred shred : this.activeShreds) {
             <<< "Removing shred" >>>;
-            // shred.exit();
             Machine.remove( shred.id() );
             me.yield();
         }
 
         // Get Rid of shreds in Input and Output IO Boxes
-        if (this.nodeInputsBox != null) {
-            for (Jack jack : this.nodeInputsBox.jacks) {
-                if (jack.colorShred != null) Machine.remove(jack.colorShred.id());
-            }
+        if (this.nodeInputsBox != null && this.nodeInputsBox.setJackColorShred != null) {
+            Machine.remove(this.nodeInputsBox.setJackColorShred.id());
         }
 
-        if (this.nodeOutputsBox != null) {
-            for (Jack jack : this.nodeOutputsBox.jacks) {
-                if (jack.colorShred != null) Machine.remove(jack.colorShred.id());
-            }
+        if (this.nodeOutputsBox != null && this.nodeOutputsBox.setJackColorShred != null) {
+            Machine.remove(this.nodeOutputsBox.setJackColorShred.id());
         }
 
         0 => this.nodeActive;
@@ -610,8 +605,6 @@ public class Jack extends GGen {
     int isConnected;
     UGen @ ugen;
 
-    Shred @ colorShred;
-
     fun @construct(int jackID, int ioType) {
         // Member variables
         ioType => this.ioType;
@@ -637,9 +630,6 @@ public class Jack extends GGen {
 
         // Connections
         this.jack --> this.border --> this;
-
-        // Handle jack color
-        spork ~ this.setColor() @=> this.colorShred;
     }
 
     fun void setUgen(UGen ugen) {
@@ -741,6 +731,9 @@ public class IOBox extends ContentBox {
     DropdownMenu @ openMenu;
     int includeNumberEntry[];
 
+    // Shreds
+    Shred @ setJackColorShred;
+
     fun @construct(int numJacks, int ioType, string parentNodeID, float xScale) {
         // Create an IO box without menus
         IOBox(numJacks, null, ioType, parentNodeID, xScale);
@@ -833,6 +826,9 @@ public class IOBox extends ContentBox {
 
         // Connect boxes to IO box
         this.contentBox --> this;
+
+        // Handle shreds
+        spork ~ this.setJackColor() @=> this.setJackColorShred;
     }
 
     fun string outputKey(int dataTypeIdx, int voiceIdx) {
@@ -1106,6 +1102,30 @@ public class IOBox extends ContentBox {
         for (int idx; idx < this.numberBoxes.size(); idx++) {
             this.numberBoxes[idx] @=> NumberEntryBox numberBox;
             startPosY + (idx * -1) => numberBox.posY;
+        }
+    }
+
+    fun void setJackColor() {
+        this.parent()$Node @=> Node parentNode;
+        while (parentNode.nodeActive) {
+            for (Jack jack : this.jacks) {
+                if (!jack.isConnected || jack.ugen == null) {
+                    continue;
+                }
+
+                parentNode.getValueFromUGen(jack.ugen) => float voltage;
+
+                0. => float hue;
+                1. => float saturation;
+                if (voltage < 0.) 240. => hue;
+
+                Std.scalef(Std.fabs(voltage), 0., 1., 0., 1.) => float value;
+                Std.clampf(value, 0., 1.) => value;
+
+                Color.hsv2rgb(@(hue, saturation, value)) * 3 => jack.jack.color;
+            }
+
+            GG.nextFrame() => now;
         }
     }
 
