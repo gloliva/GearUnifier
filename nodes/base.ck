@@ -536,9 +536,25 @@ public class Connection extends GGen {
         inputJackPos => this.inputJackPos;
         "Completed Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx + " -> Node" + this.inputNode.nodeID + " Jack" + this.inputNodeJackIdx => this.name;
 
-        // Split wire into 3 segments: 10% / 80% / 10% of total length
-        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.3 => vec2 outPoint;
-        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.7 => vec2 inPoint;
+        // Compute normalized direction
+        @(this.inputJackPos.x - this.outputJackPos.x,
+          this.inputJackPos.y - this.outputJackPos.y) => vec2 dir;
+        Math.sqrt(dir.dot(dir)) => float totalLen;
+        @(dir.x / totalLen, dir.y / totalLen) => vec2 dirNorm;
+
+        // Output segment: project output node IOBox onto wire direction, clamped to half wire length
+        this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHalfW;
+        this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHalfH;
+        Math.min(Std.fabs(dirNorm.x) * outHalfW + Std.fabs(dirNorm.y) * outHalfH, totalLen / 2.) => float outSegLen;
+        @(this.outputJackPos.x + dirNorm.x * outSegLen,
+          this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
+
+        // Input segment: project input node IOBox onto wire direction, clamped to half wire length
+        this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHalfW;
+        this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHalfH;
+        Math.min(Std.fabs(dirNorm.x) * inHalfW + Std.fabs(dirNorm.y) * inHalfH, totalLen / 2.) => float inSegLen;
+        @(this.inputJackPos.x - dirNorm.x * inSegLen,
+          this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
 
         // Output end: short segment (~10%) at output node's Z layer
         [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
@@ -561,8 +577,25 @@ public class Connection extends GGen {
     }
 
     fun void refreshWirePositions() {
-        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.3 => vec2 outPoint;
-        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.7 => vec2 inPoint;
+        // Compute normalized direction
+        @(this.inputJackPos.x - this.outputJackPos.x,
+          this.inputJackPos.y - this.outputJackPos.y) => vec2 dir;
+        Math.sqrt(dir.dot(dir)) => float totalLen;
+        @(dir.x / totalLen, dir.y / totalLen) => vec2 dirNorm;
+
+        // Output segment: project output node IOBox onto wire direction, clamped to half wire length
+        this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHalfW;
+        this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHalfH;
+        Math.min(Std.fabs(dirNorm.x) * outHalfW + Std.fabs(dirNorm.y) * outHalfH, totalLen / 2.) => float outSegLen;
+        @(this.outputJackPos.x + dirNorm.x * outSegLen,
+          this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
+
+        // Input segment: project input node IOBox onto wire direction, clamped to half wire length
+        this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHalfW;
+        this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHalfH;
+        Math.min(Std.fabs(dirNorm.x) * inHalfW + Std.fabs(dirNorm.y) * inHalfH, totalLen / 2.) => float inSegLen;
+        @(this.inputJackPos.x - dirNorm.x * inSegLen,
+          this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
         [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
         [outPoint, inPoint] => this.middleWire.positions;
         [inPoint, this.inputJackPos] => this.inputNodeWire.positions;
