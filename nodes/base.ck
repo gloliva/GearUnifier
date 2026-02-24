@@ -568,7 +568,7 @@ public class Connection extends GGen {
             Math.max(outNear, Math.min(ty1, ty2)) => outNear;
             Math.min(outFar,  Math.max(ty1, ty2)) => outFar;
         }
-        Math.min(Math.max(0., outFar), totalLen / 2.) => float outSegLen;
+        Math.min(Math.max(0., outFar) + 0.2, totalLen / 2.) => float outSegLen;
         @(this.outputJackPos.x + dirNorm.x * outSegLen,
           this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
 
@@ -599,7 +599,7 @@ public class Connection extends GGen {
             Math.max(inNear, Math.min(ty1, ty2)) => inNear;
             Math.min(inFar,  Math.max(ty1, ty2)) => inFar;
         }
-        Math.min(Math.max(0., inFar), totalLen / 2.) => float inSegLen;
+        Math.min(Math.max(0., inFar) + 0.2, totalLen / 2.) => float inSegLen;
         @(this.inputJackPos.x - dirNorm.x * inSegLen,
           this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
 
@@ -656,7 +656,7 @@ public class Connection extends GGen {
             Math.max(outNear, Math.min(ty1, ty2)) => outNear;
             Math.min(outFar,  Math.max(ty1, ty2)) => outFar;
         }
-        Math.min(Math.max(0., outFar), totalLen / 2.) => float outSegLen;
+        Math.min(Math.max(0., outFar) + 0.2, totalLen / 2.) => float outSegLen;
         @(this.outputJackPos.x + dirNorm.x * outSegLen,
           this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
 
@@ -687,7 +687,7 @@ public class Connection extends GGen {
             Math.max(inNear, Math.min(ty1, ty2)) => inNear;
             Math.min(inFar,  Math.max(ty1, ty2)) => inFar;
         }
-        Math.min(Math.max(0., inFar), totalLen / 2.) => float inSegLen;
+        Math.min(Math.max(0., inFar) + 0.2, totalLen / 2.) => float inSegLen;
         @(this.inputJackPos.x - dirNorm.x * inSegLen,
           this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
         [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
