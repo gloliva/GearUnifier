@@ -71,6 +71,16 @@ public class NodeManager {
     }
 
     fun void addNode(Node node) {
+        this.addNode(node, false);
+    }
+
+    fun void addNode(Node node, int setToCameraPos) {
+        if (setToCameraPos) {
+            node.nodeMidpoint() => float midpoint;
+            GG.scene().camera().posX() => node.posX;
+            GG.scene().camera().posY() - midpoint => node.posY;
+        }
+
         this.nodesOnScreen << node;
         this.numNodes++;
 
@@ -140,52 +150,52 @@ public class NodeManager {
             if (addNodeEvent.nodeType == NodeType.MIDI_IN) {
                 addNodeEvent.menuName => string midiDeviceName;
                 MidiInNode midiIn(midiDeviceName, MidiConstants.ALL_CHANNELS, 1, 3);
-                this.addNode(midiIn);
+                this.addNode(midiIn, true);
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_IN) {
                 AudioInNode audioIn(adc.channels());
-                this.addNode(audioIn);
+                this.addNode(audioIn, true);
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_OUT) {
                 AudioOutNode audioOut(dac.channels());
-                this.addNode(audioOut);
+                this.addNode(audioOut, true);
             } else if (addNodeEvent.nodeType == NodeType.AMB_PANNER) {
                 AmbPannerNode ambPanner();
-                this.addNode(ambPanner);
+                this.addNode(ambPanner, true);
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
-                this.addNode(wavefolder);
+                this.addNode(wavefolder, true);
             } else if (addNodeEvent.nodeType == NodeType.DISTORTION) {
                 DistortionNode distortion();
-                this.addNode(distortion);
+                this.addNode(distortion, true);
             } else if (addNodeEvent.nodeType == NodeType.DELAY) {
                 DelayNode delay();
-                this.addNode(delay);
+                this.addNode(delay, true);
             } else if (addNodeEvent.nodeType == NodeType.SEQUENCER) {
                 SequencerNode sequencer();
-                this.addNode(sequencer);
+                this.addNode(sequencer, true);
             } else if (addNodeEvent.nodeType == NodeType.COMPOSE) {
                 ComposerNode compose(3);
-                this.addNode(compose);
+                this.addNode(compose, true);
             } else if (addNodeEvent.nodeType == NodeType.SCORE_PLAYER) {
                 ScorePlayerNode scorePlayer();
-                this.addNode(scorePlayer);
+                this.addNode(scorePlayer, true);
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
-                this.addNode(transport);
+                this.addNode(transport, true);
             } else if (addNodeEvent.nodeType == NodeType.SCALE_TUNING) {
                 ScaleTuningNode scaleTuning();
-                this.addNode(scaleTuning);
+                this.addNode(scaleTuning, true);
             } else if (addNodeEvent.nodeType == NodeType.EDO_TUNING) {
                 EDOTuningNode edoTuning();
-                this.addNode(edoTuning);
+                this.addNode(edoTuning, true);
             } else if (addNodeEvent.nodeType == NodeType.SCALE) {
                 ScaleNode scale();
-                this.addNode(scale);
+                this.addNode(scale, true);
             } else if (addNodeEvent.nodeType == NodeType.ASR_ENV) {
                 ASRNode asr();
-                this.addNode(asr);
+                this.addNode(asr, true);
             } else if (addNodeEvent.nodeType == NodeType.ADSR_ENV) {
                 ADSRNode adsr();
-                this.addNode(adsr);
+                this.addNode(adsr, true);
             }
         }
     }
@@ -791,7 +801,6 @@ public class NodeManager {
     }
 
     fun void clearScreen() {
-        // TODO: disconnect UGens from the DAC!
         <<< "Clearing screen" >>>;
         for (Connection conn : this.nodeConnections) {
             conn.deleteWire();
@@ -1262,6 +1271,7 @@ public class NodeManager {
                             if (Type.of(node).name() == ComposerNode.typeOf().name()) {
                                 (node$ComposerNode).composeBoxes[buttonClickedIdx] @=> ComposeBox composeBox;
                                 if (composeBox.active) {
+                                    @(GG.scene().camera().posX(), GG.scene().camera().posY(), 1) => composeBox.pos;
                                     composeBox --> GG.scene();
                                     this.composeBoxesOnScreen << composeBox;
                                 } else {

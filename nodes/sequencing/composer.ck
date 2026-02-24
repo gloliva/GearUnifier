@@ -238,7 +238,7 @@ public class ComposerNode extends Node {
     fun void addButton() {
         this.nodeButtonBox.addButton();
         ComposeBox composeBox("Scene " + (this.composeBoxes.size() + 1), this.updateSceneEvent, 18, 13);
-        composeBox.setID(this.nodeID + " " + composeBox.headerName);
+        composeBox.setID(this.nodeID + "-" + composeBox.headerName);
         this.composeBoxes << composeBox;
     }
 
