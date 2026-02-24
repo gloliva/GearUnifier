@@ -542,13 +542,19 @@ public class Connection extends GGen {
         Math.sqrt(dir.dot(dir)) => float totalLen;
         @(dir.x / totalLen, dir.y / totalLen) => vec2 dirNorm;
 
-        // Output node IOBox AABB (world space)
+        // Output node AABB (world space): IOBox width for X, full node height for Y
         this.outputNode.posX() + this.outputNode.nodeOutputsBox.posX() * this.outputNode.scaX() => float outCX;
-        this.outputNode.posY() + this.outputNode.nodeOutputsBox.posY() * this.outputNode.scaY() => float outCY;
         this.outputNode.scaX() * this.outputNode.nodeOutputsBox.scaX() * this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHW;
-        this.outputNode.scaY() * this.outputNode.nodeOutputsBox.scaY() * this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHH;
+        -10000. => float outTopY;  10000. => float outBottomY;
+        this.outputNode.getContentBoxes() @=> ContentBox outAllBoxes[];
+        for (ContentBox box : outAllBoxes) {
+            this.outputNode.posY() + box.posY() * this.outputNode.scaY() => float boxCY;
+            box.contentBox.scaY() * this.outputNode.scaY() / 2. => float boxHH;
+            Math.max(outTopY, boxCY + boxHH) => outTopY;
+            Math.min(outBottomY, boxCY - boxHH) => outBottomY;
+        }
 
-        // Slab method: exit distance of ray (outputJackPos, dirNorm) from output IOBox
+        // Slab method: exit distance of ray (outputJackPos, dirNorm) from output node
         -10000. => float outNear;  10000. => float outFar;
         if (Std.fabs(dirNorm.x) > 0.000001) {
             (outCX - outHW - this.outputJackPos.x) / dirNorm.x => float tx1;
@@ -557,8 +563,8 @@ public class Connection extends GGen {
             Math.min(outFar,  Math.max(tx1, tx2)) => outFar;
         }
         if (Std.fabs(dirNorm.y) > 0.000001) {
-            (outCY - outHH - this.outputJackPos.y) / dirNorm.y => float ty1;
-            (outCY + outHH - this.outputJackPos.y) / dirNorm.y => float ty2;
+            (outBottomY - this.outputJackPos.y) / dirNorm.y => float ty1;
+            (outTopY - this.outputJackPos.y) / dirNorm.y => float ty2;
             Math.max(outNear, Math.min(ty1, ty2)) => outNear;
             Math.min(outFar,  Math.max(ty1, ty2)) => outFar;
         }
@@ -566,11 +572,17 @@ public class Connection extends GGen {
         @(this.outputJackPos.x + dirNorm.x * outSegLen,
           this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
 
-        // Input node IOBox AABB (world space)
+        // Input node AABB (world space): IOBox width for X, full node height for Y
         this.inputNode.posX() + this.inputNode.nodeInputsBox.posX() * this.inputNode.scaX() => float inCX;
-        this.inputNode.posY() + this.inputNode.nodeInputsBox.posY() * this.inputNode.scaY() => float inCY;
         this.inputNode.scaX() * this.inputNode.nodeInputsBox.scaX() * this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHW;
-        this.inputNode.scaY() * this.inputNode.nodeInputsBox.scaY() * this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHH;
+        -10000. => float inTopY;  10000. => float inBottomY;
+        this.inputNode.getContentBoxes() @=> ContentBox inAllBoxes[];
+        for (ContentBox box : inAllBoxes) {
+            this.inputNode.posY() + box.posY() * this.inputNode.scaY() => float boxCY;
+            box.contentBox.scaY() * this.inputNode.scaY() / 2. => float boxHH;
+            Math.max(inTopY, boxCY + boxHH) => inTopY;
+            Math.min(inBottomY, boxCY - boxHH) => inBottomY;
+        }
 
         // Slab method with reversed direction (wire arrives at inputJackPos)
         -dirNorm.x => float rdx;  -dirNorm.y => float rdy;
@@ -582,8 +594,8 @@ public class Connection extends GGen {
             Math.min(inFar,  Math.max(tx1, tx2)) => inFar;
         }
         if (Std.fabs(rdy) > 0.000001) {
-            (inCY - inHH - this.inputJackPos.y) / rdy => float ty1;
-            (inCY + inHH - this.inputJackPos.y) / rdy => float ty2;
+            (inBottomY - this.inputJackPos.y) / rdy => float ty1;
+            (inTopY - this.inputJackPos.y) / rdy => float ty2;
             Math.max(inNear, Math.min(ty1, ty2)) => inNear;
             Math.min(inFar,  Math.max(ty1, ty2)) => inFar;
         }
@@ -618,13 +630,19 @@ public class Connection extends GGen {
         Math.sqrt(dir.dot(dir)) => float totalLen;
         @(dir.x / totalLen, dir.y / totalLen) => vec2 dirNorm;
 
-        // Output node IOBox AABB (world space)
+        // Output node AABB (world space): IOBox width for X, full node height for Y
         this.outputNode.posX() + this.outputNode.nodeOutputsBox.posX() * this.outputNode.scaX() => float outCX;
-        this.outputNode.posY() + this.outputNode.nodeOutputsBox.posY() * this.outputNode.scaY() => float outCY;
         this.outputNode.scaX() * this.outputNode.nodeOutputsBox.scaX() * this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHW;
-        this.outputNode.scaY() * this.outputNode.nodeOutputsBox.scaY() * this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHH;
+        -10000. => float outTopY;  10000. => float outBottomY;
+        this.outputNode.getContentBoxes() @=> ContentBox outAllBoxes[];
+        for (ContentBox box : outAllBoxes) {
+            this.outputNode.posY() + box.posY() * this.outputNode.scaY() => float boxCY;
+            box.contentBox.scaY() * this.outputNode.scaY() / 2. => float boxHH;
+            Math.max(outTopY, boxCY + boxHH) => outTopY;
+            Math.min(outBottomY, boxCY - boxHH) => outBottomY;
+        }
 
-        // Slab method: exit distance of ray (outputJackPos, dirNorm) from output IOBox
+        // Slab method: exit distance of ray (outputJackPos, dirNorm) from output node
         -10000. => float outNear;  10000. => float outFar;
         if (Std.fabs(dirNorm.x) > 0.000001) {
             (outCX - outHW - this.outputJackPos.x) / dirNorm.x => float tx1;
@@ -633,8 +651,8 @@ public class Connection extends GGen {
             Math.min(outFar,  Math.max(tx1, tx2)) => outFar;
         }
         if (Std.fabs(dirNorm.y) > 0.000001) {
-            (outCY - outHH - this.outputJackPos.y) / dirNorm.y => float ty1;
-            (outCY + outHH - this.outputJackPos.y) / dirNorm.y => float ty2;
+            (outBottomY - this.outputJackPos.y) / dirNorm.y => float ty1;
+            (outTopY - this.outputJackPos.y) / dirNorm.y => float ty2;
             Math.max(outNear, Math.min(ty1, ty2)) => outNear;
             Math.min(outFar,  Math.max(ty1, ty2)) => outFar;
         }
@@ -642,11 +660,17 @@ public class Connection extends GGen {
         @(this.outputJackPos.x + dirNorm.x * outSegLen,
           this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
 
-        // Input node IOBox AABB (world space)
+        // Input node AABB (world space): IOBox width for X, full node height for Y
         this.inputNode.posX() + this.inputNode.nodeInputsBox.posX() * this.inputNode.scaX() => float inCX;
-        this.inputNode.posY() + this.inputNode.nodeInputsBox.posY() * this.inputNode.scaY() => float inCY;
         this.inputNode.scaX() * this.inputNode.nodeInputsBox.scaX() * this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHW;
-        this.inputNode.scaY() * this.inputNode.nodeInputsBox.scaY() * this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHH;
+        -10000. => float inTopY;  10000. => float inBottomY;
+        this.inputNode.getContentBoxes() @=> ContentBox inAllBoxes[];
+        for (ContentBox box : inAllBoxes) {
+            this.inputNode.posY() + box.posY() * this.inputNode.scaY() => float boxCY;
+            box.contentBox.scaY() * this.inputNode.scaY() / 2. => float boxHH;
+            Math.max(inTopY, boxCY + boxHH) => inTopY;
+            Math.min(inBottomY, boxCY - boxHH) => inBottomY;
+        }
 
         // Slab method with reversed direction (wire arrives at inputJackPos)
         -dirNorm.x => float rdx;  -dirNorm.y => float rdy;
@@ -658,8 +682,8 @@ public class Connection extends GGen {
             Math.min(inFar,  Math.max(tx1, tx2)) => inFar;
         }
         if (Std.fabs(rdy) > 0.000001) {
-            (inCY - inHH - this.inputJackPos.y) / rdy => float ty1;
-            (inCY + inHH - this.inputJackPos.y) / rdy => float ty2;
+            (inBottomY - this.inputJackPos.y) / rdy => float ty1;
+            (inTopY - this.inputJackPos.y) / rdy => float ty2;
             Math.max(inNear, Math.min(ty1, ty2)) => inNear;
             Math.min(inFar,  Math.max(ty1, ty2)) => inFar;
         }
