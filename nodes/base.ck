@@ -523,6 +523,7 @@ public class Connection extends GGen {
         // Names
         "Open Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx => this.name;
         "Output Node Wire" => this.outputNodeWire.name;
+        "Middle Wire" => this.middleWire.name;
         "Input Node Wire" => this.inputNodeWire.name;
 
         // Connections
@@ -535,17 +536,24 @@ public class Connection extends GGen {
         inputJackPos => this.inputJackPos;
         "Completed Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx + " -> Node" + this.inputNode.nodeID + " Jack" + this.inputNodeJackIdx => this.name;
 
-        // Calculate midpoint to split wire into two segments (one per node's Z layer)
-        @((this.outputJackPos.x + this.inputJackPos.x) / 2.,
-          (this.outputJackPos.y + this.inputJackPos.y) / 2.) => vec2 mid;
+        // Split wire into 3 segments: 10% / 80% / 10% of total length
+        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.3 => vec2 outPoint;
+        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.7 => vec2 inPoint;
 
-        // Output half: from output jack to midpoint, at output node's Z layer
-        [this.outputJackPos, mid] => this.outputNodeWire.positions;
+        // Output end: short segment (~10%) at output node's Z layer
+        [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
         this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
         Color.BLACK => this.outputNodeWire.color;
 
-        // Input half: from midpoint to input jack, at input node's Z layer
-        [mid, this.inputJackPos] => this.inputNodeWire.positions;
+        // Middle: majority of wire (~80%), behind all nodes
+        [outPoint, inPoint] => this.middleWire.positions;
+        -50. => this.middleWire.posZ;
+        0.05 => this.middleWire.width;
+        Color.BLACK => this.middleWire.color;
+        this.middleWire --> this;
+
+        // Input end: short segment (~10%) at input node's Z layer
+        [inPoint, this.inputJackPos] => this.inputNodeWire.positions;
         this.inputNode.posZ() + 0.2 => this.inputNodeWire.posZ;
         0.05 => this.inputNodeWire.width;
         Color.BLACK => this.inputNodeWire.color;
@@ -553,12 +561,14 @@ public class Connection extends GGen {
     }
 
     fun void refreshWirePositions() {
-        @((this.outputJackPos.x + this.inputJackPos.x) / 2.,
-          (this.outputJackPos.y + this.inputJackPos.y) / 2.) => vec2 mid;
-        [this.outputJackPos, mid] => this.outputNodeWire.positions;
-        [mid, this.inputJackPos] => this.inputNodeWire.positions;
+        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.3 => vec2 outPoint;
+        this.outputJackPos + (this.inputJackPos - this.outputJackPos) * 0.7 => vec2 inPoint;
+        [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
+        [outPoint, inPoint] => this.middleWire.positions;
+        [inPoint, this.inputJackPos] => this.inputNodeWire.positions;
         this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
         this.inputNode.posZ() + 0.2 => this.inputNodeWire.posZ;
+        // middleWire posZ stays at -50, set once in completeWire()
     }
 
     fun void updateWire(vec3 mouseWorldPos) {
