@@ -501,29 +501,32 @@ public class Connection extends GGen {
     int inputNodeJackIdx;
     vec2 inputJackPos;
 
-    GLines wire;
+    GLines outputNodeWire;
+    GLines middleWire;
+    GLines inputNodeWire;
 
     fun @construct(Node @ outputNode, int outputNodeJackIdx, vec2 outputJackPos, vec3 mouseWorldPos) {
         outputNode @=> this.outputNode;
         outputNodeJackIdx => this.outputNodeJackIdx;
         outputJackPos => this.outputJackPos;
 
-        // Position
-        0.101 => this.wire.posZ;
+        // Position: Z is relative to connected node's Z
+        this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
 
         // Handle Lines
-        [this.outputJackPos, @(mouseWorldPos.x, mouseWorldPos.y)] => this.wire.positions;
-        0.05 => this.wire.width;
+        [this.outputJackPos, @(mouseWorldPos.x, mouseWorldPos.y)] => this.outputNodeWire.positions;
+        0.05 => this.outputNodeWire.width;
 
         // Color
-        Color.RED => this.wire.color;
+        Color.RED => this.outputNodeWire.color;
 
         // Names
         "Open Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx => this.name;
-        "Wire" => this.wire.name;
+        "Output Node Wire" => this.outputNodeWire.name;
+        "Input Node Wire" => this.inputNodeWire.name;
 
         // Connections
-        this.wire --> this --> GG.scene();
+        this.outputNodeWire --> this --> GG.scene();
     }
 
     fun void completeWire(Node @ inputNode, int inputNodeJackIdx, vec2 inputJackPos) {
@@ -532,24 +535,44 @@ public class Connection extends GGen {
         inputJackPos => this.inputJackPos;
         "Completed Connection: Node" + this.outputNode.nodeID + " Jack" + this.outputNodeJackIdx + " -> Node" + this.inputNode.nodeID + " Jack" + this.inputNodeJackIdx => this.name;
 
-        [this.outputJackPos, this.inputJackPos] => this.wire.positions;
+        // Calculate midpoint to split wire into two segments (one per node's Z layer)
+        @((this.outputJackPos.x + this.inputJackPos.x) / 2.,
+          (this.outputJackPos.y + this.inputJackPos.y) / 2.) => vec2 mid;
 
-        // Set Color
-        Color.BLACK => this.wire.color;
+        // Output half: from output jack to midpoint, at output node's Z layer
+        [this.outputJackPos, mid] => this.outputNodeWire.positions;
+        this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
+        Color.BLACK => this.outputNodeWire.color;
+
+        // Input half: from midpoint to input jack, at input node's Z layer
+        [mid, this.inputJackPos] => this.inputNodeWire.positions;
+        this.inputNode.posZ() + 0.2 => this.inputNodeWire.posZ;
+        0.05 => this.inputNodeWire.width;
+        Color.BLACK => this.inputNodeWire.color;
+        this.inputNodeWire --> this;
+    }
+
+    fun void refreshWirePositions() {
+        @((this.outputJackPos.x + this.inputJackPos.x) / 2.,
+          (this.outputJackPos.y + this.inputJackPos.y) / 2.) => vec2 mid;
+        [this.outputJackPos, mid] => this.outputNodeWire.positions;
+        [mid, this.inputJackPos] => this.inputNodeWire.positions;
+        this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
+        this.inputNode.posZ() + 0.2 => this.inputNodeWire.posZ;
     }
 
     fun void updateWire(vec3 mouseWorldPos) {
-        [this.outputJackPos, @(mouseWorldPos.x, mouseWorldPos.y)] => this.wire.positions;
+        [this.outputJackPos, @(mouseWorldPos.x, mouseWorldPos.y)] => this.outputNodeWire.positions;
     }
 
     fun void updateWireStartPos(vec2 outputJackPos) {
         outputJackPos => this.outputJackPos;
-        [this.outputJackPos, this.inputJackPos] => this.wire.positions;
+        this.refreshWirePositions();
     }
 
     fun void updateWireEndPos(vec2 inputJackPos) {
         inputJackPos => this.inputJackPos;
-        [this.outputJackPos, this.inputJackPos] => this.wire.positions;
+        this.refreshWirePositions();
     }
 
     fun void deleteWire() {
@@ -573,15 +596,19 @@ public class Connection extends GGen {
         (@(mouseWorldPos.x, mouseWorldPos.y) - closest) => vec2 mouseToClosest;
         Math.sqrt(mouseToClosest.dot(mouseToClosest)) => float dist;
 
-        return dist <= this.wire.width() / 2.;
+        return dist <= this.outputNodeWire.width() / 2.;
     }
 
     fun void selectWire() {
-        Color.RED => this.wire.color;
+        Color.RED => this.outputNodeWire.color;
+        Color.RED => this.middleWire.color;
+        Color.RED => this.inputNodeWire.color;
     }
 
     fun void unselectWire() {
-        Color.BLACK => this.wire.color;
+        Color.BLACK => this.outputNodeWire.color;
+        Color.BLACK => this.middleWire.color;
+        Color.BLACK => this.inputNodeWire.color;
     }
 
     fun HashMap serialize() {

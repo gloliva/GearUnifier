@@ -36,6 +36,9 @@ public class NodeManager {
     int currSelectedNodeIdx;
     Node @ currSelectedNode;
 
+    // Layer Handling
+    int relayerNodes;
+
     // Held Node
     int nodeHeld;
     int currHeldNodeIdx;
@@ -75,14 +78,18 @@ public class NodeManager {
     }
 
     fun void addNode(Node node, int setToCameraPos) {
+        this.nodesOnScreen << node;
+        this.numNodes++;
+
+        // Handle position
         if (setToCameraPos) {
             node.nodeMidpoint() => float midpoint;
             GG.scene().camera().posX() => node.posX;
             GG.scene().camera().posY() - midpoint => node.posY;
-        }
 
-        this.nodesOnScreen << node;
-        this.numNodes++;
+            // Handle layering
+            this.recalculateNodeLayers();
+        }
 
         // Add to scene
         node --> GG.scene();
@@ -142,6 +149,32 @@ public class NodeManager {
 
         // Remove from scene
         node --< GG.scene();
+    }
+
+    fun void recalculateNodeLayers() {
+        float currLayer;
+
+        // Relayer nodes
+        for (this.nodesOnScreen.size() - 1 => int idx; idx >= 0; idx--) {
+            this.nodesOnScreen[idx] @=> Node node;
+            currLayer => node.layer;
+            currLayer - 0.5 => currLayer;
+        }
+
+        // Relayer connections
+        for (Connection conn : this.nodeConnections) {
+            conn.refreshWirePositions();
+        }
+    }
+
+    fun void updateConnectionsForNode(Node node) {
+        for (int i; i < this.nodeConnections.size(); i++) {
+            this.nodeConnections[i] @=> Connection conn;
+            if (conn.outputNode.nodeID == node.nodeID ||
+                conn.inputNode.nodeID == node.nodeID) {
+                conn.refreshWirePositions();
+            }
+        }
     }
 
     fun void addNodeHandler(AddNodeEvent addNodeEvent) {
@@ -1023,7 +1056,7 @@ public class NodeManager {
                 0 => int connectionCompletedThisFrame;
 
                 // Check if clicking on an on-screen Node
-                for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
+                for (this.nodesOnScreen.size() - 1 => int nodeIdx; nodeIdx >= 0; nodeIdx--) {
                     this.nodesOnScreen[nodeIdx] @=> Node node;
 
                     // Check if mouse is over this node's name box
@@ -1040,6 +1073,9 @@ public class NodeManager {
 
                         // Highlight node
                         node.selectNode();
+
+                        // Handle layering
+                        1 => this.relayerNodes;
 
                         // Found the node that was clicked on, can exit early
                         nodeIdx => clickedNodeIdx;
@@ -1340,6 +1376,18 @@ public class NodeManager {
                         nodeIdx => clickedNodeIdx;
                         break;
                     }
+                }
+
+                // Check if relayering is needed because a node was selected
+                if (this.relayerNodes) {
+                    // Remove from list, then add to the back
+                    this.nodesOnScreen[this.currSelectedNodeIdx] @=> Node selectedNode;
+                    this.nodesOnScreen.popOut(this.currSelectedNodeIdx);
+                    this.nodesOnScreen << selectedNode;
+
+                    // Update Node layer and connections
+                    this.recalculateNodeLayers();
+                    0 => this.relayerNodes;
                 }
 
                 // Check if clicking on a connection wire

@@ -1,4 +1,15 @@
 public class ClickableGGen extends GGen {
+    -1. => float _layer;
+
+    fun void layer(float l) {
+        l => this._layer;
+        l => this.posZ;
+    }
+
+    fun float layer() {
+        return this._layer;
+    }
+
     fun int mouseOverBox(vec3 mouseWorldPos, GGen boxes[]) {
         this.posX() => float centerX;
         this.posY() => float centerY;
