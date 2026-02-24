@@ -542,17 +542,52 @@ public class Connection extends GGen {
         Math.sqrt(dir.dot(dir)) => float totalLen;
         @(dir.x / totalLen, dir.y / totalLen) => vec2 dirNorm;
 
-        // Output segment: project output node IOBox onto wire direction, clamped to half wire length
-        this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHalfW;
-        this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHalfH;
-        Math.min(Std.fabs(dirNorm.x) * outHalfW + Std.fabs(dirNorm.y) * outHalfH, totalLen / 2.) => float outSegLen;
+        // Output node IOBox AABB (world space)
+        this.outputNode.posX() + this.outputNode.nodeOutputsBox.posX() * this.outputNode.scaX() => float outCX;
+        this.outputNode.posY() + this.outputNode.nodeOutputsBox.posY() * this.outputNode.scaY() => float outCY;
+        this.outputNode.scaX() * this.outputNode.nodeOutputsBox.scaX() * this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHW;
+        this.outputNode.scaY() * this.outputNode.nodeOutputsBox.scaY() * this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHH;
+
+        // Slab method: exit distance of ray (outputJackPos, dirNorm) from output IOBox
+        -10000. => float outNear;  10000. => float outFar;
+        if (Std.fabs(dirNorm.x) > 0.000001) {
+            (outCX - outHW - this.outputJackPos.x) / dirNorm.x => float tx1;
+            (outCX + outHW - this.outputJackPos.x) / dirNorm.x => float tx2;
+            Math.max(outNear, Math.min(tx1, tx2)) => outNear;
+            Math.min(outFar,  Math.max(tx1, tx2)) => outFar;
+        }
+        if (Std.fabs(dirNorm.y) > 0.000001) {
+            (outCY - outHH - this.outputJackPos.y) / dirNorm.y => float ty1;
+            (outCY + outHH - this.outputJackPos.y) / dirNorm.y => float ty2;
+            Math.max(outNear, Math.min(ty1, ty2)) => outNear;
+            Math.min(outFar,  Math.max(ty1, ty2)) => outFar;
+        }
+        Math.min(Math.max(0., outFar), totalLen / 2.) => float outSegLen;
         @(this.outputJackPos.x + dirNorm.x * outSegLen,
           this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
 
-        // Input segment: project input node IOBox onto wire direction, clamped to half wire length
-        this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHalfW;
-        this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHalfH;
-        Math.min(Std.fabs(dirNorm.x) * inHalfW + Std.fabs(dirNorm.y) * inHalfH, totalLen / 2.) => float inSegLen;
+        // Input node IOBox AABB (world space)
+        this.inputNode.posX() + this.inputNode.nodeInputsBox.posX() * this.inputNode.scaX() => float inCX;
+        this.inputNode.posY() + this.inputNode.nodeInputsBox.posY() * this.inputNode.scaY() => float inCY;
+        this.inputNode.scaX() * this.inputNode.nodeInputsBox.scaX() * this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHW;
+        this.inputNode.scaY() * this.inputNode.nodeInputsBox.scaY() * this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHH;
+
+        // Slab method with reversed direction (wire arrives at inputJackPos)
+        -dirNorm.x => float rdx;  -dirNorm.y => float rdy;
+        -10000. => float inNear;  10000. => float inFar;
+        if (Std.fabs(rdx) > 0.000001) {
+            (inCX - inHW - this.inputJackPos.x) / rdx => float tx1;
+            (inCX + inHW - this.inputJackPos.x) / rdx => float tx2;
+            Math.max(inNear, Math.min(tx1, tx2)) => inNear;
+            Math.min(inFar,  Math.max(tx1, tx2)) => inFar;
+        }
+        if (Std.fabs(rdy) > 0.000001) {
+            (inCY - inHH - this.inputJackPos.y) / rdy => float ty1;
+            (inCY + inHH - this.inputJackPos.y) / rdy => float ty2;
+            Math.max(inNear, Math.min(ty1, ty2)) => inNear;
+            Math.min(inFar,  Math.max(ty1, ty2)) => inFar;
+        }
+        Math.min(Math.max(0., inFar), totalLen / 2.) => float inSegLen;
         @(this.inputJackPos.x - dirNorm.x * inSegLen,
           this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
 
@@ -583,17 +618,52 @@ public class Connection extends GGen {
         Math.sqrt(dir.dot(dir)) => float totalLen;
         @(dir.x / totalLen, dir.y / totalLen) => vec2 dirNorm;
 
-        // Output segment: project output node IOBox onto wire direction, clamped to half wire length
-        this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHalfW;
-        this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHalfH;
-        Math.min(Std.fabs(dirNorm.x) * outHalfW + Std.fabs(dirNorm.y) * outHalfH, totalLen / 2.) => float outSegLen;
+        // Output node IOBox AABB (world space)
+        this.outputNode.posX() + this.outputNode.nodeOutputsBox.posX() * this.outputNode.scaX() => float outCX;
+        this.outputNode.posY() + this.outputNode.nodeOutputsBox.posY() * this.outputNode.scaY() => float outCY;
+        this.outputNode.scaX() * this.outputNode.nodeOutputsBox.scaX() * this.outputNode.nodeOutputsBox.contentBox.scaX() / 2. => float outHW;
+        this.outputNode.scaY() * this.outputNode.nodeOutputsBox.scaY() * this.outputNode.nodeOutputsBox.contentBox.scaY() / 2. => float outHH;
+
+        // Slab method: exit distance of ray (outputJackPos, dirNorm) from output IOBox
+        -10000. => float outNear;  10000. => float outFar;
+        if (Std.fabs(dirNorm.x) > 0.000001) {
+            (outCX - outHW - this.outputJackPos.x) / dirNorm.x => float tx1;
+            (outCX + outHW - this.outputJackPos.x) / dirNorm.x => float tx2;
+            Math.max(outNear, Math.min(tx1, tx2)) => outNear;
+            Math.min(outFar,  Math.max(tx1, tx2)) => outFar;
+        }
+        if (Std.fabs(dirNorm.y) > 0.000001) {
+            (outCY - outHH - this.outputJackPos.y) / dirNorm.y => float ty1;
+            (outCY + outHH - this.outputJackPos.y) / dirNorm.y => float ty2;
+            Math.max(outNear, Math.min(ty1, ty2)) => outNear;
+            Math.min(outFar,  Math.max(ty1, ty2)) => outFar;
+        }
+        Math.min(Math.max(0., outFar), totalLen / 2.) => float outSegLen;
         @(this.outputJackPos.x + dirNorm.x * outSegLen,
           this.outputJackPos.y + dirNorm.y * outSegLen) => vec2 outPoint;
 
-        // Input segment: project input node IOBox onto wire direction, clamped to half wire length
-        this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHalfW;
-        this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHalfH;
-        Math.min(Std.fabs(dirNorm.x) * inHalfW + Std.fabs(dirNorm.y) * inHalfH, totalLen / 2.) => float inSegLen;
+        // Input node IOBox AABB (world space)
+        this.inputNode.posX() + this.inputNode.nodeInputsBox.posX() * this.inputNode.scaX() => float inCX;
+        this.inputNode.posY() + this.inputNode.nodeInputsBox.posY() * this.inputNode.scaY() => float inCY;
+        this.inputNode.scaX() * this.inputNode.nodeInputsBox.scaX() * this.inputNode.nodeInputsBox.contentBox.scaX() / 2. => float inHW;
+        this.inputNode.scaY() * this.inputNode.nodeInputsBox.scaY() * this.inputNode.nodeInputsBox.contentBox.scaY() / 2. => float inHH;
+
+        // Slab method with reversed direction (wire arrives at inputJackPos)
+        -dirNorm.x => float rdx;  -dirNorm.y => float rdy;
+        -10000. => float inNear;  10000. => float inFar;
+        if (Std.fabs(rdx) > 0.000001) {
+            (inCX - inHW - this.inputJackPos.x) / rdx => float tx1;
+            (inCX + inHW - this.inputJackPos.x) / rdx => float tx2;
+            Math.max(inNear, Math.min(tx1, tx2)) => inNear;
+            Math.min(inFar,  Math.max(tx1, tx2)) => inFar;
+        }
+        if (Std.fabs(rdy) > 0.000001) {
+            (inCY - inHH - this.inputJackPos.y) / rdy => float ty1;
+            (inCY + inHH - this.inputJackPos.y) / rdy => float ty2;
+            Math.max(inNear, Math.min(ty1, ty2)) => inNear;
+            Math.min(inFar,  Math.max(ty1, ty2)) => inFar;
+        }
+        Math.min(Math.max(0., inFar), totalLen / 2.) => float inSegLen;
         @(this.inputJackPos.x - dirNorm.x * inSegLen,
           this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
         [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
