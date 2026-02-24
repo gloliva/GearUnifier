@@ -167,6 +167,15 @@ public class NodeManager {
         }
     }
 
+    fun void recalculateComposeBoxLayers() {
+        0.5 => float currLayer;
+
+        for (ComposeBox composeBox : this.composeBoxesOnScreen) {
+            currLayer => composeBox.layer;
+            currLayer + 0.2 => currLayer;
+        }
+    }
+
     fun void updateConnectionsForNode(Node node) {
         for (int i; i < this.nodeConnections.size(); i++) {
             this.nodeConnections[i] @=> Connection conn;
@@ -1011,8 +1020,9 @@ public class NodeManager {
                 }
 
                 // Check if clicking on an on-screen ComposeBox
+                // Loop in reverse order to observe layering order
                 -1 => int composeBoxClickedOn;
-                for (int boxIdx; boxIdx < this.composeBoxesOnScreen.size(); boxIdx++) {
+                for (this.composeBoxesOnScreen.size() -1 => int boxIdx; boxIdx >= 0; boxIdx--) {
                     this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
 
                     // Exiting out of ComposeBox window
@@ -1020,6 +1030,10 @@ public class NodeManager {
                         0 => composeBox.active;
                         composeBox --< GG.scene();
                         this.composeBoxesOnScreen.popOut(boxIdx);
+
+                        // Relayer composeBoxes
+                        this.recalculateComposeBoxLayers();
+
                         1 => composeBoxClickedOn;
                         break;
                     }
@@ -1321,6 +1335,9 @@ public class NodeManager {
                                     }
                                     this.composeBoxesOnScreen.popOut(boxIdx);
                                 }
+
+                                // Relayer ComposeBoxes
+                                this.recalculateComposeBoxLayers();
                             }
                         }
 
@@ -1444,9 +1461,27 @@ public class NodeManager {
             // Check if mouse left click is held down
             if (GWindow.mouseLeft()) {
 
-                if (!this.nodeHeld) {
+                // Check if clicking on an on-screen compose box
+                // Reverse order to respect layering
+                if (this.currHeldComposeBox == null && !this.nodeHeld) {
+                    for (this.composeBoxesOnScreen.size() - 1 => int boxIdx; boxIdx >= 0; boxIdx--) {
+                        this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
+                        if (composeBox.mouseOverHeader(mouseWorldPos)) {
+                            composeBox @=> this.currHeldComposeBox;
+                            break;
+                        }
+                    }
+                }
+
+                // Move compose box if its being held down
+                if (this.currHeldComposeBox != null && !this.nodeHeld) {
+                    this.currHeldComposeBox.translate(mouseWorldDelta);
+                }
+
+                if (!this.nodeHeld && this.currHeldComposeBox == null) {
                     // Check if clicking on an on-screen Node
-                    for (int nodeIdx; nodeIdx < this.nodesOnScreen.size(); nodeIdx++) {
+                    // Reverse order to respect layering
+                    for (this.nodesOnScreen.size() -1 => int nodeIdx; nodeIdx >= 0; nodeIdx--) {
                         this.nodesOnScreen[nodeIdx] @=> Node node;
 
                         // Check if mouse is over this node's name box
@@ -1461,7 +1496,7 @@ public class NodeManager {
                 }
 
                 // Move node if its being held down
-                if (this.nodeHeld) {
+                if (this.nodeHeld && this.currHeldComposeBox == null) {
                     this.currHeldNode.translate(mouseWorldDelta);
 
                     // Update the position of all wires connected to this node
@@ -1476,22 +1511,6 @@ public class NodeManager {
                             conn.updateWireEndPos(jackPos);
                         }
                     }
-                }
-
-                // Check if clicking on an on-screen compose box
-                if (this.currHeldComposeBox == null) {
-                    for (int boxIdx; boxIdx < this.composeBoxesOnScreen.size(); boxIdx++) {
-                        this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
-                        if (composeBox.mouseOverHeader(mouseWorldPos)) {
-                            composeBox @=> this.currHeldComposeBox;
-                            break;
-                        }
-                    }
-                }
-
-                // Move compose box if its being held down
-                if (this.currHeldComposeBox != null && !this.nodeHeld) {
-                    this.currHeldComposeBox.translate(mouseWorldDelta);
                 }
             }
 
