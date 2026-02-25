@@ -8,14 +8,15 @@ public class NodeType {
     0 => static int MIDI_IN;
     1 => static int MIDI_OUT;
 
-    // Audio
+    // Audio and IO
     100 => static int AUDIO_IN;
     101 => static int AUDIO_OUT;
-    102 => static int AMB_PANNER;
+    102 => static int OSC_IN;
+    103 => static int OSC_OUT;
 
-    // OSC
-    20 => static int OSC_IN;
-    21 => static int OSC_OUT;
+    // Compositional and Performance tools
+    200 => static int AMB_PANNER;
+    201 => static int LIVECODING_CHUCK;
 
     // Sequencing
     400 => static int SEQUENCER;

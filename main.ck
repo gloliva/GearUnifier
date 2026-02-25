@@ -3,12 +3,9 @@
 */
 
 // Imports
-@import "nodes/audio.ck"
-@import "nodes/manager.ck"
-@import "nodes/midi.ck"
+@import {"nodes/audio.ck", "nodes/manager.ck", "nodes/midi.ck"}
 @import "ui/manager.ck"
-@import "events.ck"
-@import "utils.ck"
+@import {"events.ck", "utils.ck"}
 
 
 // Camera / Background
@@ -34,7 +31,7 @@ UIManager uiManager(addNodeEvent, moveCameraEvent, saveLoadEvent);
 uiManager.setAudioUI();
 uiManager.setMidiInUI(nodeManager.midiInDevices);
 uiManager.setMidiOutUI(nodeManager.midiOutDevices);
-uiManager.setOscUI();
+uiManager.setComposerUI();
 uiManager.setSequencerUI();
 uiManager.setEffectsUI();
 uiManager.setModifiersUI();

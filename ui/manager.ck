@@ -69,16 +69,10 @@ public class UIManager {
     }
 
     fun void setAudioUI() {
-        new DropdownMenu(
-            [
-                new Enum(0, "Audio In"),
-                new Enum(1, "Audio Out"),
-                new Enum(2, "Ambisonics Panner"),
-            ]
-        ) @=> this.audioMenu;
+        this.createDropdownMenu(["Audio In", "Audio Out", "OSC In", "OSC Out"]) @=> this.audioMenu;
 
         // Set name and scale
-        this.audioMenu.setSelectedName("Audio");
+        this.audioMenu.setSelectedName("Audio / IO");
         this.audioMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.audioMenu.sca;
@@ -110,11 +104,11 @@ public class UIManager {
         this.midiOutMenu --> GG.scene();
     }
 
-    fun void setOscUI() {
-        new DropdownMenu([new Enum(0, "OSC In"), new Enum(1, "OSC Out")]) @=> this.oscMenu;
+    fun void setComposerUI() {
+        this.createDropdownMenu(["Ambisonics Panner", "Chuck Scripting"]) @=> this.oscMenu;
 
         // Set name and scale
-        this.oscMenu.setSelectedName("OSC");
+        this.oscMenu.setSelectedName("Composing Tools");
         this.oscMenu.setScale(4., 0.5);
 
         @(0.3, 0.3, 1.) => this.oscMenu.sca;
@@ -366,7 +360,8 @@ public class UIManager {
                         // Handle Node type for Audio In and Out
                         NodeType.AUDIO_IN => int nodeType;
                         if (menuEntry.id == 1) NodeType.AUDIO_OUT => nodeType;
-                        if (menuEntry.id == 2) NodeType.AMB_PANNER => nodeType;
+                        if (menuEntry.id == 2) NodeType.OSC_IN => nodeType;
+                        if (menuEntry.id == 3) NodeType.OSC_OUT => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
@@ -415,8 +410,8 @@ public class UIManager {
                     this.mouseOverMenuEntry(mouseWorldPos, this.oscMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
                         this.oscMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
-                        NodeType.OSC_IN => int nodeType;
-                        if (menuEntry.id == 1) NodeType.OSC_OUT => nodeType;
+                        NodeType.AMB_PANNER => int nodeType;
+                        if (menuEntry.id == 1) NodeType.LIVECODING_CHUCK => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }

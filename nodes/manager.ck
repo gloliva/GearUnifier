@@ -4,6 +4,7 @@
 @import {"../ui/composeBox.ck", "../ui/menu.ck", "../ui/popupBox.ck"}
 @import "base.ck"
 @import {"ambisonics.ck", "audio.ck", "midi.ck", "tuning.ck"}
+@import "livecoding/chuck.ck"
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck"}
@@ -202,6 +203,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.AMB_PANNER) {
                 AmbPannerNode ambPanner();
                 this.addNode(ambPanner, true);
+            } else if (addNodeEvent.nodeType == NodeType.LIVECODING_CHUCK) {
+                ChuckScriptNode chuckScript();
+                this.addNode(chuckScript, true);
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
                 this.addNode(wavefolder, true);
