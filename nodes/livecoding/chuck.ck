@@ -6,6 +6,11 @@
 public class LiveIO {
     static UGen outs[0];
     static UGen ins[0];
+
+    fun static setOut(string path, int out, UGen ugen) {
+        path + "-" + out => string key;
+        ugen @=> LiveIO.outs[key];
+    }
 }
 
 
@@ -104,11 +109,6 @@ public class ChuckScriptNode extends Node {
         // Create options box
         new ChuckScriptOptionsBox(xScale) @=> this.nodeOptionsBox;
 
-        // Create outputs box
-        new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
-        new Enum(0, "Out 1") @=> Enum startingMenu;
-        new IOBox(1, [startingMenu], IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
-
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
 
@@ -118,8 +118,8 @@ public class ChuckScriptNode extends Node {
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
-        this.nodeOutputsModifierBox --> this;
-        this.nodeOutputsBox --> this;
+        // this.nodeOutputsModifierBox --> this;
+        // this.nodeOutputsBox --> this;
         this.nodeVisibilityBox --> this;
 
         // Update position
@@ -137,11 +137,48 @@ public class ChuckScriptNode extends Node {
             if (this.scriptShredId != 0) {
                 this.getFilenameFromPath(scriptPath) => string scriptName;
                 (this.nodeOptionsBox$ChuckScriptOptionsBox).setFilename(scriptName);
+                me.yield();
+                this.setOutputs();
             }
         // Replace the current script
         } else {
             Machine.replace(this.scriptShredId, scriptPath) => this.scriptShredId;
+            me.yield();
+            this.clearOutputs();
+            this.setOutputs();
         }
+    }
+
+    fun void setOutputs() {
+        string keys[0];
+        LiveIO.outs.getKeys(keys);
+
+        // Set up nodeOutputsBox
+        Enum ioMenuEntries[0];
+        for (int idx; idx < keys.size(); idx++) {
+            ioMenuEntries << new Enum(idx, "Out " + (idx + 1));
+        }
+
+        new IOBox(keys.size(), ioMenuEntries, IOType.OUTPUT, this.nodeID, this.nodeNameBox.contentBox.scaX()) @=> this.nodeOutputsBox;
+        this.nodeOutputsBox --> this;
+        this.updatePos();
+
+        StringTokenizer tokenizer;
+        tokenizer.delims("-");
+        for (string key : keys) {
+            <<< "Setting output for key", key >>>;
+            LiveIO.outs[key] @=> UGen ugen;
+            tokenizer.set(key);
+            tokenizer.get(1).toInt() => int outIdx;
+
+            // Set output in nodeOutputsBox
+            this.nodeOutputsBox.setOutput(ioMenuEntries[outIdx], outIdx, ugen);
+        }
+    }
+
+    fun void clearOutputs() {
+        this.nodeOutputsBox --< this;
+        null @=> this.nodeOutputsBox;
     }
 
     fun int validateScript(string scriptPath) {
