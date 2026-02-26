@@ -1178,7 +1178,7 @@ public class IOBox extends ContentBox {
 
     fun void addJack(Enum menuSelections[]) {
         this.numJacks => int jackIdx;
-        Jack jack(jackIdx, IOType.OUTPUT);
+        Jack jack(jackIdx, this.ioType);
         Step out(0.);
 
         // Update numJacks
