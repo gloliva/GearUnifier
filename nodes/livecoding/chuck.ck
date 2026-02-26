@@ -7,38 +7,18 @@ public class LiveIO {
     static HashMap ins;
     static HashMap outs;
 
-    fun static void setNumIns(int shredId, int numIns) {
+    fun static void setIn(int shredId, int in, UGen ugen) {
         "Shred-" + shredId => string shredKey;
-
-        // No negative numbers
-        if (numIns < 0) 0 => numIns;
 
         // Create inputs map for this shred
-        HashMap shredMap;
-        shredMap.set("NumIns", numIns);
-        LiveIO.ins.set(shredKey, shredMap);
-    }
+        if (!LiveIO.ins.has(shredKey)) {
+            HashMap shredMap;
+            LiveIO.ins.set(shredKey, shredMap);
+        }
 
-    fun static int hasIn(int shredId, int in) {
-        // Check if this shred has any inputs
-        "Shred-" + shredId => string shredKey;
-        if (!LiveIO.ins.has(shredKey)) return false;
-
-        // Check if this shred has inputs at specific input jack
-        LiveIO.ins.get(shredKey) @=> HashMap shredInsMap;
         "In-" + in => string inKey;
-        if (!shredInsMap.has(inKey)) return false;
-
-        return true;
-    }
-
-    fun static UGen getIn(int shredId, int in) {
-        if (!LiveIO.hasIn(shredId, in)) return null;
-
-        "Shred-" + shredId => string shredKey;
         LiveIO.ins.get(shredKey) @=> HashMap shredInsMap;
-        "In-" + in => string inKey;
-        return shredInsMap.getObj(inKey)$UGen;
+        shredInsMap.set(inKey, ugen);
     }
 
     fun static HashMap getInsForShred(int shredId) {
@@ -65,22 +45,6 @@ public class LiveIO {
     fun static HashMap getOutsForShred(int shredId) {
         "Shred-" + shredId => string shredKey;
         return LiveIO.outs.get(shredKey);
-    }
-
-    fun static float getValueFromUGen(UGen ugen) {
-        // Value can be from a audio rate UGen (which uses last()),
-        // a control rate UGen (which uses next()),
-        // or an envelope UGen (which uses value())
-        float value;
-        if (Type.of(ugen).name() == Step.typeOf().name()) {
-            (ugen$Step).next() => value;
-        } else if (Type.of(ugen).name() == ADSR.typeOf().name() || Type.of(ugen).name() == Envelope.typeOf().name()) {
-            (ugen$Envelope).value() => value;
-        } else {
-            ugen.last() => value;
-        }
-
-        return value;
     }
 }
 
@@ -221,16 +185,21 @@ public class ChuckScriptNode extends Node {
             if (this.scriptShredId != 0) {
                 this.getFilenameFromPath(scriptPath) => string scriptName;
                 (this.nodeOptionsBox$ChuckScriptOptionsBox).setFilename(scriptName);
+
+                // Yield the main shred to allow the script shred to run
+                // which will set the input/output UGens in the LiveIO maps
                 me.yield();
                 this.setInputs();
                 this.setOutputs();
             }
         // Replace the current script
         } else {
+            this.clearIO();
             Machine.replace(this.scriptShredId, scriptPath) => this.scriptShredId;
+
+            // Yield the main shred to allow the script shred to run
+            // which will set the input/output UGens in the LiveIO maps
             me.yield();
-            this.clearInputs();
-            this.clearOutputs();
             this.setInputs();
             this.setOutputs();
         }
@@ -239,13 +208,12 @@ public class ChuckScriptNode extends Node {
     fun void setInputs() {
         LiveIO.getInsForShred(this.scriptShredId) @=> HashMap shredInsMap;
         if (shredInsMap == null) return;
+        shredInsMap.strKeys() @=> string keys[];
 
-        // Get number of inputs
-        shredInsMap.getInt("NumIns") => int numIns;
 
         // Create inputs menu entries
         [ChuckScriptInputType.REFRESH] @=> Enum inputTypes[];
-        for (int idx; idx < numIns; idx++) {
+        for (int idx; idx < keys.size(); idx++) {
             inputTypes << new Enum(idx + 1, "In " + (idx + 1));
 
             if (this.nodeInputsBox.dataMap.size() <= idx + 1) {
@@ -255,7 +223,7 @@ public class ChuckScriptNode extends Node {
         inputTypes @=> this.inputTypes;
 
         // Add jacks to inputs IOBox
-        for (int idx; idx < numIns; idx++) {
+        for (int idx; idx < keys.size(); idx++) {
             this.addJack(IOType.INPUT);
             this.nodeInputsBox.setInput(inputTypes[idx + 1], idx + 1);
         }
@@ -264,6 +232,7 @@ public class ChuckScriptNode extends Node {
     fun void setOutputs() {
         // Retrieve UGen mapping that corresponds to the shred
         LiveIO.getOutsForShred(this.scriptShredId) @=> HashMap shredOutsMap;
+        if (shredOutsMap == null) return;
         shredOutsMap.strKeys() @=> string keys[];
 
         // Create output types for each output defined in the chuck script
@@ -290,13 +259,21 @@ public class ChuckScriptNode extends Node {
         }
     }
 
-    fun void clearInputs() {
+    fun void clearIO() {
+        // If only 1 input (just Refresh input), then this won't run
+        repeat (this.nodeInputsBox.numJacks - 1) {
+            this.removeJack(IOType.INPUT);
+        }
 
-    }
+        if (this.nodeOutputsBox != null) {
+            this.nodeOutputsBox --< this;
+            null @=> this.nodeOutputsBox;
+        }
 
-    fun void clearOutputs() {
-        this.nodeOutputsBox --< this;
-        null @=> this.nodeOutputsBox;
+        // Reset LiveIO ins and outs for this shred
+        "Shred-" + this.scriptShredId => string shredKey;
+        LiveIO.ins.get(shredKey).clear();
+        LiveIO.outs.get(shredKey).clear();
     }
 
     fun int validateScript(string scriptPath) {
@@ -324,12 +301,36 @@ public class ChuckScriptNode extends Node {
             LiveIO.getInsForShred(this.scriptShredId) @=> HashMap shredInsMap;
             // (inputJackIdx - 1) because REFRESH is jack 0, and Input 0 is jack 1
             "In-" + (inputJackIdx - 1) => string inKey;
-            shredInsMap.set(inKey, ugen);
+
+            if (!shredInsMap.has(inKey)) {
+                <<< "No input set for Jack", inputJackIdx >>>;
+                return;
+            }
+
+            // Connect UGen at the input jack to the UGen in the chuck script
+            shredInsMap.getObj(inKey)$UGen @=> UGen scriptUgen;
+            ugen => scriptUgen;
         }
     }
 
     fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
 
+        // Refresh input jack is handled by processInputs
+        // If any other jack is connected to, it's an input to the chuck script
+        if (dataType != ChuckScriptInputType.REFRESH.id) {
+            LiveIO.getInsForShred(this.scriptShredId) @=> HashMap shredInsMap;
+            // (inputJackIdx - 1) because REFRESH is jack 0, and Input 0 is jack 1
+            "In-" + (inputJackIdx - 1) => string inKey;
+
+            // Remove the connection from jack UGen to scipt UGen
+            shredInsMap.getObj(inKey)$UGen @=> UGen scriptUgen;
+            ugen =< scriptUgen;
+        }
     }
 
     fun void processOptions() {
