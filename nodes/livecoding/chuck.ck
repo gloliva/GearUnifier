@@ -178,6 +178,11 @@ public class ChuckScriptNode extends Node {
         this.addShreds([processOptionsShred, processInputsShred]);
     }
 
+    fun void openFromFilepath(string filePath) {
+        filePath => this.openChuckFilepath;
+        this.addScript(filePath);
+    }
+
     fun void addScript(string scriptPath) {
         // Add a new script
         if (this.scriptShredId == -1) {
@@ -405,5 +410,11 @@ public class ChuckScriptNode extends Node {
         }
 
         super.deactivateNode();
+    }
+
+    fun HashMap serialize() {
+        super.serialize() @=> HashMap data;
+        data.set("chuckFile", this.openChuckFilepath);
+        return data;
     }
 }

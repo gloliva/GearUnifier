@@ -538,6 +538,12 @@ public class NodeManager {
                     // Update input data type mapping
                     ambPanner.nodeInputsBox.setDataTypeMapping(ambPannerInputType, idx);
                 }
+            } else if (nodeClassName == ChuckScriptNode.typeOf().name()) {
+                // Instantiate node
+                nodeData.getStr("chuckFile") => string chuckFile;
+                ChuckScriptNode chuckScript();
+                chuckScript.openFromFilepath(chuckFile);
+                chuckScript @=> currNode;
             } else if (nodeClassName == WavefolderNode.typeOf().name()) {
                 // Instantiate node
                 nodeData.getInt("numInputs") => int numInputs;
