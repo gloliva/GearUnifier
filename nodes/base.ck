@@ -74,7 +74,6 @@ public class Node extends ClickableGGen {
 
     fun void deactivateNode() {
         for (Shred shred : this.activeShreds) {
-            <<< "Removing shred" >>>;
             Machine.remove( shred.id() );
             me.yield();
         }

@@ -4,12 +4,27 @@
 
 
 public class LiveIO {
-    static UGen outs[0];
-    static UGen ins[0];
+    static HashMap outs;
+    static HashMap ins;
 
-    fun static setOut(string path, int out, UGen ugen) {
-        path + "-" + out => string key;
-        ugen @=> LiveIO.outs[key];
+    fun static void setOut(int shredId, int out, UGen ugen) {
+        Shred.fromId(shredId) @=> Shred shred;
+        "Shred-" + shred.id() => string shredKey;
+
+        if (!LiveIO.outs.has(shredKey)) {
+            HashMap shredMap;
+            LiveIO.outs.set(shredKey, shredMap);
+        }
+
+        "Out-" + out => string outKey;
+        LiveIO.outs.get(shredKey) @=> HashMap shredOutsMap;
+        shredOutsMap.set(outKey, ugen);
+    }
+
+    fun static HashMap getOutsForShred(int shredId) {
+        Shred.fromId(shredId) @=> Shred shred;
+        "Shred-"  + shred.id() => string shredKey;
+        return LiveIO.outs.get(shredKey);
     }
 }
 
@@ -118,8 +133,6 @@ public class ChuckScriptNode extends Node {
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
-        // this.nodeOutputsModifierBox --> this;
-        // this.nodeOutputsBox --> this;
         this.nodeVisibilityBox --> this;
 
         // Update position
@@ -150,8 +163,10 @@ public class ChuckScriptNode extends Node {
     }
 
     fun void setOutputs() {
-        string keys[0];
-        LiveIO.outs.getKeys(keys);
+        // Retrieve UGen mapping that corresponds to the shred
+        LiveIO.getOutsForShred(this.scriptShredId) @=> HashMap shredOutsMap;
+
+        shredOutsMap.strKeys() @=> string keys[];
 
         // Set up nodeOutputsBox
         Enum ioMenuEntries[0];
@@ -167,7 +182,7 @@ public class ChuckScriptNode extends Node {
         tokenizer.delims("-");
         for (string key : keys) {
             <<< "Setting output for key", key >>>;
-            LiveIO.outs[key] @=> UGen ugen;
+            shredOutsMap.getObj(key)$UGen @=> UGen ugen;
             tokenizer.set(key);
             tokenizer.get(1).toInt() => int outIdx;
 
