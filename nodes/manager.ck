@@ -1195,11 +1195,32 @@ public class NodeManager {
                         } else if (jackModifier == IOModifierBox.REMOVE && node.nodeInputsBox.numJacks > 1) {
                             node.nodeInputsBox.numJacks - 1 => int removedJackIdx;
 
-                            // TODO: Remove the connection
+                            -1 => int removedConnectionIdx;
+                            for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
+                                this.nodeConnections[connIdx] @=> Connection conn;
+                                if (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx) {
+                                    connIdx => removedConnectionIdx;
+                                    break;
+                                }
+                            }
+
+                            if (removedConnectionIdx != -1) {
+                                this.nodeConnections[removedConnectionIdx] @=> Connection conn;
+
+                                // Remove the connection and UGen mapping
+                                conn.outputNode.nodeOutputsBox.jacks[conn.outputNodeJackIdx].ugen @=> UGen ugen;
+                                conn.inputNode.disconnect(conn.outputNode, ugen, conn.inputNodeJackIdx);
+                                conn.inputNode.nodeInputsBox.jacks[conn.inputNodeJackIdx].removeUgen();
+
+                                // Delete the wire
+                                conn.deleteWire();
+
+                                // Remove connection from connection list
+                                this.nodeConnections.erase(removedConnectionIdx);
+                            }
 
                             node.removeJack(IOType.INPUT);
                             1 => nodeInputsModifierInteractedWith;
-
                         }
                     }
 
@@ -1216,10 +1237,7 @@ public class NodeManager {
                             -1 => int removedConnectionIdx;
                             for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
                                 this.nodeConnections[connIdx] @=> Connection conn;
-                                if (
-                                    (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx)
-                                    || (conn.inputNode.nodeID == node.nodeID && conn.inputNodeJackIdx == removedJackIdx)
-                                ) {
+                                if (conn.outputNode.nodeID == node.nodeID && conn.outputNodeJackIdx == removedJackIdx) {
                                     connIdx => removedConnectionIdx;
                                     break;
                                 }
