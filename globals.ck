@@ -6,6 +6,11 @@ public class LiveIO {
     static HashMap outs;
 
     fun static void setIn(int shredId, int in, UGen ugen) {
+        if (in < 1) {
+            <<< "Input Num must greater than 0, received:", in >>>;
+            return;
+        }
+
         "Shred-" + shredId => string shredKey;
 
         // Create inputs map for this shred
@@ -27,6 +32,11 @@ public class LiveIO {
     }
 
     fun static void setOut(int shredId, int out, UGen ugen) {
+        if (out < 1) {
+            <<< "Output Num must greater than 0, received:", out >>>;
+            return;
+        }
+
         "Shred-" + shredId => string shredKey;
 
         // Create outputs map for this shred

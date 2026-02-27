@@ -13,6 +13,15 @@ public class ChuckScriptInputType {
 }
 
 
+public class ChuckScriptOutputType {
+    new Enum(0, "Reset") @=> static Enum RESET;
+
+    [
+        ChuckScriptOutputType.RESET,
+    ] @=> static Enum allTypes[];
+}
+
+
 public class ChuckScriptOptionsBox extends OptionsBox {
     1 => static int OPEN_BUTTON;
     2 => static int REFRESH_BUTTON;
@@ -112,6 +121,10 @@ public class ChuckScriptNode extends Node {
         new IOBox(1, ChuckScriptInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
         this.nodeInputsBox.setInput(ChuckScriptInputType.REFRESH, 0);
 
+        // Create outputs box
+        new IOBox(1, ChuckScriptOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+        this.nodeOutputsBox.setOutput(ChuckScriptOutputType.RESET, 0);
+
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
 
@@ -122,6 +135,7 @@ public class ChuckScriptNode extends Node {
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
         this.nodeInputsBox --> this;
+        this.nodeOutputsBox --> this;
         this.nodeVisibilityBox --> this;
 
         // Update position
@@ -131,6 +145,13 @@ public class ChuckScriptNode extends Node {
         spork ~ this.processOptions() @=> Shred @ processOptionsShred;
         spork ~ this.processInputs() @=> Shred @ processInputsShred;
         this.addShreds([processOptionsShred, processInputsShred]);
+    }
+
+    fun void triggerOnScriptStart() {
+        this.nodeOutputsBox.outs(ChuckScriptOutputType.RESET) @=> Step out;
+        1. => out.next;
+        5::ms => now;
+        0. => out.next;
     }
 
     fun void openFromFilepath(string filePath) {
@@ -154,7 +175,7 @@ public class ChuckScriptNode extends Node {
             }
         // Replace the current script
         } else {
-            this.clearIO();
+            this.resetMaps();
             Machine.replace(this.scriptShredId, scriptPath) => this.scriptShredId;
 
             // Yield the main shred to allow the script shred to run
@@ -163,6 +184,8 @@ public class ChuckScriptNode extends Node {
             this.setInputs();
             this.setOutputs();
         }
+
+        spork ~ this.triggerOnScriptStart();
     }
 
     fun void setInputs() {
@@ -182,10 +205,31 @@ public class ChuckScriptNode extends Node {
         }
         inputTypes @=> this.inputTypes;
 
-        // Add jacks to inputs IOBox
-        for (int idx; idx < keys.size(); idx++) {
-            this.addJack(IOType.INPUT);
-            this.nodeInputsBox.setInput(inputTypes[idx + 1], idx + 1);
+        // Check if Adding jacks to inputs IOBox (-1 jacks to account for REFRESH jack)
+        if (this.nodeInputsBox.numJacks - 1 < keys.size()) {
+            for (this.nodeInputsBox.numJacks => int idx; idx <= keys.size(); idx++) {
+                this.addJack(IOType.INPUT);
+                this.nodeInputsBox.setInput(inputTypes[idx], idx);
+            }
+        // Otherwise, if more jacks than inputs, remove jacks
+        } else if (this.nodeInputsBox.numJacks - 1 > keys.size()) {
+            repeat ((this.nodeInputsBox.numJacks - 1) - keys.size()) {
+                this.removeJack(IOType.INPUT);
+            }
+        }
+
+        // If there are any existing connections to the input jacks, reconnect those
+        // UGens to the script's input UGens
+        for (1 => int jackIdx; jackIdx < this.nodeInputsBox.numJacks; jackIdx++) {
+            this.nodeInputsBox.getJackUGen(jackIdx) @=> UGen ugen;
+            if (ugen == null) continue;
+
+            "In-" + jackIdx => string inKey;
+            if (shredInsMap.has(inKey)) {
+                // Connect jack UGen to script UGen
+                shredInsMap.getObj(inKey)$UGen @=> UGen scriptUgen;
+                ugen => scriptUgen;
+            }
         }
     }
 
@@ -196,15 +240,27 @@ public class ChuckScriptNode extends Node {
         shredOutsMap.strKeys() @=> string keys[];
 
         // Create output types for each output defined in the chuck script
-        Enum ioMenuEntries[0];
+        [ChuckScriptOutputType.RESET] @=> Enum outputTypes[];
         for (int idx; idx < keys.size(); idx++) {
-            ioMenuEntries << new Enum(idx, "Out " + (idx + 1));
-        }
+            outputTypes << new Enum(idx + 1, "Out " + (idx + 1));
 
-        // Create the outputs box
-        new IOBox(keys.size(), ioMenuEntries, IOType.OUTPUT, this.nodeID, this.nodeNameBox.contentBox.scaX()) @=> this.nodeOutputsBox;
-        this.nodeOutputsBox --> this;
-        this.updatePos();
+            if (this.nodeOutputsBox.dataMap.size() <= idx + 1) {
+                this.nodeOutputsBox.dataMap << -1;
+            }
+        }
+        outputTypes @=> this.outputTypes;
+
+        // Check if Adding jacks to outputs IOBox (-1 jacks to account for RESET jack)
+        if (this.nodeOutputsBox.numJacks - 1 < keys.size()) {
+            for (this.nodeOutputsBox.numJacks => int idx; idx <= keys.size(); idx++) {
+                this.addJack(IOType.OUTPUT);
+            }
+        // Otherwise, if more jacks than outputs, remove jacks
+        } else if (this.nodeOutputsBox.numJacks - 1 > keys.size()) {
+            repeat((this.nodeOutputsBox.numJacks - 1) - keys.size()) {
+                this.removeJack(IOType.OUTPUT);
+            }
+        }
 
         // Process the UGens from the script and connect them to this Node's outputs
         StringTokenizer tokenizer;
@@ -215,8 +271,14 @@ public class ChuckScriptNode extends Node {
             tokenizer.get(1).toInt() => int outIdx;
 
             // Set output in nodeOutputsBox
-            this.nodeOutputsBox.setOutput(ioMenuEntries[outIdx], outIdx, ugen);
+            this.nodeOutputsBox.setOutput(outputTypes[outIdx], outIdx, ugen);
         }
+    }
+
+    fun void resetMaps() {
+        "Shred-" + this.scriptShredId => string shredKey;
+        LiveIO.ins.get(shredKey).clear();
+        LiveIO.outs.get(shredKey).clear();
     }
 
     fun void clearIO() {
@@ -229,11 +291,6 @@ public class ChuckScriptNode extends Node {
             this.nodeOutputsBox --< this;
             null @=> this.nodeOutputsBox;
         }
-
-        // Reset LiveIO ins and outs for this shred
-        "Shred-" + this.scriptShredId => string shredKey;
-        LiveIO.ins.get(shredKey).clear();
-        LiveIO.outs.get(shredKey).clear();
     }
 
     fun int validateScript(string scriptPath) {
@@ -259,8 +316,7 @@ public class ChuckScriptNode extends Node {
         // If any other jack is connected to, it's an input to the chuck script
         if (dataType != ChuckScriptInputType.REFRESH.id) {
             LiveIO.getInsForShred(this.scriptShredId) @=> HashMap shredInsMap;
-            // (inputJackIdx - 1) because REFRESH is jack 0, and Input 0 is jack 1
-            "In-" + (inputJackIdx - 1) => string inKey;
+            "In-" + inputJackIdx => string inKey;
 
             if (!shredInsMap.has(inKey)) {
                 <<< "No input set for Jack", inputJackIdx >>>;
@@ -284,8 +340,7 @@ public class ChuckScriptNode extends Node {
         // If any other jack is connected to, it's an input to the chuck script
         if (dataType != ChuckScriptInputType.REFRESH.id) {
             LiveIO.getInsForShred(this.scriptShredId) @=> HashMap shredInsMap;
-            // (inputJackIdx - 1) because REFRESH is jack 0, and Input 0 is jack 1
-            "In-" + (inputJackIdx - 1) => string inKey;
+            "In-" + inputJackIdx => string inKey;
 
             // Remove the connection from jack UGen to scipt UGen
             shredInsMap.getObj(inKey)$UGen @=> UGen scriptUgen;
