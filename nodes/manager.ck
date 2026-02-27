@@ -7,7 +7,7 @@
 @import "livecoding/chuck.ck"
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
-@import {"utils/scale.ck", "utils/envelope.ck"}
+@import {"utils/scale.ck", "utils/envelope.ck", "utils/meter.ck"}
 
 
 public class NodeManager {
@@ -243,6 +243,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.ADSR_ENV) {
                 ADSRNode adsr();
                 this.addNode(adsr, true);
+            } else if (addNodeEvent.nodeType == NodeType.METER) {
+                MeterNode meter();
+                this.addNode(meter, true);
             }
         }
     }
@@ -283,6 +286,7 @@ public class NodeManager {
         }
     }
 
+    // Node-specific event-based handling
     fun void customNodeHandler() {
         while (true) {
             this.customNodeHandlingEvent => now;
@@ -852,6 +856,10 @@ public class NodeManager {
                 nodeData.getInt("degreeOffset") => int degreeOffset;
                 EDOTuningNode edoTuning(scaleSize, degreeOffset);
                 edoTuning @=> currNode;
+            } else if (nodeClassName == MeterNode.typeOf().name()) {
+                nodeData.getInt("numInputs") => int numInputs;
+                MeterNode meter(numInputs, 4.);
+                meter @=> currNode;
             }
 
             // Set attributes relevant to all nodes

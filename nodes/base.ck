@@ -35,6 +35,7 @@ public class NodeType {
     602 => static int ADSR_ENV;
     603 => static int SCALE_TUNING;
     604 => static int EDO_TUNING;
+    605 => static int METER;
 }
 
 
@@ -945,7 +946,7 @@ public class IOBox extends ContentBox {
 
         // Initialize data map
         if (ioMenuEntries != null) {
-            for (int idx; idx < ioMenuEntries.size(); idx++) {
+            for (int idx; idx < numStartJacks; idx++) {
                 this.dataMap << -1;
             }
         }
@@ -1145,6 +1146,20 @@ public class IOBox extends ContentBox {
         jack.removeUgen();
     }
 
+    fun void setMenuDisplayText(string text, int menuIdx) {
+        if (!this.hasMenus) {
+            <<< "ERROR: Trying to set Menu text on an IOBox without Menus" >>>;
+            return;
+        }
+
+        if (menuIdx >= this.menus.size() || menuIdx < 0) {
+            <<< "ERROR: Trying to set Menu text at index", menuIdx, "with menu length", this.menus.size() >>>;
+            return;
+        }
+
+        this.menus[menuIdx].setMenuName(text);
+    }
+
     fun int hasNumberBox(int ioEntryIdx) {
         if (ioEntryIdx >= this.dataMap.size() || ioEntryIdx < 0) {
             <<< "ERROR: IO entry index out of bounds" >>>;
@@ -1229,6 +1244,9 @@ public class IOBox extends ContentBox {
             // Connect menu to IO box
             jackMenu --> this;
 
+            // Add entry to dataMap
+            this.dataMap << -1;
+
             // Add number entry box for each menu
             NumberEntryBox numberBox(3, jackIdx);
             -0.27 * this.xPosModifier => numberBox.posX;
@@ -1263,6 +1281,7 @@ public class IOBox extends ContentBox {
         this.jacks.popBack();
         this.menus.popBack();
         this.numberBoxes.popBack();
+        this.dataMap.popBack();
 
         // Update Jack and Menu Y Pos
         this.updateJackandMenuYPos();

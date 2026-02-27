@@ -99,6 +99,10 @@ public class DropdownMenu extends GGen {
         return this.menuItems[this.selectedIdx];
     }
 
+    fun void setMenuName(string text) {
+        this.selectedBox.setName(text);
+    }
+
     fun void expand() {
         if (this.expanded) return;
 

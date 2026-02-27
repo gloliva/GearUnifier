@@ -141,7 +141,7 @@ public class UIManager {
     }
 
     fun void setModifiersUI() {
-        this.createDropdownMenu(["Scale", "ASR", "ADSR", "Scale Tuning", "EDO Tuning"]) @=> this.modifiersMenu;
+        this.createDropdownMenu(["Scale", "ASR", "ADSR", "Scale Tuning", "EDO Tuning", "Meter"]) @=> this.modifiersMenu;
 
         // Set name and scale
         this.modifiersMenu.setSelectedName("Modifiers");
@@ -476,6 +476,7 @@ public class UIManager {
                         if (menuEntry.id == 2) NodeType.ADSR_ENV => nodeType;
                         if (menuEntry.id == 3) NodeType.SCALE_TUNING => nodeType;
                         if (menuEntry.id == 4) NodeType.EDO_TUNING => nodeType;
+                        if (menuEntry.id == 5) NodeType.METER => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
