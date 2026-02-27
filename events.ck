@@ -11,6 +11,15 @@ public class AddNodeEvent extends Event {
 }
 
 
+public class CustomNodeHandlingEvent extends Event {
+    string nodeID;
+
+    fun void set(string nodeID) {
+        nodeID => this.nodeID;
+    }
+}
+
+
 public class SaveLoadEvent extends Event {
     int mode;
 

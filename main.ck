@@ -25,6 +25,7 @@ nodeManager.findMidiDevices();
 spork ~ nodeManager.run();
 spork ~ nodeManager.addNodeHandler(addNodeEvent);
 spork ~ nodeManager.saveHandler();
+spork ~ nodeManager.customNodeHandler();
 
 // UI
 UIManager uiManager(addNodeEvent, moveCameraEvent, saveLoadEvent);

@@ -1116,6 +1116,15 @@ public class IOBox extends ContentBox {
         return -1;
     }
 
+    fun void setJackUGen(UGen ugen, int jackIdx) {
+        if (jackIdx >= this.jacks.size() || jackIdx < 0) {
+            <<< "ERROR: Jack index", jackIdx, "is out of bounds for Jack Length", this.jacks.size() >>>;
+            return;
+        }
+
+        this.jacks[jackIdx].setUgen(ugen);
+    }
+
     fun UGen getJackUGen(int jackIdx) {
         if (jackIdx >= this.jacks.size() || jackIdx < 0) {
             <<< "ERROR: Jack index", jackIdx, "is out of bounds for Jack Length", this.jacks.size() >>>;

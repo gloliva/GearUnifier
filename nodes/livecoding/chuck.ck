@@ -1,4 +1,4 @@
-@import "../../globals.ck"
+@import {"../../events.ck", "../../globals.ck"}
 @import {"../../ui/base.ck", "../../ui/textBox.ck"}
 @import "../base.ck"
 @import "HashMap"
@@ -102,11 +102,16 @@ public class ChuckScriptNode extends Node {
     -1 => int scriptShredId;
     string openChuckFilepath;
 
-    fun @construct() {
-        ChuckScriptNode(4.);
+    // Events
+    CustomNodeHandlingEvent @ customNodeHandlingEvent;
+
+    fun @construct(CustomNodeHandlingEvent event) {
+        ChuckScriptNode(event, 4.);
     }
 
-    fun @construct(float xScale) {
+    fun @construct(CustomNodeHandlingEvent event, float xScale) {
+        event @=> this.customNodeHandlingEvent;
+
         // Set name and Node ID
         "Chuck-Script-Node" => this.name;
         this.setNodeID();
@@ -183,6 +188,10 @@ public class ChuckScriptNode extends Node {
             me.yield();
             this.setInputs();
             this.setOutputs();
+
+            // Event handling
+            this.customNodeHandlingEvent.set(this.nodeID);
+            this.customNodeHandlingEvent.broadcast();
         }
 
         spork ~ this.triggerOnScriptStart();

@@ -62,6 +62,7 @@ public class NodeManager {
     // Events
     MoveCameraEvent @ moveCameraEvent;
     SaveLoadEvent @ saveLoadEvent;
+    CustomNodeHandlingEvent customNodeHandlingEvent;
 
     // File management
     string openedFilePath;
@@ -204,7 +205,7 @@ public class NodeManager {
                 AmbPannerNode ambPanner();
                 this.addNode(ambPanner, true);
             } else if (addNodeEvent.nodeType == NodeType.LIVECODING_CHUCK) {
-                ChuckScriptNode chuckScript();
+                ChuckScriptNode chuckScript(this.customNodeHandlingEvent);
                 this.addNode(chuckScript, true);
             } else if (addNodeEvent.nodeType == NodeType.WAVEFOLDER) {
                 WavefolderNode wavefolder();
@@ -278,6 +279,70 @@ public class NodeManager {
             } else if (this.saveLoadEvent.mode == SaveState.NEW) {
                 this.clearScreen();
                 "" => this.openedFilePath;
+            }
+        }
+    }
+
+    fun void customNodeHandler() {
+        while (true) {
+            this.customNodeHandlingEvent => now;
+
+            for (Node node : this.nodesOnScreen) {
+                if (node.nodeID == this.customNodeHandlingEvent.nodeID) {
+                    // Customn handling for ChuckScriptNode
+                    if (Type.of(node).name() == ChuckScriptNode.typeOf().name()) {
+                        // Delete any connections from removed jacks
+                        vec2 connsToRemove[0];
+                        for (int idx; idx < this.nodeConnections.size(); idx++) {
+                            this.nodeConnections[idx] @=> Connection conn;
+                            if (node.nodeID == conn.inputNode.nodeID && node.nodeInputsBox.numJacks <= conn.inputNodeJackIdx) {
+                                connsToRemove << @(idx, IOType.INPUT);
+                            } else if (node.nodeID == conn.outputNode.nodeID && node.nodeOutputsBox.numJacks <= conn.outputNodeJackIdx) {
+                                connsToRemove << @(idx, IOType.OUTPUT);
+                            }
+                        }
+
+                        // Remove connections in reverse order
+                        for (connsToRemove.size() - 1 => int idx; idx >= 0; idx--) {
+                            (connsToRemove[idx].x)$int => int connIdx;
+                            this.nodeConnections[connIdx] @=> Connection conn;
+
+                            // Need to disconnect the UGen that belonged to the output jack from whatever it was connected to
+                            // Since the output jack no longer exists, use the input jack's UGen
+                            if ((connsToRemove[idx].y)$int == IOType.OUTPUT) {
+                                conn.inputNode.nodeInputsBox.getJackUGen(conn.inputNodeJackIdx) @=> UGen oldUgen;
+                                conn.inputNode.disconnect(node, oldUgen, conn.inputNodeJackIdx);
+                                conn.inputNode.nodeInputsBox.removeJackUGen(conn.inputNodeJackIdx);
+                            }
+
+                            // Delete the wire
+                            conn.deleteWire();
+
+                            // Remove connection from connection list
+                            this.nodeConnections.erase(connIdx);
+                        }
+
+                        // Reconnect ChuckScript outputs to their input nodes
+                        for (Connection conn : this.nodeConnections) {
+                            if (node.nodeID == conn.outputNode.nodeID) {
+                                // Disconnect the UGen that is currently assigned to the input jack
+                                // This will differ from the ChuckScript output jack since that has been refreshed
+                                conn.inputNode.nodeInputsBox.getJackUGen(conn.inputNodeJackIdx) @=> UGen oldUgen;
+                                conn.inputNode.disconnect(node, oldUgen, conn.inputNodeJackIdx);
+                                conn.inputNode.nodeInputsBox.removeJackUGen(conn.inputNodeJackIdx);
+
+                                // Connect the new Output UGens to the input nodes
+                                node.nodeOutputsBox.getJackUGen(conn.outputNodeJackIdx) @=> UGen newUgen;
+                                conn.inputNode.connect(node, newUgen, conn.inputNodeJackIdx);
+                                conn.inputNode.nodeInputsBox.setJackUGen(newUgen, conn.inputNodeJackIdx);
+
+                                // Update wire starting position
+                                node.outputJackPos(conn.outputNodeJackIdx) => vec2 jackPos;
+                                conn.updateWireStartPos(jackPos);
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -541,7 +606,7 @@ public class NodeManager {
             } else if (nodeClassName == ChuckScriptNode.typeOf().name()) {
                 // Instantiate node
                 nodeData.getStr("chuckFile") => string chuckFile;
-                ChuckScriptNode chuckScript();
+                ChuckScriptNode chuckScript(this.customNodeHandlingEvent);
                 chuckScript.openFromFilepath(chuckFile);
                 chuckScript @=> currNode;
             } else if (nodeClassName == WavefolderNode.typeOf().name()) {
