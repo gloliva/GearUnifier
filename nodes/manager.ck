@@ -810,7 +810,8 @@ public class NodeManager {
                 nodeData.getFloat("tempo") => float tempo;
                 nodeData.getFloat("beatDiv") => float beatDiv;
                 nodeData.getInt("PPQN") => int ppqn;
-                TransportNode transport(numOutputs, tempo, beatDiv, ppqn, 4.);
+                nodeData.getFloat("threshold") => float threshold;
+                TransportNode transport(numOutputs, tempo, beatDiv, ppqn, threshold, 4.);
                 transport @=> currNode;
 
                 // Handle output data type mappings and menu selections

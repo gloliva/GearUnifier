@@ -32,6 +32,7 @@ public class TransportOptionsBox extends OptionsBox {
     NumberEntryBox @ tempoEntryBox;
     NumberEntryBox @ beatDivEntryBox;
     NumberEntryBox @ PPQNEntryBox;
+    NumberEntryBox @ thresholdEntryBox;
 
     // Events
     UpdateNumberEntryBoxEvent updateNumberEntryBoxEvent;
@@ -43,25 +44,31 @@ public class TransportOptionsBox extends OptionsBox {
         new NumberEntryBox(3, 0, NumberBoxType.INT, 2.) @=> this.tempoEntryBox;
         new NumberEntryBox(6, 1, NumberBoxType.FLOAT, 2.) @=> this.beatDivEntryBox;
         new NumberEntryBox(3, 2, NumberBoxType.INT, 2.) @=> this.PPQNEntryBox;
+        new NumberEntryBox(4, 3, NumberBoxType.FLOAT, 2.) @=> this.thresholdEntryBox;
 
         // Set Events
         this.tempoEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
         this.beatDivEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
+        this.PPQNEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
+        this.thresholdEntryBox.setUpdateEvent(this.updateNumberEntryBoxEvent);
 
         // Position
         @(0.75, this.optionNames[0].posY(), 0.201) => this.tempoEntryBox.pos;
         @(0.75, this.optionNames[1].posY(), 0.201) => this.beatDivEntryBox.pos;
         @(0.75, this.optionNames[2].posY(), 0.201) => this.PPQNEntryBox.pos;
+        @(0.75, this.optionNames[3].posY(), 0.201) => this.thresholdEntryBox.pos;
 
         // Name
         "Tempo NumberEntryBox" => this.tempoEntryBox.name;
         "Beat Divider NumberEntryBox" => this.beatDivEntryBox.name;
         "PPQN NumberEntryBox" => this.PPQNEntryBox.name;
+        "Threshold NumberEntryBox" => this.thresholdEntryBox.name;
 
         // Connections
         this.tempoEntryBox --> this;
         this.beatDivEntryBox --> this;
         this.PPQNEntryBox --> this;
+        this.thresholdEntryBox --> this;
     }
 
     fun void handleMouseOver(vec3 mouseWorldPos) {
@@ -102,6 +109,7 @@ public class TransportNode extends Node {
     float tempo;
     float beatDiv;
     int PPQN;
+    float threshold;
 
     // External Clock
     UGen @ externalClock;
@@ -117,14 +125,15 @@ public class TransportNode extends Node {
     }
 
     fun @construct(float tempo, float beatDiv, float xScale) {
-        TransportNode(1, tempo, beatDiv, 24, xScale);
+        TransportNode(1, tempo, beatDiv, 24, 0.4, xScale);
     }
 
-    fun @construct(int numOutputs, float tempo, float beatDiv, int ppqn, float xScale) {
+    fun @construct(int numOutputs, float tempo, float beatDiv, int ppqn, float threshold, float xScale) {
         // Initialize tempo variables
         tempo => this.tempo;
         beatDiv => this.beatDiv;
         ppqn => this.PPQN;
+        threshold => this.threshold;
 
         // Set node ID and name
         "Transport-Node" => this.name;
@@ -134,10 +143,11 @@ public class TransportNode extends Node {
         new NameBox("Transport", xScale) @=> this.nodeNameBox;
 
         // Create options box
-        new TransportOptionsBox(["Tempo", "Beat X", "PPQN"], xScale) @=> this.nodeOptionsBox;
+        new TransportOptionsBox(["Tempo", "Beat X", "PPQN", "Thresh"], xScale) @=> this.nodeOptionsBox;
         (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(tempo));
         (this.nodeOptionsBox$TransportOptionsBox).beatDivEntryBox.set(beatDiv);
         (this.nodeOptionsBox$TransportOptionsBox).PPQNEntryBox.set(ppqn);
+        (this.nodeOptionsBox$TransportOptionsBox).thresholdEntryBox.set(threshold);
 
         // Create inputs box
         TransportInputType.allTypes @=> this.inputTypes;
@@ -212,45 +222,49 @@ public class TransportNode extends Node {
             // Wait until an external clock is connected
             this.syncToExternalClock => now;
 
-            // Circular buffer for pulse high durations (size = 2 * PPQN)
+            // Circular buffer for pulse periods (size = 2 * PPQN)
             this.PPQN * 2 => int bufSize;
             float pulseTimes[bufSize];
             0 => int bufferIdx;
             0 => int bufferCount;
 
             0 => int wasHigh;
+            0 => int hasPrevRise;
             time riseTime;
 
             while (this.externalClockConnected) {
                 if (this.externalClock == null) break;
 
                 this.getValueFromUGen(this.externalClock) => float val;
-                if (!wasHigh && val >= 0.4) {
-                    // Rising edge — start timing
-                    now => riseTime;
-                    1 => wasHigh;
-                } else if (wasHigh && val < 0.4) {
-                    // Falling edge — record high duration in seconds
-                    (now - riseTime) / 1::second => float pulseWidth;
-                    pulseWidth => pulseTimes[bufferIdx];
-                    (bufferIdx + 1) % bufSize => bufferIdx;
-                    Math.min(bufferCount + 1, bufSize) => bufferCount;
-                    0 => wasHigh;
+                if (!wasHigh && val >= this.threshold) {
+                    // Rising edge — measure period from previous rise
+                    if (hasPrevRise) {
+                        (now - riseTime) / 1::second => float period;
+                        period => pulseTimes[bufferIdx];
+                        (bufferIdx + 1) % bufSize => bufferIdx;
+                        Math.min(bufferCount + 1, bufSize) => bufferCount;
 
-                    // Update tempo once we have at least PPQN measurements
-                    if (bufferCount >= this.PPQN) {
-                        0. => float sumTime;
-                        for (int i; i < this.PPQN; i++) {
-                            (bufferIdx - 1 - i + bufSize) % bufSize => int idx;
-                            pulseTimes[idx] +=> sumTime;
+                        // Update tempo once we have at least PPQN measurements
+                        if (bufferCount >= this.PPQN) {
+                            0. => float sumTime;
+                            for (int i; i < this.PPQN; i++) {
+                                (bufferIdx - 1 - i + bufSize) % bufSize => int idx;
+                                pulseTimes[idx] +=> sumTime;
+                            }
+                            sumTime / this.PPQN => float avgPeriod;
+
+                            // period = 60 / (tempo * PPQN)  →  tempo = 60 / (PPQN * period)
+                            Math.round(60.0 / (this.PPQN * avgPeriod)) => this.tempo;
+                            (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
+                            this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
                         }
-                        sumTime / this.PPQN => float avgPulseWidth;
-
-                        // Update tempo
-                        Math.round(30.0 / (this.PPQN * avgPulseWidth)) => this.tempo;
-                        (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
-                        this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
                     }
+                    now => riseTime;
+                    1 => hasPrevRise;
+                    1 => wasHigh;
+                } else if (wasHigh && val < this.threshold) {
+                    // Falling edge — update state only, timing is rise-to-rise
+                    0 => wasHigh;
                 }
 
                 1::samp => now;
@@ -302,6 +316,8 @@ public class TransportNode extends Node {
                 numberBoxFloatValue => this.beatDiv;
             } else if (numberBoxIdx == 2) {
                 numberBoxFloatValue$int => this.PPQN;
+            } else if (numberBoxIdx == 3) {
+                numberBoxFloatValue => this.threshold;
             }
 
             this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
@@ -315,6 +331,7 @@ public class TransportNode extends Node {
         data.set("tempo", this.tempo);
         data.set("beatDiv", this.beatDiv);
         data.set("PPQN", this.PPQN);
+        data.set("threshold", this.threshold);
 
         // Get output data
         HashMap outputMenuData;
