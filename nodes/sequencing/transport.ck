@@ -80,23 +80,30 @@ public class TransportOptionsBox extends OptionsBox {
         this.parent()$TransportNode @=> TransportNode parentNode;
 
         // Check if Tempo clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.tempoEntryBox, this.tempoEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.tempoEntryBox, this.tempoEntryBox.box, this.tempoEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.tempoEntryBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if Beat Divider clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.beatDivEntryBox, this.beatDivEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.beatDivEntryBox, this.beatDivEntryBox.box, this.beatDivEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.beatDivEntryBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if PPQN clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.PPQNEntryBox, this.PPQNEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.PPQNEntryBox, this.PPQNEntryBox.box, this.PPQNEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.PPQNEntryBox @=> this.selectedEntryBox;
+            return true;
+        }
+
+        // Check if Threshold clicked on
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.thresholdEntryBox, this.thresholdEntryBox.box, this.thresholdEntryBox.box.box])) {
+            1 => entryBoxSelected;
+            this.thresholdEntryBox @=> this.selectedEntryBox;
             return true;
         }
 

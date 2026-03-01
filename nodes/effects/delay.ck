@@ -56,7 +56,7 @@ public class DelayOptionsBox extends OptionsBox {
         this.parent()$DelayNode @=> DelayNode parentNode;
 
         // Check if In Low clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.delayEntryBox, this.delayEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.delayEntryBox, this.delayEntryBox.box, this.delayEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.delayEntryBox @=> this.selectedEntryBox;
             return true;

@@ -614,19 +614,19 @@ public class Connection extends GGen {
         @(this.inputJackPos.x - dirNorm.x * inSegLen,
           this.inputJackPos.y - dirNorm.y * inSegLen) => vec2 inPoint;
 
-        // Output end: short segment (~10%) at output node's Z layer
+        // Output end: short segment at output node's Z layer
         [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
         this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
         Color.BLACK => this.outputNodeWire.color;
 
-        // Middle: majority of wire (~80%), behind all nodes
+        // Middle: majority of wire, behind all nodes
         [outPoint, inPoint] => this.middleWire.positions;
         -50. => this.middleWire.posZ;
         0.05 => this.middleWire.width;
         Color.BLACK => this.middleWire.color;
         this.middleWire --> this;
 
-        // Input end: short segment (~10%) at input node's Z layer
+        // Input end: short segment at input node's Z layer
         [inPoint, this.inputJackPos] => this.inputNodeWire.positions;
         this.inputNode.posZ() + 0.2 => this.inputNodeWire.posZ;
         0.05 => this.inputNodeWire.width;
@@ -704,9 +704,19 @@ public class Connection extends GGen {
         [this.outputJackPos, outPoint] => this.outputNodeWire.positions;
         [outPoint, inPoint] => this.middleWire.positions;
         [inPoint, this.inputJackPos] => this.inputNodeWire.positions;
-        this.outputNode.posZ() + 0.2 => this.outputNodeWire.posZ;
-        this.inputNode.posZ() + 0.2 => this.inputNodeWire.posZ;
-        // middleWire posZ stays at -50, set once in completeWire()
+
+        // Determine posZ of wire based on whether the node's IOBox is visible
+        -50. => float outputNodeWirePosZ;
+        if (this.outputNode.nodeOutputsBox.active) {
+            this.outputNode.posZ() + 0.2 => outputNodeWirePosZ;
+        }
+        outputNodeWirePosZ => this.outputNodeWire.posZ;
+
+        -50. => float inputNodeWirePosZ;
+        if (this.inputNode.nodeInputsBox.active) {
+            this.inputNode.posZ() + 0.2 => inputNodeWirePosZ;
+        }
+        inputNodeWirePosZ => this.inputNodeWire.posZ;
     }
 
     fun void updateWire(vec3 mouseWorldPos) {
@@ -1161,7 +1171,7 @@ public class IOBox extends ContentBox {
     }
 
     fun int hasNumberBox(int ioEntryIdx) {
-        if (ioEntryIdx >= this.dataMap.size() || ioEntryIdx < 0) {
+        if (ioEntryIdx >= this.includeNumberEntry.size() || ioEntryIdx < 0) {
             <<< "ERROR: IO entry index out of bounds" >>>;
             return false;
         }

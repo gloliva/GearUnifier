@@ -105,28 +105,28 @@ public class ScaleOptionsBox extends OptionsBox {
         this.parent()$ScaleNode @=> ScaleNode parentNode;
 
         // Check if In Low clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inLowEntryBox, this.inLowEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inLowEntryBox, this.inLowEntryBox.box, this.inLowEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.inLowEntryBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if In High clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inHighEntryBox, this.inHighEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.inHighEntryBox, this.inHighEntryBox.box, this.inHighEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.inHighEntryBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if Out Low clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outLowEntryBox, this.outLowEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outLowEntryBox, this.outLowEntryBox.box, this.outLowEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.outLowEntryBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if Out High clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outHighEntryBox, this.outHighEntryBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.outHighEntryBox, this.outHighEntryBox.box, this.outHighEntryBox.box.box])) {
             1 => entryBoxSelected;
             this.outHighEntryBox @=> this.selectedEntryBox;
             return true;
@@ -154,6 +154,9 @@ public class ScaleNode extends Node {
         inHigh => this.scale.setInHigh;
         outLow => this.scale.setOutLow;
         outHigh => this.scale.setOutHigh;
+
+        // Scale Chugen needs to be connected to blackhole in order to be processed
+        this.scale => blackhole;
 
         // Set node ID and name
         "Scale-Node" => this.name;

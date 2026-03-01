@@ -69,21 +69,21 @@ public class ASROptionsBox extends OptionsBox {
         this.parent()$ASRNode @=> ASRNode parentNode;
 
         // Check if AttackTime clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.attackTimeBox, this.attackTimeBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.attackTimeBox, this.attackTimeBox.box, this.attackTimeBox.box.box])) {
             1 => entryBoxSelected;
             this.attackTimeBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if SustainLevel clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.sustainLevelBox, this.sustainLevelBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.sustainLevelBox, this.sustainLevelBox.box, this.sustainLevelBox.box.box])) {
             1 => entryBoxSelected;
             this.sustainLevelBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if ReleaseTime clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.releaseTimeBox, this.releaseTimeBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.releaseTimeBox, this.releaseTimeBox.box, this.releaseTimeBox.box.box])) {
             1 => entryBoxSelected;
             this.releaseTimeBox @=> this.selectedEntryBox;
             return true;
@@ -315,28 +315,28 @@ public class ADSROptionsBox extends OptionsBox {
         this.parent()$ADSRNode @=> ADSRNode parentNode;
 
         // Check if AttackTime clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.attackTimeBox, this.attackTimeBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.attackTimeBox, this.attackTimeBox.box, this.attackTimeBox.box.box])) {
             1 => entryBoxSelected;
             this.attackTimeBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if DecayTime clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.decayTimeBox, this.decayTimeBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.decayTimeBox, this.decayTimeBox.box, this.decayTimeBox.box.box])) {
             1 => entryBoxSelected;
             this.decayTimeBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if SustainLevel clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.sustainLevelBox, this.sustainLevelBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.sustainLevelBox, this.sustainLevelBox.box, this.sustainLevelBox.box.box])) {
             1 => entryBoxSelected;
             this.sustainLevelBox @=> this.selectedEntryBox;
             return true;
         }
 
         // Check if ReleaseTime clicked on
-        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.releaseTimeBox, this.releaseTimeBox.box])) {
+        if (parentNode.mouseOverBox(mouseWorldPos, [this, this.releaseTimeBox, this.releaseTimeBox.box, this.releaseTimeBox.box.box])) {
             1 => entryBoxSelected;
             this.releaseTimeBox @=> this.selectedEntryBox;
             return true;
