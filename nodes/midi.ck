@@ -523,7 +523,7 @@ public class MidiInNode extends MidiNode {
         // Remove any additional mappings
         if (dataType == MidiInputType.SEQUENCER.id) {
             null => this.sequencer;
-        } else if (dataType == dataType == MidiInputType.TUNING.id) {
+        } else if (dataType == MidiInputType.TUNING.id) {
             new EDO(12, -48) @=> this.tuning;
         }
     }

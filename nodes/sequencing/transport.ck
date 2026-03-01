@@ -5,11 +5,22 @@
 @import "HashMap"
 
 
-public class TransportOutputType {
-    new Enum(0, "Beat") @=> static Enum BEAT;
-    new Enum(1, "Clock Out") @=> static Enum CLOCK;
+public class TransportInputType {
+    new Enum(0, "Clock In") @=> static Enum CLOCK;
 
     [
+        TransportInputType.CLOCK,
+    ] @=> static Enum allTypes[];
+}
+
+
+public class TransportOutputType {
+    new Enum(0, "Sync") @=> static Enum SYNC;
+    new Enum(1, "Beat Out") @=> static Enum BEAT;
+    new Enum(2, "Clock Out") @=> static Enum CLOCK;
+
+    [
+        TransportOutputType.SYNC,
         TransportOutputType.BEAT,
         TransportOutputType.CLOCK,
     ] @=> static Enum allTypes[];
@@ -92,6 +103,11 @@ public class TransportNode extends Node {
     float beatDiv;
     int PPQN;
 
+    // External Clock
+    UGen @ externalClock;
+    Event syncToExternalClock;
+    int externalClockConnected;
+
     fun @construct() {
         TransportNode(120., 1., 4.);
     }
@@ -123,11 +139,16 @@ public class TransportNode extends Node {
         (this.nodeOptionsBox$TransportOptionsBox).beatDivEntryBox.set(beatDiv);
         (this.nodeOptionsBox$TransportOptionsBox).PPQNEntryBox.set(ppqn);
 
+        // Create inputs box
+        TransportInputType.allTypes @=> this.inputTypes;
+        new IOBox(1, TransportInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        this.nodeInputsBox.setInput(TransportInputType.CLOCK, 0);
+
         // Create outputs box
         TransportOutputType.allTypes @=> this.outputTypes;
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(numOutputs, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
-        this.getBeat() => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+        this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
 
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -138,6 +159,7 @@ public class TransportNode extends Node {
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
+        this.nodeInputsBox --> this;
         this.nodeOutputsModifierBox --> this;
         this.nodeOutputsBox --> this;
         this.nodeVisibilityBox --> this;
@@ -147,16 +169,32 @@ public class TransportNode extends Node {
 
         // Shreds
         spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        spork ~ this.outputBeat() @=> Shred @ outputBeatShred;
         spork ~ this.outputClock() @=> Shred @ outputClockShred;
-        this.addShreds([processOptionsShred, outputClockShred]);
+        spork ~ this.processExternalClockSync() @=> Shred @ processExternalClockSyncShred;
+        this.addShreds([processOptionsShred, outputBeatShred, outputClockShred, processExternalClockSyncShred]);
     }
 
-    fun float getBeat() {
+    fun float updateSync() {
         return ((60. / this.tempo) / this.beatDiv);
+    }
+
+    fun dur beatDur() {
+        return ((30. / this.tempo) / this.beatDiv)::second;
     }
 
     fun dur pulseDur() {
         return (30.0 / (this.tempo * this.PPQN))::second;
+    }
+
+    fun void outputBeat() {
+        while (this.nodeActive) {
+            0.5 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+            this.beatDur() => now;
+
+            0.0 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+            this.beatDur() => now;
+        }
     }
 
     fun void outputClock() {
@@ -166,6 +204,86 @@ public class TransportNode extends Node {
 
             0.0 => this.nodeOutputsBox.outs(TransportOutputType.CLOCK).next;
             this.pulseDur() => now;
+        }
+    }
+
+    fun void processExternalClockSync() {
+        while (this.nodeActive) {
+            // Wait until an external clock is connected
+            this.syncToExternalClock => now;
+
+            // Circular buffer for pulse high durations (size = 2 * PPQN)
+            this.PPQN * 2 => int bufSize;
+            float pulseTimes[bufSize];
+            0 => int bufferIdx;
+            0 => int bufferCount;
+
+            0 => int wasHigh;
+            time riseTime;
+
+            while (this.externalClockConnected) {
+                if (this.externalClock == null) break;
+
+                this.getValueFromUGen(this.externalClock) => float val;
+                if (!wasHigh && val >= 0.4) {
+                    // Rising edge — start timing
+                    now => riseTime;
+                    1 => wasHigh;
+                } else if (wasHigh && val < 0.4) {
+                    // Falling edge — record high duration in seconds
+                    (now - riseTime) / 1::second => float pulseWidth;
+                    pulseWidth => pulseTimes[bufferIdx];
+                    (bufferIdx + 1) % bufSize => bufferIdx;
+                    Math.min(bufferCount + 1, bufSize) => bufferCount;
+                    0 => wasHigh;
+
+                    // Update tempo once we have at least PPQN measurements
+                    if (bufferCount >= this.PPQN) {
+                        0. => float sumTime;
+                        for (int i; i < this.PPQN; i++) {
+                            (bufferIdx - 1 - i + bufSize) % bufSize => int idx;
+                            pulseTimes[idx] +=> sumTime;
+                        }
+                        sumTime / this.PPQN => float avgPulseWidth;
+
+                        // Update tempo
+                        Math.round(30.0 / (this.PPQN * avgPulseWidth)) => this.tempo;
+                        (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
+                        this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
+                    }
+                }
+
+                1::samp => now;
+            }
+        }
+    }
+
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
+
+        // Check if connecting an external clock
+        if (dataType == TransportInputType.CLOCK.id) {
+            1 => this.externalClockConnected;
+            ugen @=> this.externalClock;
+            this.syncToExternalClock.signal();
+        }
+    }
+
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx >>>;
+            return;
+        }
+
+        // Check if disconnecting an external clock
+        if (dataType == TransportInputType.CLOCK.id) {
+            0 => this.externalClockConnected;
+            null @=> this.externalClock;
         }
     }
 
@@ -186,7 +304,7 @@ public class TransportNode extends Node {
                 numberBoxFloatValue$int => this.PPQN;
             }
 
-            this.getBeat() => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+            this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
         }
     }
 
