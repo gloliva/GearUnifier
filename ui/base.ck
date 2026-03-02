@@ -1,6 +1,11 @@
 @import "../events.ck"
 
 
+public class UIScene {
+    static GGen scene;
+}
+
+
 public class BorderedBox extends GGen {
     GCube box;
     GText text;

@@ -3,8 +3,7 @@
 @import "../saveHandler.ck"
 @import "../utils.ck"
 @import "../nodes/base.ck"
-@import "menu.ck"
-@import "textBox.ck"
+@import {"base.ck", "menu.ck", "textBox.ck"}
 
 
 public class UIManager {
@@ -55,8 +54,16 @@ public class UIManager {
         Color.DARKGRAY => this.topMenuBar.color;
         Color.DARKGRAY => this.bottomMenuBar.color;
 
-        this.topMenuBar --> GG.scene();
-        this.bottomMenuBar --> GG.scene();
+        "Top Menu Bar" => this.topMenuBar.name;
+        this.topMenuBar --> UIScene.scene;
+
+        "Bottom Menu Bar" => this.bottomMenuBar.name;
+        this.bottomMenuBar --> UIScene.scene;
+
+        // UI Scene
+        "UI Scene" => UIScene.scene.name;
+        UIScene.scene --> GG.scene();
+
     }
 
     fun static DropdownMenu createDropdownMenu(string entryNames[]) {
@@ -77,7 +84,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.audioMenu.sca;
         1.201 => this.audioMenu.posZ;
-        this.audioMenu --> GG.scene();
+        this.audioMenu --> UIScene.scene;
     }
 
     fun void setMidiInUI(Enum midiInDeviceNames[]) {
@@ -89,7 +96,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.midiInMenu.sca;
         1.201 => this.midiInMenu.posZ;
-        this.midiInMenu --> GG.scene();
+        this.midiInMenu --> UIScene.scene;
     }
 
     fun void setMidiOutUI(Enum midiOutDeviceNames[]) {
@@ -101,7 +108,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.midiOutMenu.sca;
         1.201 => this.midiOutMenu.posZ;
-        this.midiOutMenu --> GG.scene();
+        this.midiOutMenu --> UIScene.scene;
     }
 
     fun void setComposerUI() {
@@ -113,7 +120,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.oscMenu.sca;
         1.201 => this.oscMenu.posZ;
-        this.oscMenu --> GG.scene();
+        this.oscMenu --> UIScene.scene;
     }
 
     fun void setSequencerUI() {
@@ -125,7 +132,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.sequencerMenu.sca;
         1.201 => this.sequencerMenu.posZ;
-        this.sequencerMenu --> GG.scene();
+        this.sequencerMenu --> UIScene.scene;
     }
 
     fun void setEffectsUI() {
@@ -137,7 +144,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.effectsMenu.sca;
         1.201 => this.effectsMenu.posZ;
-        this.effectsMenu --> GG.scene();
+        this.effectsMenu --> UIScene.scene;
     }
 
     fun void setModifiersUI() {
@@ -149,7 +156,7 @@ public class UIManager {
 
         @(0.3, 0.3, 1.) => this.modifiersMenu.sca;
         1.201 => this.modifiersMenu.posZ;
-        this.modifiersMenu --> GG.scene();
+        this.modifiersMenu --> UIScene.scene;
     }
 
     fun void setSaveUI() {
@@ -163,7 +170,7 @@ public class UIManager {
         for (Button button : this.bottomBarButtons) {
             @(0.3, 0.3, 1.) => button.sca;
              1.201 => button.posZ;
-             button --> GG.scene();
+             button --> UIScene.scene;
         }
     }
 

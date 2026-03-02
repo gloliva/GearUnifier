@@ -73,6 +73,10 @@ public class NodeManager {
         saveLoadEvent @=> this.saveLoadEvent;
         "" => this.openedFilePath;
         GWindow.files() @=> this.droppedFilePaths;
+
+        // Display Node Scene
+        "Node Scene" => NodeScene.scene.name;
+        NodeScene.scene --> GG.scene();
     }
 
     fun void addNode(Node node) {
@@ -94,7 +98,7 @@ public class NodeManager {
         }
 
         // Add to scene
-        node --> GG.scene();
+        node --> NodeScene.scene;
     }
 
     fun void removeNode(Node node) {
@@ -150,7 +154,7 @@ public class NodeManager {
         node.deactivateNode();
 
         // Remove from scene
-        node --< GG.scene();
+        node --< NodeScene.scene;
     }
 
     fun void recalculateNodeLayers() {
@@ -934,7 +938,7 @@ public class NodeManager {
 
         for (Node node : this.nodesOnScreen) {
             node.deactivateNode();
-            node --< GG.scene();
+            node --< NodeScene.scene;
         }
 
         // Clear nodes
@@ -984,12 +988,17 @@ public class NodeManager {
             // Update prev mouse world pos after delta has been calculated
             mouseWorldPos => mousePrevWorldPos;
 
+            // Convert world-space mouse to NodeScene.scene local space to handle zooming in/out for node-type objects
+            NodeScene.scene.scaX() => float sceneScale;
+            @(mouseWorldPos.x / sceneScale, mouseWorldPos.y / sceneScale, 0.) => vec3 nodeMousePos;
+            @(mouseWorldDelta.x / sceneScale, mouseWorldDelta.y / sceneScale, 0.) => vec3 nodeMouseDelta;
+
             // Mouse Click Down on this frame
             if (GWindow.mouseLeftDown() == 1) {
 
                 // First check if there is a popupMenu open, which prevents all other activity
                 if (this.popupMenu != null && this.popupMenu.closed != 1) {
-                    if (this.popupMenu.mouseOverButton(mouseWorldPos)) {
+                    if (this.popupMenu.mouseOverButton(nodeMousePos)) {
                         this.popupMenu.button.clickOn();
                         me.yield();
 
@@ -1007,7 +1016,7 @@ public class NodeManager {
                 if (this.menuOpen) {
                     this.currMenu.parent()$IOBox @=> IOBox ioBoxParent;
                     ioBoxParent.parent()$Node @=> Node parent;
-                    this.currMenu.mouseHoverEntry(mouseWorldPos, parent, ioBoxParent) => dropdownMenuEntryIdx;
+                    this.currMenu.mouseHoverEntry(nodeMousePos, parent, ioBoxParent) => dropdownMenuEntryIdx;
                 }
 
                 // Update menu entry
@@ -1110,9 +1119,9 @@ public class NodeManager {
                     this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
 
                     // Exiting out of ComposeBox window
-                    if (composeBox.mouseOverClose(mouseWorldPos)) {
+                    if (composeBox.mouseOverClose(nodeMousePos)) {
                         0 => composeBox.active;
-                        composeBox --< GG.scene();
+                        composeBox --< NodeScene.scene;
                         this.composeBoxesOnScreen.popOut(boxIdx);
 
                         // Relayer composeBoxes
@@ -1123,18 +1132,18 @@ public class NodeManager {
                     }
 
                     // Clicking on a ComposeBox button
-                    composeBox.mouseOverButtons(mouseWorldPos) => int buttonIdx;
+                    composeBox.mouseOverButtons(nodeMousePos) => int buttonIdx;
                     if (buttonIdx) {
                         composeBox.handleButtonPress(buttonIdx);
                     }
 
                     // Clicking in the content section of a ComposeBox
-                    if (composeBox.mouseOverContentBox(mouseWorldPos)) {
+                    if (composeBox.mouseOverContentBox(nodeMousePos)) {
                         composeBox @=> this.currSelectedComposeBox;
                     }
 
                     // Click anywhere on a ComposeBox
-                    if (composeBox.mouseOverComposeBox(mouseWorldPos)) {
+                    if (composeBox.mouseOverComposeBox(nodeMousePos)) {
                         1 => composeBoxClickedOn;
                         break;
                     }
@@ -1158,7 +1167,7 @@ public class NodeManager {
                     this.nodesOnScreen[nodeIdx] @=> Node node;
 
                     // Check if mouse is over this node's name box
-                    node.mouseOverNameBox(mouseWorldPos) => int nodeNameHover;
+                    node.mouseOverNameBox(nodeMousePos) => int nodeNameHover;
                     if (nodeNameHover) {
                         // Unhighlight previous selected node
                         if (this.currSelectedNode != null) {
@@ -1182,10 +1191,10 @@ public class NodeManager {
 
                     // Check if mouse is over this node's options box
                     int nodeOptionsBoxIteractedWith;
-                    node.mouseOverOptionsBox(mouseWorldPos) => int nodeOptionsHover;
+                    node.mouseOverOptionsBox(nodeMousePos) => int nodeOptionsHover;
                     if (nodeOptionsHover && node.nodeOptionsBox.active || (node.nodeOptionsBox != null && node.nodeOptionsBox.menuOpen)) {
                         <<< "Clicked on node option's box" >>>;
-                        node.nodeOptionsBox.handleMouseLeftDown(mouseWorldPos) => nodeOptionsBoxIteractedWith;
+                        node.nodeOptionsBox.handleMouseLeftDown(nodeMousePos) => nodeOptionsBoxIteractedWith;
 
                         if (node.nodeOptionsBox.entryBoxSelected) {
                             node.nodeOptionsBox.selectedEntryBox @=> this.currNumberBox;
@@ -1205,10 +1214,10 @@ public class NodeManager {
 
                     // Check if mouse is over this node's nodeInputsBox
                     // This would be for completing a connection
-                    node.mouseOverInputsBox(mouseWorldPos) => int nodeInputsBoxHover;
+                    node.mouseOverInputsBox(nodeMousePos) => int nodeInputsBoxHover;
                     if (nodeInputsBoxHover && node.nodeInputsBox.active && !nodeOptionsBoxIteractedWith) {
                         // Check if clicking on an Input jack
-                        node.nodeInputsBox.mouseOverJack(mouseWorldPos) => int jackIdx;
+                        node.nodeInputsBox.mouseOverJack(nodeMousePos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.nodeInputsBox.jacks[jackIdx] @=> Jack jack;
                             node.inputJackPos(jackIdx) => vec2 jackPos;
@@ -1236,7 +1245,7 @@ public class NodeManager {
                         }
 
                         // Check if clicking on a menu
-                        node.nodeInputsBox.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
+                        node.nodeInputsBox.mouseOverDropdownMenu(nodeMousePos) => int dropdownMenuIdx;
                         if (dropdownMenuIdx != -1 && jackIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                             <<< "Clicked on", node.nodeInputsBox.menus[dropdownMenuIdx].menuID >>>;
 
@@ -1260,9 +1269,9 @@ public class NodeManager {
 
                     // Check if 1) the mouse is over this node's IO modifier box for an nodeInputsBox and 2) not in an open menu
                     int nodeInputsModifierInteractedWith;
-                    node.mouseOverInputsModifierBox(mouseWorldPos) => int nodeInputsModifierHover;
+                    node.mouseOverInputsModifierBox(nodeMousePos) => int nodeInputsModifierHover;
                     if (nodeInputsModifierHover && node.nodeInputsModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        node.nodeInputsModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
+                        node.nodeInputsModifierBox.mouseOverModifiers(nodeMousePos) => int jackModifier;
                         if (jackModifier == IOModifierBox.ADD) {
                             node.addJack(IOType.INPUT);
                             1 => nodeInputsModifierInteractedWith;
@@ -1299,9 +1308,9 @@ public class NodeManager {
                     }
 
                     // Check if 1) the mouse is over this node's IO modifier box for an nodeOutputsBox and 2) not in an open menu
-                    node.mouseOverOutputsModifierBox(mouseWorldPos) => int nodeOutputsModifierHover;
+                    node.mouseOverOutputsModifierBox(nodeMousePos) => int nodeOutputsModifierHover;
                     if (nodeOutputsModifierHover && node.nodeOutputsModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        node.nodeOutputsModifierBox.mouseOverModifiers(mouseWorldPos) => int jackModifier;
+                        node.nodeOutputsModifierBox.mouseOverModifiers(nodeMousePos) => int jackModifier;
                         if (jackModifier == IOModifierBox.ADD) {
                             node.addJack(IOType.OUTPUT);  // Call on the Node directly
                         } else if (jackModifier == IOModifierBox.REMOVE && node.nodeOutputsBox.numJacks > 1) {
@@ -1341,11 +1350,11 @@ public class NodeManager {
 
                     // Check if mouse is over this node's nodeOutputsBox
                     // This would be for starting a new connection
-                    node.mouseOverOutputsBox(mouseWorldPos) => int nodeOutputsBoxHover;
+                    node.mouseOverOutputsBox(nodeMousePos) => int nodeOutputsBoxHover;
                     if (nodeOutputsBoxHover && node.nodeOutputsBox.active && !nodeOptionsBoxIteractedWith) {
                         <<< "Clicked on node outputs box", node.nodeID >>>;
                         // Check if clicking on an Output jack
-                        node.nodeOutputsBox.mouseOverJack(mouseWorldPos) => int jackIdx;
+                        node.nodeOutputsBox.mouseOverJack(nodeMousePos) => int jackIdx;
                         if (jackIdx != -1) {
                             node.outputJackPos(jackIdx) => vec2 jackPos;
 
@@ -1353,7 +1362,7 @@ public class NodeManager {
                             // Jack's from an nodeOutputsBox are always Output jacks
                             if (this.openConnection == 0) {
                                 <<< "Starting a new Connection" >>>;
-                                Connection newConnection(node, jackIdx, jackPos, mouseWorldPos);
+                                Connection newConnection(node, jackIdx, jackPos, nodeMousePos);
                                 newConnection @=> this.currOpenConnection;
                                 1 => this.openConnection;
                             } else {
@@ -1366,7 +1375,7 @@ public class NodeManager {
                         }
 
                         // Check if clicking on a menu
-                        node.nodeOutputsBox.mouseOverDropdownMenu(mouseWorldPos) => int dropdownMenuIdx;
+                        node.nodeOutputsBox.mouseOverDropdownMenu(nodeMousePos) => int dropdownMenuIdx;
                         if (dropdownMenuIdx != -1 && jackIdx == -1 && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
                             <<< "Clicked on", node.nodeOutputsBox.menus[dropdownMenuIdx].menuID >>>;
 
@@ -1384,7 +1393,7 @@ public class NodeManager {
                         }
 
                         // Check if clicking on a number box
-                        node.nodeOutputsBox.mouseOverNumberBox(mouseWorldPos) => int numberBoxIdx;
+                        node.nodeOutputsBox.mouseOverNumberBox(nodeMousePos) => int numberBoxIdx;
                         if (numberBoxIdx != -1) {
                             node.nodeOutputsBox.numberBoxes[numberBoxIdx] @=> this.currNumberBox;
                             1 => this.numberBoxSelected;
@@ -1397,9 +1406,9 @@ public class NodeManager {
                     }
 
                     // Check if clicking on a node's button modifier box
-                    node.mouseOverButtonModifierBox(mouseWorldPos) => int overNodeButtonModifier;
+                    node.mouseOverButtonModifierBox(nodeMousePos) => int overNodeButtonModifier;
                     if (overNodeButtonModifier && node.nodeButtonModifierBox.active && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        node.nodeButtonModifierBox.mouseOverModifiers(mouseWorldPos) => int buttonModifier;
+                        node.nodeButtonModifierBox.mouseOverModifiers(nodeMousePos) => int buttonModifier;
                         if (buttonModifier == IOModifierBox.ADD) {
                             node.addButton();
                         } else if (buttonModifier == IOModifierBox.REMOVE) {
@@ -1413,9 +1422,9 @@ public class NodeManager {
 
                     // Check if clicking on a node's button box
                     int nodeButtonBoxInteractedWith;
-                    node.mouseOverButtonBox(mouseWorldPos) => int overNodeButtonBox;
+                    node.mouseOverButtonBox(nodeMousePos) => int overNodeButtonBox;
                     if (overNodeButtonBox && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        node.nodeButtonBox.mouseOverButtons(mouseWorldPos) => int buttonClickedIdx;
+                        node.nodeButtonBox.mouseOverButtons(nodeMousePos) => int buttonClickedIdx;
                         if (buttonClickedIdx != -1) {
                             node.handleButtonPress(buttonClickedIdx);
 
@@ -1424,10 +1433,10 @@ public class NodeManager {
                                 (node$ComposerNode).composeBoxes[buttonClickedIdx] @=> ComposeBox composeBox;
                                 if (composeBox.active) {
                                     @(GG.scene().camera().posX(), GG.scene().camera().posY(), 1) => composeBox.pos;
-                                    composeBox --> GG.scene();
+                                    composeBox --> NodeScene.scene;
                                     this.composeBoxesOnScreen << composeBox;
                                 } else {
-                                    composeBox --< GG.scene();
+                                    composeBox --< NodeScene.scene;
                                     int boxIdx;
                                     for (int idx; idx < this.composeBoxesOnScreen.size(); idx++) {
                                         if (this.composeBoxesOnScreen[idx].ID == composeBox.ID) {
@@ -1450,9 +1459,9 @@ public class NodeManager {
 
                     // Check if clicking on a node's visibility box
                     int nodeVisibilityBoxIteractedWith;
-                    node.mouseOverVisibilityBox(mouseWorldPos) => int nodeVisibilityBoxHover;
+                    node.mouseOverVisibilityBox(nodeMousePos) => int nodeVisibilityBoxHover;
                     if (nodeVisibilityBoxHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        node.nodeVisibilityBox.mouseHoverModifiers(mouseWorldPos) => int visibilityModifier;
+                        node.nodeVisibilityBox.mouseHoverModifiers(nodeMousePos) => int visibilityModifier;
                         if (visibilityModifier == VisibilityBox.OPTIONS_BOX && node.nodeOptionsBox != null) {
                             if (node.nodeOptionsBox.active) {
                                 node.hideOptionsBox();
@@ -1513,7 +1522,7 @@ public class NodeManager {
                 -1 => int clickedConnectionIdx;
                 for (int connIdx; connIdx < this.nodeConnections.size(); connIdx++) {
                     this.nodeConnections[connIdx] @=> Connection conn;
-                    conn.mouseOverWire(mouseWorldPos) => int hoverOverWire;
+                    conn.mouseOverWire(nodeMousePos) => int hoverOverWire;
                     if (hoverOverWire && !connectionCompletedThisFrame) {
                         // If a wire is already selected, unselect that wire
                         if (this.connectionSelected) this.currSelectedConnection.unselectWire();
@@ -1568,7 +1577,7 @@ public class NodeManager {
                 if (this.currHeldComposeBox == null && !this.nodeHeld) {
                     for (this.composeBoxesOnScreen.size() - 1 => int boxIdx; boxIdx >= 0; boxIdx--) {
                         this.composeBoxesOnScreen[boxIdx] @=> ComposeBox composeBox;
-                        if (composeBox.mouseOverHeader(mouseWorldPos)) {
+                        if (composeBox.mouseOverHeader(nodeMousePos)) {
                             composeBox @=> this.currHeldComposeBox;
                             break;
                         }
@@ -1577,7 +1586,7 @@ public class NodeManager {
 
                 // Move compose box if its being held down
                 if (this.currHeldComposeBox != null && !this.nodeHeld) {
-                    this.currHeldComposeBox.translate(mouseWorldDelta);
+                    this.currHeldComposeBox.translate(nodeMouseDelta);
                 }
 
                 if (!this.nodeHeld && this.currHeldComposeBox == null) {
@@ -1587,7 +1596,7 @@ public class NodeManager {
                         this.nodesOnScreen[nodeIdx] @=> Node node;
 
                         // Check if mouse is over this node's name box
-                        node.mouseOverNameBox(mouseWorldPos) => int nodeNameHover;
+                        node.mouseOverNameBox(nodeMousePos) => int nodeNameHover;
                         if (nodeNameHover) {
                             1 => this.nodeHeld;
                             nodeIdx => this.currHeldNodeIdx;
@@ -1599,7 +1608,7 @@ public class NodeManager {
 
                 // Move node if its being held down
                 if (this.nodeHeld && this.currHeldComposeBox == null) {
-                    this.currHeldNode.translate(mouseWorldDelta);
+                    this.currHeldNode.translate(nodeMouseDelta);
 
                     // Update the position of all wires connected to this node
                     for (Connection conn : this.nodeConnections) {
@@ -1645,7 +1654,7 @@ public class NodeManager {
                 if (this.droppedFilePaths.size() > 0) {
                     for (Node node : this.nodesOnScreen) {
                         // Check if dropped onto a ScaleTuning node to change scale file
-                        if (Type.of(node).name() == ScaleTuningNode.typeOf().name() && node.mouseOverNode(mouseWorldPos)) {
+                        if (Type.of(node).name() == ScaleTuningNode.typeOf().name() && node.mouseOverNode(nodeMousePos)) {
                             // Take first file if multiple dropped files
                             this.droppedFilePaths[0] => string filePath;
                             (node$ScaleTuningNode).setTuning(filePath);
@@ -1668,6 +1677,15 @@ public class NodeManager {
                     this.moveCameraEvent.set(0., translateVal);
                     this.moveCameraEvent.signal();
                 }
+            }
+
+            // Handle zooming in and out
+            if (GWindow.key(GWindow.KEY_LEFTSUPER) && GWindow.keyDown(GWindow.KEY_EQUAL)) {
+                NodeScene.scene.sca() @=> vec3 sceneSca;
+                @(sceneSca.x + 0.2, sceneSca.y + 0.2, 1.) => NodeScene.scene.sca;
+            } else if (GWindow.key(GWindow.KEY_LEFTSUPER) && GWindow.keyDown(GWindow.KEY_MINUS)) {
+                NodeScene.scene.sca() @=> vec3 sceneSca;
+                @(sceneSca.x - 0.2, sceneSca.y - 0.2, 1.) => NodeScene.scene.sca;
             }
 
             // Check if BACKSPACE key is pressed
@@ -1747,21 +1765,21 @@ public class NodeManager {
 
             // Handle moving wire for open connection
             if (this.openConnection == 1) {
-                this.currOpenConnection.updateWire(mouseWorldPos);
+                this.currOpenConnection.updateWire(nodeMousePos);
             }
 
             // Highlight menu item if mouse hovers over it
             if (this.menuOpen) {
                 this.currMenu.parent()$IOBox @=> IOBox ioBoxParent;
                 ioBoxParent.parent()$Node @=> Node parent;
-                this.currMenu.mouseHoverEntry(mouseWorldPos, parent, ioBoxParent) => int hoveredMenuEntryIdx;
+                this.currMenu.mouseHoverEntry(nodeMousePos, parent, ioBoxParent) => int hoveredMenuEntryIdx;
                 this.currMenu.highlightHoveredEntry(hoveredMenuEntryIdx);
             }
 
             // Handle mouse over each node's options box, if applicable
             for (Node node : this.nodesOnScreen) {
                 if (node.nodeOptionsBox != null) {
-                    node.nodeOptionsBox.handleMouseOver(mouseWorldPos);
+                    node.nodeOptionsBox.handleMouseOver(nodeMousePos);
                 }
             }
 

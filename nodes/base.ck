@@ -39,6 +39,11 @@ public class NodeType {
 }
 
 
+public class NodeScene {
+    static GGen scene;
+}
+
+
 public class Node extends ClickableGGen {
     string nodeID;
     1 => int nodeActive;
@@ -538,7 +543,7 @@ public class Connection extends GGen {
         "Input Node Wire" => this.inputNodeWire.name;
 
         // Connections
-        this.outputNodeWire --> this --> GG.scene();
+        this.outputNodeWire --> this --> NodeScene.scene;
     }
 
     fun void completeWire(Node @ inputNode, int inputNodeJackIdx, vec2 inputJackPos) {
@@ -734,7 +739,7 @@ public class Connection extends GGen {
     }
 
     fun void deleteWire() {
-        this --< GG.scene();
+        this --< NodeScene.scene;
     }
 
     fun int mouseOverWire(vec3 mouseWorldPos) {
