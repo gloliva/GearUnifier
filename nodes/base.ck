@@ -14,28 +14,28 @@ public class NodeType {
     102 => static int OSC_IN;
     103 => static int OSC_OUT;
 
-    // Compositional and Performance tools
-    200 => static int AMB_PANNER;
-    201 => static int LIVECODING_CHUCK;
+    // Modifiers
+    200 => static int ASR_ENV;
+    201 => static int ADSR_ENV;
+    202 => static int SCALE_TUNING;
+    203 => static int EDO_TUNING;
+    204 => static int AMB_PANNER;
 
     // Sequencing
-    400 => static int SEQUENCER;
-    401 => static int TRANSPORT;
-    402 => static int COMPOSE;
-    403 => static int SCORE_PLAYER;
+    300 => static int TRANSPORT;
+    301 => static int SEQUENCER;
+    302 => static int COMPOSE;
+    303 => static int SCORE_PLAYER;
 
     // Effects
-    50 => static int WAVEFOLDER;
-    51 => static int DISTORTION;
-    52 => static int DELAY;
+    400 => static int WAVEFOLDER;
+    401 => static int DISTORTION;
+    402 => static int DELAY;
 
     // Modifiers
-    600 => static int SCALE;
-    601 => static int ASR_ENV;
-    602 => static int ADSR_ENV;
-    603 => static int SCALE_TUNING;
-    604 => static int EDO_TUNING;
-    605 => static int METER;
+    500 => static int LIVECODING_CHUCK;
+    501 => static int SCALE;
+    502 => static int METER;
 }
 
 

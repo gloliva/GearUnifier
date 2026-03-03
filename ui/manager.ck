@@ -14,10 +14,10 @@ public class UIManager {
     DropdownMenu @ audioMenu;
     DropdownMenu @ midiInMenu;
     DropdownMenu @ midiOutMenu;
-    DropdownMenu @ oscMenu;
+    DropdownMenu @ modifiersMenu;
     DropdownMenu @ effectsMenu;
     DropdownMenu @ sequencerMenu;
-    DropdownMenu @ modifiersMenu;
+    DropdownMenu @ utilitiesMenu;
 
     // Save/Load Handling
     Button bottomBarButtons[];
@@ -111,20 +111,20 @@ public class UIManager {
         this.midiOutMenu --> UIScene.scene;
     }
 
-    fun void setComposerUI() {
-        this.createDropdownMenu(["Ambisonics Panner", "Chuck Scripting"]) @=> this.oscMenu;
+    fun void setModifiersUI() {
+        this.createDropdownMenu(["ASR Envelope", "ADSR Envelope", "Scale Tuning", "EDO Tuning", "Ambisonics Panner"]) @=> this.modifiersMenu;
 
         // Set name and scale
-        this.oscMenu.setSelectedName("Composing Tools");
-        this.oscMenu.setScale(4., 0.5);
+        this.modifiersMenu.setSelectedName("Modifiers");
+        this.modifiersMenu.setScale(4., 0.5);
 
-        @(0.3, 0.3, 1.) => this.oscMenu.sca;
-        1.201 => this.oscMenu.posZ;
-        this.oscMenu --> UIScene.scene;
+        @(0.3, 0.3, 1.) => this.modifiersMenu.sca;
+        1.201 => this.modifiersMenu.posZ;
+        this.modifiersMenu --> UIScene.scene;
     }
 
     fun void setSequencerUI() {
-        this.createDropdownMenu(["Sequencer", "Composer", "ScorePlayer", "Transport"]) @=> this.sequencerMenu;
+        this.createDropdownMenu(["Transport", "MIDI Sequencer", "Composer", "ScorePlayer"]) @=> this.sequencerMenu;
 
         // Set name and scale
         this.sequencerMenu.setSelectedName("Sequencing");
@@ -136,7 +136,7 @@ public class UIManager {
     }
 
     fun void setEffectsUI() {
-        new DropdownMenu([new Enum(0, "Wavefolder"), new Enum(1, "Distortion"), new Enum(2, "Delay")]) @=> this.effectsMenu;
+        this.createDropdownMenu(["Wavefolder", "Distortion", "Delay"]) @=> this.effectsMenu;
 
         // Set name and scale
         this.effectsMenu.setSelectedName("Effects");
@@ -147,16 +147,16 @@ public class UIManager {
         this.effectsMenu --> UIScene.scene;
     }
 
-    fun void setModifiersUI() {
-        this.createDropdownMenu(["Scale", "ASR", "ADSR", "Scale Tuning", "EDO Tuning", "Meter"]) @=> this.modifiersMenu;
+    fun void setUtilitiesUI() {
+        this.createDropdownMenu(["ChucK Scripting", "Scale", "Meter"]) @=> this.utilitiesMenu;
 
         // Set name and scale
-        this.modifiersMenu.setSelectedName("Modifiers");
-        this.modifiersMenu.setScale(4., 0.5);
+        this.utilitiesMenu.setSelectedName("Utilities");
+        this.utilitiesMenu.setScale(4., 0.5);
 
-        @(0.3, 0.3, 1.) => this.modifiersMenu.sca;
-        1.201 => this.modifiersMenu.posZ;
-        this.modifiersMenu --> UIScene.scene;
+        @(0.3, 0.3, 1.) => this.utilitiesMenu.sca;
+        1.201 => this.utilitiesMenu.posZ;
+        this.utilitiesMenu --> UIScene.scene;
     }
 
     fun void setSaveUI() {
@@ -286,8 +286,8 @@ public class UIManager {
                 this.topMenuBar.posY() => this.midiOutMenu.posY;
             }
 
-            if (this.oscMenu != null) {
-                this.topMenuBar.posY() => this.oscMenu.posY;
+            if (this.modifiersMenu != null) {
+                this.topMenuBar.posY() => this.modifiersMenu.posY;
             }
 
 
@@ -303,10 +303,10 @@ public class UIManager {
                 this.topMenuBar.posY() => this.effectsMenu.posY;
             }
 
-            if (this.modifiersMenu != null) {
-                this.modifiersMenu.selectedBox.box.scaWorld().x => float modifiersMenuWidth;
-                3 * (modifiersMenuWidth + menuBuffer) => this.modifiersMenu.posX;
-                this.topMenuBar.posY() => this.modifiersMenu.posY;
+            if (this.utilitiesMenu != null) {
+                this.utilitiesMenu.selectedBox.box.scaWorld().x => float utilitiesMenuWidth;
+                3 * (utilitiesMenuWidth + menuBuffer) => this.utilitiesMenu.posX;
+                this.topMenuBar.posY() => this.utilitiesMenu.posY;
             }
 
             // Reposition bottom bar buttons
@@ -335,10 +335,10 @@ public class UIManager {
             translatePos => this.audioMenu.translate;
             translatePos => this.midiInMenu.translate;
             translatePos => this.midiOutMenu.translate;
-            translatePos => this.oscMenu.translate;
+            translatePos => this.modifiersMenu.translate;
             translatePos => this.effectsMenu.translate;
             translatePos => this.sequencerMenu.translate;
-            translatePos => this.modifiersMenu.translate;
+            translatePos => this.utilitiesMenu.translate;
 
             // Move Bottom UI elements
             for (Button button : this.bottomBarButtons) {
@@ -413,21 +413,24 @@ public class UIManager {
                 }
 
                 // If OSC Menu is open, check if clicking on a menu entry
-                if (this.oscMenu.expanded) {
-                    this.mouseOverMenuEntry(mouseWorldPos, this.oscMenu) => int dropdownMenuEntryIdx;
+                if (this.modifiersMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.modifiersMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
-                        this.oscMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
-                        NodeType.AMB_PANNER => int nodeType;
-                        if (menuEntry.id == 1) NodeType.LIVECODING_CHUCK => nodeType;
+                        this.modifiersMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        NodeType.ASR_ENV => int nodeType;
+                        if (menuEntry.id == 1) NodeType.ADSR_ENV => nodeType;
+                        if (menuEntry.id == 2) NodeType.SCALE_TUNING => nodeType;
+                        if (menuEntry.id == 3) NodeType.EDO_TUNING => nodeType;
+                        if (menuEntry.id == 4) NodeType.AMB_PANNER => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
-                    this.oscMenu.collapse();
+                    this.modifiersMenu.collapse();
                 // Otherwise, check if clicking on the OSC Menu, then open it
-                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.oscMenu) && !this.oscMenu.expanded) {
-                    this.oscMenu.expand();
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.modifiersMenu) && !this.modifiersMenu.expanded) {
+                    this.modifiersMenu.expand();
                 }
 
                 // If Effects Menu is open, check if clicking on a menu entry
@@ -458,10 +461,10 @@ public class UIManager {
                         this.sequencerMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
 
                         // Handle Node type for Sequencer
-                        NodeType.SEQUENCER => int nodeType;
-                        if (menuEntry.id == 1) NodeType.COMPOSE => nodeType;
-                        if (menuEntry.id == 2) NodeType.SCORE_PLAYER => nodeType;
-                        if (menuEntry.id == 3) NodeType.TRANSPORT => nodeType;
+                        NodeType.TRANSPORT => int nodeType;
+                        if (menuEntry.id == 1) NodeType.SEQUENCER => nodeType;
+                        if (menuEntry.id == 2) NodeType.COMPOSE => nodeType;
+                        if (menuEntry.id == 3) NodeType.SCORE_PLAYER => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
@@ -473,26 +476,23 @@ public class UIManager {
                     this.sequencerMenu.expand();
                 }
 
-                // If Modifiers Menu is open, check if clicking on a menu entry
-                if (this.modifiersMenu.expanded) {
-                    this.mouseOverMenuEntry(mouseWorldPos, this.modifiersMenu) => int dropdownMenuEntryIdx;
+                // If Utilities Menu is open, check if clicking on a menu entry
+                if (this.utilitiesMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.utilitiesMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
-                        this.modifiersMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
-                        NodeType.SCALE => int nodeType;
-                        if (menuEntry.id == 1) NodeType.ASR_ENV => nodeType;
-                        if (menuEntry.id == 2) NodeType.ADSR_ENV => nodeType;
-                        if (menuEntry.id == 3) NodeType.SCALE_TUNING => nodeType;
-                        if (menuEntry.id == 4) NodeType.EDO_TUNING => nodeType;
-                        if (menuEntry.id == 5) NodeType.METER => nodeType;
+                        this.utilitiesMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        NodeType.LIVECODING_CHUCK => int nodeType;
+                        if (menuEntry.id == 1) NodeType.SCALE => nodeType;
+                        if (menuEntry.id == 2) NodeType.METER => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
-                    this.modifiersMenu.collapse();
+                    this.utilitiesMenu.collapse();
                 // Otherwise, check if clicking on the Utilities Menu, then open it
-                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.modifiersMenu) && !this.modifiersMenu.expanded) {
-                    this.modifiersMenu.expand();
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.utilitiesMenu) && !this.utilitiesMenu.expanded) {
+                    this.utilitiesMenu.expand();
                 }
 
                 // Check if saving a new file
@@ -530,9 +530,9 @@ public class UIManager {
                 this.midiOutMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
-            if (this.oscMenu.expanded) {
-                this.mouseOverMenuEntry(mouseWorldPos, this.oscMenu) => int dropdownMenuEntryIdx;
-                this.oscMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            if (this.modifiersMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.modifiersMenu) => int dropdownMenuEntryIdx;
+                this.modifiersMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             if (this.sequencerMenu.expanded) {
@@ -545,9 +545,9 @@ public class UIManager {
                 this.effectsMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
-            if (this.modifiersMenu.expanded) {
-                this.mouseOverMenuEntry(mouseWorldPos, this.modifiersMenu) => int dropdownMenuEntryIdx;
-                this.modifiersMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            if (this.utilitiesMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.utilitiesMenu) => int dropdownMenuEntryIdx;
+                this.utilitiesMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             GG.nextFrame() => now;
