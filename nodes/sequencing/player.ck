@@ -1,7 +1,7 @@
 @import "../../utils.ck"
 @import "../base.ck"
-@import "HashMap"
-@import "smuck"
+@import "transport.ck"
+@import {"HashMap", "smuck"}
 
 
 public class ScorePlayerInputType {
@@ -9,12 +9,14 @@ public class ScorePlayerInputType {
     new Enum(1, "Stop") @=> static Enum STOP;
     new Enum(2, "Rate") @=> static Enum RATE;
     new Enum(3, "Loop") @=> static Enum LOOP;
+    new Enum(4, "Transport") @=> static Enum TRANSPORT;
 
     [
         ScorePlayerInputType.RUN,
         ScorePlayerInputType.STOP,
         ScorePlayerInputType.RATE,
         ScorePlayerInputType.LOOP,
+        ScorePlayerInputType.TRANSPORT,
     ] @=> static Enum allTypes[];
 }
 
@@ -37,6 +39,9 @@ public class ScorePlayerNode extends Node {
     // State management
     0 => int isRunning;
     0 => int isStopped;
+
+    // Transport
+    TransportNode @ transport;
 
     fun @construct() {
         ScorePlayerNode(4.);
@@ -131,6 +136,33 @@ public class ScorePlayerNode extends Node {
         0 => this.isRunning;
     }
 
+    fun void connect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx, "for node", this.nodeID >>>;
+            return;
+        }
+
+        // Check if connecting a Transport node
+        if (dataType == ScorePlayerInputType.TRANSPORT.id && Type.of(outputNode).name() == TransportNode.typeOf().name()) {
+            outputNode$TransportNode @=> this.transport;
+            this.transport.tempo => this.scorePlayer.bpm;
+        }
+    }
+
+    fun void disconnect(Node outputNode, UGen ugen, int inputJackIdx) {
+        this.nodeInputsBox.getDataTypeMapping(inputJackIdx) => int dataType;
+        if (dataType == -1) {
+            <<< "No data type mapping for jack", inputJackIdx, "for node", this.nodeID >>>;
+            return;
+        }
+
+        // Check if disconnecting a Transport node
+        if (dataType == ScorePlayerInputType.TRANSPORT.id && Type.of(outputNode).name() == TransportNode.typeOf().name()) {
+            null => this.transport;
+        }
+    }
+
     fun void processInputs() {
         while (this.nodeActive) {
             for (int idx; idx < this.nodeInputsBox.jacks.size(); idx++) {
@@ -183,7 +215,7 @@ public class ScorePlayerNode extends Node {
                         0 => this.isStopped;
                     }
                 } else if (dataType == ScorePlayerInputType.RATE.id) {
-
+                    if (value != this.scorePlayer.rate()) value => this.scorePlayer.rate;
                 } else if (dataType == ScorePlayerInputType.LOOP.id) {
                     if (value > 0. && !this.scorePlayer.loop()) {
                         <<< "Score Player: Enabling Loop" >>>;
@@ -194,6 +226,12 @@ public class ScorePlayerNode extends Node {
                     }
                 }
             }
+
+            // Check if BPM change
+            if (this.transport != null && this.transport.tempo != this.scorePlayer.bpm()) {
+                this.transport.tempo => this.scorePlayer.bpm;
+            }
+
             10::ms => now;
         }
     }

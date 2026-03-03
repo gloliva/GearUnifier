@@ -37,31 +37,6 @@ public class MidiMessage {
 }
 
 
-public class MidiOutputType {
-    new Enum(0, "Pitch") @=> static Enum PITCH;
-    new Enum(1, "Gate") @=> static Enum GATE;
-    new Enum(2, "Trigger") @=> static Enum TRIGGER;
-    new Enum(3, "Velocity") @=> static Enum VELOCITY;
-    new Enum(4, "Aftertouch") @=> static Enum AFTERTOUCH;
-    new Enum(5, "CC") @=> static Enum CC;
-    new Enum(6, "Note") @=> static Enum NOTE;
-
-    [
-        MidiOutputType.PITCH,
-        MidiOutputType.GATE,
-        MidiOutputType.TRIGGER,
-        MidiOutputType.VELOCITY,
-        MidiOutputType.AFTERTOUCH,
-        MidiOutputType.CC,
-        MidiOutputType.NOTE,
-    ] @=> static Enum allTypes[];
-
-    [
-        0, 0, 0, 0, 0, 1, 0,
-    ] @=> static int includeNumberEntry[];
-}
-
-
 public class MidiInputType {
     new Enum(0, "Sequencer") @=> static Enum SEQUENCER;
     new Enum(1, "Latch") @=> static Enum LATCH;
@@ -74,6 +49,33 @@ public class MidiInputType {
         MidiInputType.TRANSPORT,
         MidiInputType.TUNING,
     ] @=> static Enum allTypes[];
+}
+
+
+public class MidiOutputType {
+    new Enum(0, "Pitch") @=> static Enum PITCH;
+    new Enum(1, "Gate") @=> static Enum GATE;
+    new Enum(2, "Trigger") @=> static Enum TRIGGER;
+    new Enum(3, "Velocity") @=> static Enum VELOCITY;
+    new Enum(4, "Aftertouch") @=> static Enum AFTERTOUCH;
+    new Enum(5, "CC") @=> static Enum CC;
+    new Enum(6, "Note") @=> static Enum NOTE;
+    new Enum(7, "VGate") @=> static Enum VOICED_GATE;
+
+    [
+        MidiOutputType.PITCH,
+        MidiOutputType.GATE,
+        MidiOutputType.TRIGGER,
+        MidiOutputType.VELOCITY,
+        MidiOutputType.AFTERTOUCH,
+        MidiOutputType.CC,
+        MidiOutputType.NOTE,
+        MidiOutputType.VOICED_GATE,
+    ] @=> static Enum allTypes[];
+
+    [
+        0, 0, 0, 0, 0, 1, 0, 1,
+    ] @=> static int includeNumberEntry[];
 }
 
 
@@ -551,13 +553,8 @@ public class MidiInNode extends MidiNode {
                 this.nodeInputsBox.jacks[idx].ugen @=> UGen ugen;
                 if (ugen == null) continue;
 
-                // UGen can either be Audio Rate (which uses last()) or Control Rate (which uses next())
-                float value;
-                if (Type.of(ugen).name() == Step.typeOf().name()) {
-                    (ugen$Step).next() => value;
-                } else {
-                    ugen.last() => value;
-                }
+                // Input value from ugen
+                this.getValueFromUGen(ugen) => float value;
 
                 // Update based on inputs that use a UGen
                 if (dataType == MidiInputType.LATCH.id) {
@@ -567,6 +564,7 @@ public class MidiInNode extends MidiNode {
                     value => this.beat;
                 }
             }
+
             10::ms => now;
         }
     }
@@ -683,6 +681,10 @@ public class MidiInNode extends MidiNode {
             if (this.nodeOutputsBox.hasOutput(MidiOutputType.NOTE, 0))
                 noteNumber => this.nodeOutputsBox.outs(MidiOutputType.NOTE).next;
 
+            // Voiced Gate out
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.VOICED_GATE, noteNumber))
+                1. => this.nodeOutputsBox.outs(MidiOutputType.VOICED_GATE, noteNumber).next;
+
             // Set processed status
             1 => midiProcessed;
         // Note off
@@ -726,6 +728,10 @@ public class MidiInNode extends MidiNode {
                  if (this.nodeOutputsBox.hasOutput(MidiOutputType.TRIGGER, 0) && currNote != prevNote && this.synthMode() != SynthMode.ARP.id)
                     spork ~ this.sendTrigger();
             }
+
+            // Turn off gate for a Voiced Gate
+            if (this.nodeOutputsBox.hasOutput(MidiOutputType.VOICED_GATE, noteNumber))
+                0. => this.nodeOutputsBox.outs(MidiOutputType.VOICED_GATE, noteNumber).next;
 
             // Set processed status
             1 => midiProcessed;
