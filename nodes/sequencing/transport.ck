@@ -7,9 +7,11 @@
 
 public class TransportInputType {
     new Enum(0, "Clock In") @=> static Enum CLOCK;
+    new Enum(1, "Tempo") @=> static Enum TEMPO;
 
     [
         TransportInputType.CLOCK,
+        TransportInputType.TEMPO,
     ] @=> static Enum allTypes[];
 }
 
@@ -113,6 +115,9 @@ public class TransportOptionsBox extends OptionsBox {
 
 
 public class TransportNode extends Node {
+    1. => static float MIN_TEMPO;
+    300. => static float MAX_TEMPO;
+
     float tempo;
     float beatDiv;
     int PPQN;
@@ -158,8 +163,9 @@ public class TransportNode extends Node {
 
         // Create inputs box
         TransportInputType.allTypes @=> this.inputTypes;
-        new IOBox(1, TransportInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        new IOBox(2, TransportInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
         this.nodeInputsBox.setInput(TransportInputType.CLOCK, 0);
+        this.nodeInputsBox.setInput(TransportInputType.TEMPO, 1);
 
         // Create outputs box
         TransportOutputType.allTypes @=> this.outputTypes;
@@ -186,10 +192,17 @@ public class TransportNode extends Node {
 
         // Shreds
         spork ~ this.processOptions() @=> Shred @ processOptionsShred;
+        spork ~ this.processInputs() @=> Shred @ processInputsShred;
         spork ~ this.outputBeat() @=> Shred @ outputBeatShred;
         spork ~ this.outputClock() @=> Shred @ outputClockShred;
         spork ~ this.processExternalClockSync() @=> Shred @ processExternalClockSyncShred;
-        this.addShreds([processOptionsShred, outputBeatShred, outputClockShred, processExternalClockSyncShred]);
+        this.addShreds([
+            processOptionsShred,
+            processInputsShred,
+            outputBeatShred,
+            outputClockShred,
+            processExternalClockSyncShred,
+        ]);
     }
 
     fun float updateSync() {
@@ -305,6 +318,29 @@ public class TransportNode extends Node {
         if (dataType == TransportInputType.CLOCK.id) {
             0 => this.externalClockConnected;
             null @=> this.externalClock;
+        }
+    }
+
+    fun void processInputs() {
+        while (this.nodeActive) {
+            // Only change tempo from inputs in not synced to an external clock
+            if (!this.externalClockConnected) {
+                // Fixed number of input jacks, only need to check Tempo jack
+                this.nodeInputsBox.getJackUGen(TransportInputType.TEMPO.id) @=> UGen ugen;
+                if (ugen != null) {
+                    // Input value from ugen
+                    this.getValueFromUGen(ugen) => float value;
+                    Math.clampf(Math.round(value), this.MIN_TEMPO, this.MAX_TEMPO) => value;
+
+                    if (value != this.tempo) {
+                        value => this.tempo;
+                        (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
+                        this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
+                    }
+                }
+            }
+
+            10::ms => now;
         }
     }
 
