@@ -446,6 +446,32 @@ public class Node extends ClickableGGen {
         <<< "ERROR: Override the handleButtonPress function for Child Nodes" >>>;
     }
 
+    fun void handleVisibility(vec3 nodeMousePos) {
+        if (this.nodeVisibilityBox == null) return;
+
+        // Default visibility box with Options, Inputs, and Outputs
+        this.nodeVisibilityBox.mouseHoverModifiers(nodeMousePos) => int visibilityModifier;
+        if (visibilityModifier == VisibilityBox.OPTIONS_BOX && this.nodeOptionsBox != null) {
+            if (this.nodeOptionsBox.active) {
+                this.hideOptionsBox();
+            } else {
+                this.showOptionsBox();
+            }
+        } else if (visibilityModifier == VisibilityBox.INPUTS_BOX && this.nodeInputsBox != null) {
+            if (this.nodeInputsBox.active) {
+                this.hideInputsBox();
+            } else {
+                this.showInputsBox();
+            }
+        } else if (visibilityModifier == VisibilityBox.OUTPUTS_BOX && this.nodeOutputsBox != null) {
+            if (this.nodeOutputsBox.active) {
+                this.hideOutputsBox();
+            } else {
+                this.showOutputsBox();
+            }
+        }
+    }
+
     fun HashMap serialize() {
         HashMap data;
 
@@ -1609,9 +1635,9 @@ public class VisibilityBox extends ContentBox {
         new BorderedBox("Outs", 1., 0.5) @=> this.outputsBox;
 
         // Position
-        @(1.2, 0., 0.1) => this.optionsBox.pos;
-        @(0., 0., 0.1) => this.outputsBox.pos;
-        @(-1.2, 0., 0.1) => this.inputsBox.pos;
+        @(-1.2, 0., 0.1) => this.optionsBox.pos;
+        @(0., 0., 0.1) => this.inputsBox.pos;
+        @(1.2, 0., 0.1) => this.outputsBox.pos;
 
         // Scale
         @(xScale, 1.0, 0.2) => this.contentBox.sca;

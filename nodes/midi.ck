@@ -1,14 +1,3 @@
-/*
-
-    Focus on MidiIn
-        - Select a Channel
-        - Pitch
-        - Gate
-        - Polyphonic Aftertouch
-        - Control Change
-
-*/
-
 // Imports
 @import "../tuning/base.ck"
 @import "../utils.ck"

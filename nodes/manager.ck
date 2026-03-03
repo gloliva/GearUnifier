@@ -1461,29 +1461,8 @@ public class NodeManager {
                     int nodeVisibilityBoxIteractedWith;
                     node.mouseOverVisibilityBox(nodeMousePos) => int nodeVisibilityBoxHover;
                     if (nodeVisibilityBoxHover && dropdownMenuEntryIdx == -1 && !nodeOptionsBoxIteractedWith) {
-                        node.nodeVisibilityBox.mouseHoverModifiers(nodeMousePos) => int visibilityModifier;
-                        if (visibilityModifier == VisibilityBox.OPTIONS_BOX && node.nodeOptionsBox != null) {
-                            if (node.nodeOptionsBox.active) {
-                                node.hideOptionsBox();
-                            } else {
-                                node.showOptionsBox();
-                            }
-                            1 => nodeVisibilityBoxIteractedWith;
-                        } else if (visibilityModifier == VisibilityBox.INPUTS_BOX && node.nodeInputsBox != null) {
-                            if (node.nodeInputsBox.active) {
-                                node.hideInputsBox();
-                            } else {
-                                node.showInputsBox();
-                            }
-                            1 => nodeVisibilityBoxIteractedWith;
-                        } else if (visibilityModifier == VisibilityBox.OUTPUTS_BOX && node.nodeOutputsBox != null) {
-                            if (node.nodeOutputsBox.active) {
-                                node.hideOutputsBox();
-                            } else {
-                                node.showOutputsBox();
-                            }
-                            1 => nodeVisibilityBoxIteractedWith;
-                        }
+                        node.handleVisibility(nodeMousePos);
+                        1 => nodeVisibilityBoxIteractedWith;
                     }
 
                     // Update this node's connection positions
