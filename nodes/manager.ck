@@ -5,6 +5,7 @@
 @import "base.ck"
 @import {"ambisonics.ck", "audio.ck", "midi.ck", "tuning.ck"}
 @import "livecoding/chuck.ck"
+@import "modifiers/random.ck"
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
 @import {"utils/scale.ck", "utils/envelope.ck", "utils/meter.ck"}
@@ -232,6 +233,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.TRANSPORT) {
                 TransportNode transport();
                 this.addNode(transport, true);
+            } else if (addNodeEvent.nodeType == NodeType.RANDOM_PITCH) {
+                RandomPitch randomPitch();
+                this.addNode(randomPitch, true);
             } else if (addNodeEvent.nodeType == NodeType.SCALE_TUNING) {
                 ScaleTuningNode scaleTuning();
                 this.addNode(scaleTuning, true);

@@ -20,12 +20,14 @@ public class NodeType {
     202 => static int SCALE_TUNING;
     203 => static int EDO_TUNING;
     204 => static int AMB_PANNER;
+    205 => static int AMB_BINAURAL;
 
     // Sequencing
     300 => static int TRANSPORT;
     301 => static int SEQUENCER;
     302 => static int COMPOSE;
     303 => static int SCORE_PLAYER;
+    304 => static int RANDOM_PITCH;
 
     // Effects
     400 => static int WAVEFOLDER;

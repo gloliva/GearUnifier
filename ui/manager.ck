@@ -124,7 +124,7 @@ public class UIManager {
     }
 
     fun void setSequencerUI() {
-        this.createDropdownMenu(["Transport", "MIDI Sequencer", "Composer", "ScorePlayer"]) @=> this.sequencerMenu;
+        this.createDropdownMenu(["Transport", "MIDI Sequencer", "Composer", "Score Player", "Random Pitch"]) @=> this.sequencerMenu;
 
         // Set name and scale
         this.sequencerMenu.setSelectedName("Sequencing");
@@ -465,6 +465,7 @@ public class UIManager {
                         if (menuEntry.id == 1) NodeType.SEQUENCER => nodeType;
                         if (menuEntry.id == 2) NodeType.COMPOSE => nodeType;
                         if (menuEntry.id == 3) NodeType.SCORE_PLAYER => nodeType;
+                        if (menuEntry.id == 4) NodeType.RANDOM_PITCH => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }

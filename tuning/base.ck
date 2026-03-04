@@ -1,4 +1,5 @@
 public class Tuning {
+    int scaleSize;
     float voltPerOctave;
     int degreeOffset;
 
@@ -33,6 +34,7 @@ public class ScaleTuning extends Tuning {
 
     fun @construct(int numNotes, float degreesRatio[], float period) {
         Tuning();
+        numNotes => this.scaleSize;
         this.setScale(numNotes, degreesRatio, period);
     }
 
@@ -80,6 +82,7 @@ public class EDO extends Tuning {
 
     fun @construct(int divisions) {
         Tuning();
+        divisions => this.scaleSize;
         this.setDivisions(divisions);
     }
 

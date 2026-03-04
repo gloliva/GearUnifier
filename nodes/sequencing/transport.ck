@@ -128,6 +128,9 @@ public class TransportNode extends Node {
     Event syncToExternalClock;
     int externalClockConnected;
 
+    // Beat event
+    Event beat;
+
     fun @construct() {
         TransportNode(120., 1., 4.);
     }
@@ -219,6 +222,7 @@ public class TransportNode extends Node {
 
     fun void outputBeat() {
         while (this.nodeActive) {
+            this.beat.broadcast();
             0.5 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
             this.beatDur() => now;
 
