@@ -69,10 +69,6 @@ public class RandomPitch extends Node {
 
         // Update position
         this.updatePos();
-
-        // // Shreds
-        // spork ~ this.processInputs() @=> Shred @ processInputsShred;
-        // this.addShreds([processInputsShred]);
     }
 
     fun void outputPitchOnBeat() {
@@ -116,13 +112,6 @@ public class RandomPitch extends Node {
             -1 => this.beatShredId;
         } else if (dataType == RandomPitchInputType.TUNING.id) {
             new EDO(12, 0) @=> this.tuning;
-        }
-    }
-
-    fun void processInputs() {
-        while (this.nodeActive) {
-
-            10::ms => now;
         }
     }
 
