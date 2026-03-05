@@ -38,6 +38,7 @@ public class NodeType {
     500 => static int LIVECODING_CHUCK;
     501 => static int SCALE;
     502 => static int METER;
+    503 => static int TOGGLE;
 }
 
 

@@ -148,7 +148,7 @@ public class UIManager {
     }
 
     fun void setUtilitiesUI() {
-        this.createDropdownMenu(["ChucK Scripting", "Scale", "Meter"]) @=> this.utilitiesMenu;
+        this.createDropdownMenu(["ChucK Scripting", "Scale", "Toggle", "Meter"]) @=> this.utilitiesMenu;
 
         // Set name and scale
         this.utilitiesMenu.setSelectedName("Utilities");
@@ -484,7 +484,8 @@ public class UIManager {
                         this.utilitiesMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
                         NodeType.LIVECODING_CHUCK => int nodeType;
                         if (menuEntry.id == 1) NodeType.SCALE => nodeType;
-                        if (menuEntry.id == 2) NodeType.METER => nodeType;
+                        if (menuEntry.id == 2) NodeType.TOGGLE => nodeType;
+                        if (menuEntry.id == 3) NodeType.METER => nodeType;
                         this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }

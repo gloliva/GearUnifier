@@ -8,7 +8,7 @@
 @import "modifiers/random.ck"
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
 @import {"effects/distortion.ck", "effects/delay.ck", "effects/wavefolder.ck"}
-@import {"utils/scale.ck", "utils/envelope.ck", "utils/meter.ck"}
+@import {"utils/scale.ck", "utils/envelope.ck", "utils/meter.ck", "utils/toggle.ck"}
 
 
 public class NodeManager {
@@ -254,6 +254,9 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.METER) {
                 MeterNode meter();
                 this.addNode(meter, true);
+            } else if (addNodeEvent.nodeType == NodeType.TOGGLE) {
+                ToggleNode toggle();
+                this.addNode(toggle, true);
             }
         }
     }
@@ -869,6 +872,9 @@ public class NodeManager {
                 nodeData.getInt("numInputs") => int numInputs;
                 MeterNode meter(numInputs, 4.);
                 meter @=> currNode;
+            } else if (nodeClassName == ToggleNode.typeOf().name()) {
+                ToggleNode toggle();
+                toggle @=> currNode;
             }
 
             // Set attributes relevant to all nodes
