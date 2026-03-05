@@ -286,8 +286,14 @@ public class ChuckScriptNode extends Node {
 
     fun void resetMaps() {
         "Shred-" + this.scriptShredId => string shredKey;
-        LiveIO.ins.get(shredKey).clear();
-        LiveIO.outs.get(shredKey).clear();
+
+        if (LiveIO.ins.has(shredKey)) {
+            LiveIO.ins.get(shredKey).clear();
+        }
+
+        if (LiveIO.outs.has(shredKey)) {
+            LiveIO.outs.get(shredKey).clear();
+        }
     }
 
     fun void clearIO() {

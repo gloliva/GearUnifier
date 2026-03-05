@@ -1663,10 +1663,10 @@ public class NodeManager {
             }
 
             // Handle zooming in and out
-            if (GWindow.key(GWindow.KEY_LEFTSUPER) && GWindow.keyDown(GWindow.KEY_EQUAL)) {
+            if ((GWindow.key(GWindow.KEY_LEFTSUPER) || GWindow.key(GWindow.KEY_RIGHTSUPER)) && GWindow.keyDown(GWindow.KEY_EQUAL)) {
                 NodeScene.scene.sca() @=> vec3 sceneSca;
                 @(sceneSca.x + 0.2, sceneSca.y + 0.2, 1.) => NodeScene.scene.sca;
-            } else if (GWindow.key(GWindow.KEY_LEFTSUPER) && GWindow.keyDown(GWindow.KEY_MINUS)) {
+            } else if ((GWindow.key(GWindow.KEY_LEFTSUPER) || GWindow.key(GWindow.KEY_RIGHTSUPER)) && GWindow.keyDown(GWindow.KEY_MINUS)) {
                 NodeScene.scene.sca() @=> vec3 sceneSca;
                 @(sceneSca.x - 0.2, sceneSca.y - 0.2, 1.) => NodeScene.scene.sca;
             }
