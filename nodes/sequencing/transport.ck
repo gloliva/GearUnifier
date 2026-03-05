@@ -7,10 +7,12 @@
 
 public class TransportInputType {
     new Enum(0, "Clock In") @=> static Enum CLOCK;
-    new Enum(1, "Tempo") @=> static Enum TEMPO;
+    new Enum(1, "Beat Sync")  @=> static Enum BEAT_SYNC;
+    new Enum(2, "Tempo")    @=> static Enum TEMPO;
 
     [
         TransportInputType.CLOCK,
+        TransportInputType.BEAT_SYNC,
         TransportInputType.TEMPO,
     ] @=> static Enum allTypes[];
 }
@@ -123,10 +125,15 @@ public class TransportNode extends Node {
     int PPQN;
     float threshold;
 
-    // External Clock
+    // External Clock (PPQN)
     UGen @ externalClock;
     Event syncToExternalClock;
     int externalClockConnected;
+
+    // External Beat (phase-locked sync from another Transport's Beat Out)
+    UGen @ externalBeat;
+    Event syncToExternalBeat;
+    int externalBeatConnected;
 
     // Beat event
     Event beat;
@@ -166,9 +173,11 @@ public class TransportNode extends Node {
 
         // Create inputs box
         TransportInputType.allTypes @=> this.inputTypes;
-        new IOBox(2, TransportInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
+        new IOModifierBox(xScale) @=> this.nodeInputsModifierBox;
+        new IOBox(3, TransportInputType.allTypes, IOType.INPUT, this.nodeID, xScale) @=> this.nodeInputsBox;
         this.nodeInputsBox.setInput(TransportInputType.CLOCK, 0);
-        this.nodeInputsBox.setInput(TransportInputType.TEMPO, 1);
+        this.nodeInputsBox.setInput(TransportInputType.BEAT_SYNC, 1);
+        this.nodeInputsBox.setInput(TransportInputType.TEMPO, 2);
 
         // Create outputs box
         TransportOutputType.allTypes @=> this.outputTypes;
@@ -185,6 +194,7 @@ public class TransportNode extends Node {
         // Connections
         this.nodeNameBox --> this;
         this.nodeOptionsBox --> this;
+        this.nodeInputsModifierBox --> this;
         this.nodeInputsBox --> this;
         this.nodeOutputsModifierBox --> this;
         this.nodeOutputsBox --> this;
@@ -199,12 +209,14 @@ public class TransportNode extends Node {
         spork ~ this.outputBeat() @=> Shred @ outputBeatShred;
         spork ~ this.outputClock() @=> Shred @ outputClockShred;
         spork ~ this.processExternalClockSync() @=> Shred @ processExternalClockSyncShred;
+        spork ~ this.processExternalBeatSync() @=> Shred @ processExternalBeatSyncShred;
         this.addShreds([
             processOptionsShred,
             processInputsShred,
             outputBeatShred,
             outputClockShred,
             processExternalClockSyncShred,
+            processExternalBeatSyncShred,
         ]);
     }
 
@@ -222,12 +234,21 @@ public class TransportNode extends Node {
 
     fun void outputBeat() {
         while (this.nodeActive) {
-            this.beat.broadcast();
-            0.5 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
-            this.beatDur() => now;
-
-            0.0 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
-            this.beatDur() => now;
+            if (this.externalClockConnected || this.externalBeatConnected) {
+                // Phase-locked: wait for beat signal from processExternalClockSync or processExternalBeatSync
+                this.beat => now;
+                if (!this.externalClockConnected && !this.externalBeatConnected) continue;
+                0.5 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+                this.beatDur() => now;
+                0.0 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+            } else {
+                // Free-running at internal tempo
+                this.beat.broadcast();
+                0.5 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+                this.beatDur() => now;
+                0.0 => this.nodeOutputsBox.outs(TransportOutputType.BEAT).next;
+                this.beatDur() => now;
+            }
         }
     }
 
@@ -255,6 +276,7 @@ public class TransportNode extends Node {
             0 => int wasHigh;
             0 => int hasPrevRise;
             time riseTime;
+            0 => int pulseCount;
 
             while (this.externalClockConnected) {
                 if (this.externalClock == null) break;
@@ -286,6 +308,14 @@ public class TransportNode extends Node {
                     now => riseTime;
                     1 => hasPrevRise;
                     1 => wasHigh;
+
+                    // Count pulse and broadcast beat at the correct sub-division
+                    pulseCount + 1 => pulseCount;
+                    Math.max(1., Math.round(this.PPQN / this.beatDiv))$int => int pulsesPerBeat;
+                    if (pulseCount >= pulsesPerBeat) {
+                        this.beat.broadcast();
+                        0 => pulseCount;
+                    }
                 } else if (wasHigh && val < this.threshold) {
                     // Falling edge — update state only, timing is rise-to-rise
                     0 => wasHigh;
@@ -293,6 +323,76 @@ public class TransportNode extends Node {
 
                 1::samp => now;
             }
+
+            // Unblock outputBeat() if it is waiting on this.beat
+            this.beat.broadcast();
+        }
+    }
+
+    fun void processExternalBeatSync() {
+        while (this.nodeActive) {
+            // Wait until a Beat In is connected
+            this.syncToExternalBeat => now;
+
+            0 => int wasHigh;
+            0 => int hasPrev;
+            time prevRiseTime;
+            0. => float beatPeriod;
+            0 => int incomingCount;
+
+            while (this.externalBeatConnected) {
+                if (this.externalBeat == null) break;
+
+                this.getValueFromUGen(this.externalBeat) => float val;
+
+                if (!wasHigh && val >= this.threshold) {
+                    1 => wasHigh;
+                    incomingCount + 1 => incomingCount;
+
+                    if (hasPrev) {
+                        (now - prevRiseTime) / 1::second => beatPeriod;
+                        // this.tempo = 60 / beatPeriod so beatDur() = beatPeriod / (2 * beatDiv)
+                        Math.round(60.0 / beatPeriod) => this.tempo;
+                        (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
+                        this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
+                    }
+                    now => prevRiseTime;
+                    1 => hasPrev;
+
+                    if (this.beatDiv >= 1.) {
+                        // Phase-lock on every incoming beat; spawn sub-beats for beatDiv > 1
+                        this.beat.broadcast();
+                        if (beatPeriod > 0.) {
+                            spork ~ this.spawnSubBeats(beatPeriod);
+                        }
+                    } else {
+                        // Fire one output beat every round(1/beatDiv) incoming beats
+                        Math.max(1., Math.round(1. / this.beatDiv))$int => int incomingPerBeat;
+                        if (incomingCount >= incomingPerBeat) {
+                            this.beat.broadcast();
+                            0 => incomingCount;
+                        }
+                    }
+                } else if (wasHigh && val < this.threshold) {
+                    0 => wasHigh;
+                }
+
+                1::samp => now;
+            }
+
+            // Unblock outputBeat() if it is waiting on this.beat
+            this.beat.broadcast();
+        }
+    }
+
+    fun void spawnSubBeats(float period) {
+        Math.max(1., Math.round(this.beatDiv))$int => int numBeats;
+        if (numBeats <= 1) return;
+        (period / numBeats)::second => dur subInterval;
+        for (1 => int i; i < numBeats; i++) {
+            subInterval => now;
+            if (!this.externalBeatConnected) return;
+            this.beat.broadcast();
         }
     }
 
@@ -308,6 +408,11 @@ public class TransportNode extends Node {
             1 => this.externalClockConnected;
             ugen @=> this.externalClock;
             this.syncToExternalClock.signal();
+        // Check if connecting an external beat sync
+        } else if (dataType == TransportInputType.BEAT_SYNC.id) {
+            1 => this.externalBeatConnected;
+            ugen @=> this.externalBeat;
+            this.syncToExternalBeat.signal();
         }
     }
 
@@ -322,6 +427,10 @@ public class TransportNode extends Node {
         if (dataType == TransportInputType.CLOCK.id) {
             0 => this.externalClockConnected;
             null @=> this.externalClock;
+        // Check if disconnecting an external beat sync
+        } else if (dataType == TransportInputType.BEAT_SYNC.id) {
+            0 => this.externalBeatConnected;
+            null @=> this.externalBeat;
         }
     }
 
