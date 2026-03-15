@@ -1054,16 +1054,22 @@ public class IOBox extends ContentBox {
         spork ~ this.setJackColor() @=> this.setJackColorShred;
     }
 
-    fun string outputKey(int dataTypeIdx, int voiceIdx) {
-        return Std.itoa(dataTypeIdx) + "-" + Std.itoa(voiceIdx);
+    fun string outputKey(int dataTypeIdx, int voiceId) {
+        return Std.itoa(dataTypeIdx) + "-" + Std.itoa(voiceId);
     }
 
     fun Step outs(Enum dataType) {
         return this.outs(dataType.id, 0);
     }
 
-    fun Step outs(Enum dataType, int voiceIdx) {
-        return this.outs(dataType.id, voiceIdx);
+    fun Step outs(Enum dataType, int voiceId) {
+        return this.outs(dataType.id, voiceId);
+    }
+
+    fun Step outs(Enum dataType, float voiceId) {
+        // TODO: implement this function to handle float values as the voiceId
+        <<< "Not implemented yet!" >>>;
+        return null;
     }
 
     fun Step outs(int outIdx, int voiceIdx) {
