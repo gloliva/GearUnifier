@@ -7,8 +7,8 @@
 
 public class TransportInputType {
     new Enum(0, "Clock In") @=> static Enum CLOCK;
-    new Enum(1, "Beat Sync")  @=> static Enum BEAT_SYNC;
-    new Enum(2, "Tempo")    @=> static Enum TEMPO;
+    new Enum(1, "Beat Sync") @=> static Enum BEAT_SYNC;
+    new Enum(2, "Tempo In") @=> static Enum TEMPO;
 
     [
         TransportInputType.CLOCK,
@@ -22,11 +22,13 @@ public class TransportOutputType {
     new Enum(0, "Sync") @=> static Enum SYNC;
     new Enum(1, "Beat Out") @=> static Enum BEAT;
     new Enum(2, "Clock Out") @=> static Enum CLOCK;
+    new Enum(3, "Tempo Out") @=> static Enum TEMPO;
 
     [
         TransportOutputType.SYNC,
         TransportOutputType.BEAT,
         TransportOutputType.CLOCK,
+        TransportOutputType.TEMPO,
     ] @=> static Enum allTypes[];
 }
 
@@ -183,7 +185,10 @@ public class TransportNode extends Node {
         TransportOutputType.allTypes @=> this.outputTypes;
         new IOModifierBox(xScale) @=> this.nodeOutputsModifierBox;
         new IOBox(numOutputs, TransportOutputType.allTypes, IOType.OUTPUT, this.nodeID, xScale) @=> this.nodeOutputsBox;
+
+        // Update outputs
         this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
+        this.tempo => this.nodeOutputsBox.outs(TransportOutputType.TEMPO).next;
 
         // Create visibility box
         new VisibilityBox(xScale) @=> this.nodeVisibilityBox;
@@ -449,6 +454,9 @@ public class TransportNode extends Node {
                         value => this.tempo;
                         (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
                         this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
+
+                        // Set Tempo out
+                        this.tempo => this.nodeOutputsBox.outs(TransportOutputType.TEMPO).next;
                     }
                 }
             }
@@ -468,6 +476,7 @@ public class TransportNode extends Node {
 
             if (numberBoxIdx == 0) {
                 numberBoxFloatValue => this.tempo;
+                this.tempo => this.nodeOutputsBox.outs(TransportOutputType.TEMPO).next;
             } else if (numberBoxIdx == 1) {
                 numberBoxFloatValue => this.beatDiv;
             } else if (numberBoxIdx == 2) {

@@ -7,9 +7,10 @@
 public class ScorePlayerInputType {
     new Enum(0, "Play/Pause") @=> static Enum RUN;
     new Enum(1, "Stop") @=> static Enum STOP;
-    new Enum(2, "Rate") @=> static Enum RATE;
-    new Enum(3, "Loop") @=> static Enum LOOP;
-    new Enum(4, "Transport") @=> static Enum TRANSPORT;
+    new Enum(2, "Tempo") @=> static Enum TEMPO;
+    new Enum(3, "Rate") @=> static Enum RATE;
+    new Enum(4, "Loop") @=> static Enum LOOP;
+    new Enum(5, "Transport") @=> static Enum TRANSPORT;
 
     [
         ScorePlayerInputType.RUN,
@@ -214,6 +215,8 @@ public class ScorePlayerNode extends Node {
                         <<< "Score Player: Reset Stop" >>>;
                         0 => this.isStopped;
                     }
+                } else if (dataType == ScorePlayerInputType.TEMPO.id) {
+                    if (value != this.scorePlayer.bpm()) value => this.scorePlayer.bpm;
                 } else if (dataType == ScorePlayerInputType.RATE.id) {
                     if (value != this.scorePlayer.rate()) value => this.scorePlayer.rate;
                 } else if (dataType == ScorePlayerInputType.LOOP.id) {
