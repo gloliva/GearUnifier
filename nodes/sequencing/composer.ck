@@ -293,16 +293,14 @@ public class ComposerNode extends Node {
 
                     if (sceneNum != this.sceneNumInput) sceneNum => this.sceneNumInput;
                 } else if (dataType == ComposerInputType.SET_SCENE.id) {
-                    value$int => int triggerValue;
-
                     // Reset to 0.
-                    if (triggerValue < 1.) {
+                    if (value < 0.5) {
                         0 => this.setSceneTrigger;
                         continue;
                     }
 
                     // Only trigger if value not already high
-                    if (triggerValue >= 1. && this.setSceneTrigger == 1) continue;
+                    if (value >= 0.5 && this.setSceneTrigger == 1) continue;
 
                     1 => this.setSceneTrigger;
                     if (this.sceneNumInput < 0.) {
@@ -312,16 +310,14 @@ public class ComposerNode extends Node {
 
                     this.updateMeasures(this.sceneNumInput, 1);
                 } else if (dataType == ComposerInputType.QUEUE_SCENE.id) {
-                    value$int => int triggerValue;
-
                     // Reset to 0.
-                    if (triggerValue < 1.) {
+                    if (value < 0.5) {
                         0 => this.queueSceneTrigger;
                         continue;
                     }
 
                     // Only trigger if value not already high
-                    if (triggerValue >= 1. && this.queueSceneTrigger == 1) continue;
+                    if (value >= 0.5 && this.queueSceneTrigger == 1) continue;
 
                     // Skip if already queued
                     if (this.sceneNumInput == this.queuedScene) continue;

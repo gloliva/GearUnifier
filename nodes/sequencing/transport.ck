@@ -308,6 +308,7 @@ public class TransportNode extends Node {
                             Math.round(60.0 / (this.PPQN * avgPeriod)) => this.tempo;
                             (this.nodeOptionsBox$TransportOptionsBox).tempoEntryBox.set(Std.ftoi(this.tempo));
                             this.updateSync() => this.nodeOutputsBox.outs(TransportOutputType.SYNC).next;
+                            this.tempo => this.nodeOutputsBox.outs(TransportOutputType.TEMPO).next;
                         }
                     }
                     now => riseTime;
