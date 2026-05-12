@@ -387,17 +387,13 @@ public class NodeManager {
     }
 
     fun void findHIDDevices() {
-        int deviceId;
         20 => int deviceLimit;
-
-        while (deviceId < deviceLimit) {
+        for (int deviceId; deviceId < deviceLimit; deviceId++) {
             Hid hid;
             if (!hid.openJoystick(deviceId, true)) return;
 
             // Add HID device to list
             this.hidDevices << new Enum(deviceId, hid.name());
-
-            deviceId++;
         }
 
     }
