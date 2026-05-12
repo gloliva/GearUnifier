@@ -22,6 +22,7 @@ SaveLoadEvent saveLoadEvent;
 // Node Manager
 NodeManager nodeManager(moveCameraEvent, saveLoadEvent);
 nodeManager.findMidiDevices();
+nodeManager.findHIDDevices();
 spork ~ nodeManager.run();
 spork ~ nodeManager.addNodeHandler(addNodeEvent);
 spork ~ nodeManager.saveHandler();
@@ -31,7 +32,7 @@ spork ~ nodeManager.customNodeHandler();
 UIManager uiManager(addNodeEvent, moveCameraEvent, saveLoadEvent);
 uiManager.setAudioUI();
 uiManager.setMidiInUI(nodeManager.midiInDevices);
-uiManager.setMidiOutUI(nodeManager.midiOutDevices);
+uiManager.setDevicesUI(nodeManager.hidDevices);
 uiManager.setModifiersUI();
 uiManager.setSequencerUI();
 uiManager.setEffectsUI();

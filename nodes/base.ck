@@ -4,9 +4,10 @@
 
 
 public class NodeType {
-    // MIDI
+    // MIDI and HID Devices
     0 => static int MIDI_IN;
     1 => static int MIDI_OUT;
+    2 => static int GAMETRAK;
 
     // Audio and IO
     100 => static int AUDIO_IN;
@@ -39,6 +40,9 @@ public class NodeType {
     501 => static int SCALE;
     502 => static int METER;
     503 => static int TOGGLE;
+
+    // Null / Error / NoneType
+    -1 => static int NONE;
 }
 
 

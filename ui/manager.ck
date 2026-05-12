@@ -13,7 +13,7 @@ public class UIManager {
     // Node Menus
     DropdownMenu @ audioMenu;
     DropdownMenu @ midiInMenu;
-    DropdownMenu @ midiOutMenu;
+    DropdownMenu @ devicesMenu;
     DropdownMenu @ modifiersMenu;
     DropdownMenu @ effectsMenu;
     DropdownMenu @ sequencerMenu;
@@ -99,16 +99,20 @@ public class UIManager {
         this.midiInMenu --> UIScene.scene;
     }
 
-    fun void setMidiOutUI(Enum midiOutDeviceNames[]) {
-        new DropdownMenu(midiOutDeviceNames) @=> this.midiOutMenu;
+    fun void setDevicesUI(Enum deviceNames[]) {
+        if (deviceNames.size() < 1) {
+            deviceNames << new Enum(-1, "No Devices Found");
+        }
+
+        new DropdownMenu(deviceNames) @=> this.devicesMenu;
 
         // Set name and scale
-        this.midiOutMenu.setSelectedName("Midi Out");
-        this.midiOutMenu.setScale(4., 0.5);
+        this.devicesMenu.setSelectedName("Devices");
+        this.devicesMenu.setScale(4., 0.5);
 
-        @(0.3, 0.3, 1.) => this.midiOutMenu.sca;
-        1.201 => this.midiOutMenu.posZ;
-        this.midiOutMenu --> UIScene.scene;
+        @(0.3, 0.3, 1.) => this.devicesMenu.sca;
+        1.201 => this.devicesMenu.posZ;
+        this.devicesMenu --> UIScene.scene;
     }
 
     fun void setModifiersUI() {
@@ -280,10 +284,10 @@ public class UIManager {
                 this.topMenuBar.posY() => this.midiInMenu.posY;
             }
 
-            if (this.midiOutMenu != null) {
-                this.midiOutMenu.selectedBox.box.scaWorld().x => float midiOutMenuWidth;
-                -midiOutMenuWidth - menuBuffer => this.midiOutMenu.posX;
-                this.topMenuBar.posY() => this.midiOutMenu.posY;
+            if (this.devicesMenu != null) {
+                this.devicesMenu.selectedBox.box.scaWorld().x => float devicesMenuWidth;
+                -devicesMenuWidth - menuBuffer => this.devicesMenu.posX;
+                this.topMenuBar.posY() => this.devicesMenu.posY;
             }
 
             if (this.modifiersMenu != null) {
@@ -334,7 +338,7 @@ public class UIManager {
             // Move Top UI menus
             translatePos => this.audioMenu.translate;
             translatePos => this.midiInMenu.translate;
-            translatePos => this.midiOutMenu.translate;
+            translatePos => this.devicesMenu.translate;
             translatePos => this.modifiersMenu.translate;
             translatePos => this.effectsMenu.translate;
             translatePos => this.sequencerMenu.translate;
@@ -397,19 +401,24 @@ public class UIManager {
                 }
 
                 // If MidiOut Menu is open, check if clicking on a menu entry
-                if (this.midiOutMenu.expanded) {
-                    this.mouseOverMenuEntry(mouseWorldPos, this.midiOutMenu) => int dropdownMenuEntryIdx;
+                if (this.devicesMenu.expanded) {
+                    this.mouseOverMenuEntry(mouseWorldPos, this.devicesMenu) => int dropdownMenuEntryIdx;
                     if (dropdownMenuEntryIdx != -1) {
-                        this.midiOutMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
-                        this.addNodeEvent.set(NodeType.MIDI_OUT, menuEntry.name, menuEntry.id);
+                        this.devicesMenu.getMenuEntry(dropdownMenuEntryIdx) @=> Enum menuEntry;
+                        NodeType.NONE => int nodeType;
+                        if (menuEntry.name.find("Game-Trak") != -1) {
+                            NodeType.GAMETRAK => nodeType;
+                        }
+
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
 
                     // Close menu for both 1) clicking on an entry or 2) clicking out of the menu
-                    this.midiOutMenu.collapse();
+                    this.devicesMenu.collapse();
                 // Otherwise, check if clicking on the MidiOut Menu, then open it
-                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.midiOutMenu) && !this.midiOutMenu.expanded) {
-                    this.midiOutMenu.expand();
+                } else if (this.mouseOverDropdownMenu(mouseWorldPos, this.devicesMenu) && !this.devicesMenu.expanded) {
+                    this.devicesMenu.expand();
                 }
 
                 // If OSC Menu is open, check if clicking on a menu entry
@@ -527,9 +536,9 @@ public class UIManager {
                 this.midiInMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
-            if (this.midiOutMenu.expanded) {
-                this.mouseOverMenuEntry(mouseWorldPos, this.midiOutMenu) => int dropdownMenuEntryIdx;
-                this.midiOutMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
+            if (this.devicesMenu.expanded) {
+                this.mouseOverMenuEntry(mouseWorldPos, this.devicesMenu) => int dropdownMenuEntryIdx;
+                this.devicesMenu.highlightHoveredEntry(dropdownMenuEntryIdx);
             }
 
             if (this.modifiersMenu.expanded) {

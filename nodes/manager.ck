@@ -4,6 +4,7 @@
 @import {"../ui/composeBox.ck", "../ui/menu.ck", "../ui/popupBox.ck"}
 @import "base.ck"
 @import {"ambisonics.ck", "audio.ck", "midi.ck", "tuning.ck"}
+@import {"devices/gametrack.ck"}
 @import "livecoding/chuck.ck"
 @import "modifiers/random.ck"
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
@@ -59,6 +60,9 @@ public class NodeManager {
     // Available Midi Devices
     Enum midiInDevices[0];
     Enum midiOutDevices[0];
+
+    // Available HID Devices
+    Enum hidDevices[0];
 
     // Events
     MoveCameraEvent @ moveCameraEvent;
@@ -206,6 +210,13 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_OUT) {
                 AudioOutNode audioOut(dac.channels());
                 this.addNode(audioOut, true);
+            } else if (addNodeEvent.nodeType == NodeType.GAMETRAK) {
+                GameTrakNode gametrak(addNodeEvent.menuIdx);
+
+                // Check if GameTrak was opened successfully
+                if (gametrak.good) {
+                    this.addNode(gametrak, true);
+                }
             } else if (addNodeEvent.nodeType == NodeType.AMB_PANNER) {
                 AmbPannerNode ambPanner();
                 this.addNode(ambPanner, true);
@@ -424,6 +435,22 @@ public class NodeManager {
                 }
             }
         }
+    }
+
+    fun void findHIDDevices() {
+        int deviceId;
+        20 => int deviceLimit;
+
+        while (deviceId < deviceLimit) {
+            Hid hid;
+            if (!hid.openJoystick(deviceId, true)) return;
+
+            // Add HID device to list
+            this.hidDevices << new Enum(deviceId, hid.name());
+
+            deviceId++;
+        }
+
     }
 
     fun int midiDeviceConnected(string deviceName, string nodeClassName) {
