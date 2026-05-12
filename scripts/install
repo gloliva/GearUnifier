@@ -1,0 +1,17 @@
+#!/bin/bash
+
+if command -v chump >/dev/null 2>&1
+then
+    echo "Installing ChucK Packages..."
+    chump install HashMap;
+    chump install Patch;
+    chump install smuck;
+    echo "Updating ChucK Packages..."
+    chump update HashMap;
+    chump update Patch;
+    chump update smuck;
+    echo "Done installing/updating."
+else
+    echo "Command \"chump\" not found, please install the latest version of the \"chuck\" programming language."
+    echo "\"chuck\" can be downloaded here: https://chuck.stanford.edu/release/"
+fi
