@@ -88,6 +88,10 @@ public class UIManager {
     }
 
     fun void setMidiInUI(Enum midiInDeviceNames[]) {
+        if (midiInDeviceNames.size() < 1) {
+            midiInDeviceNames << new Enum(-1, "No Midi Devices Found");
+        }
+
         new DropdownMenu(midiInDeviceNames) @=> this.midiInMenu;
 
         // Set name and scale
