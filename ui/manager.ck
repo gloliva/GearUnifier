@@ -34,6 +34,10 @@ public class UIManager {
     MoveCameraEvent @ moveCameraEvent;
     SaveLoadEvent @ saveLoadEvent;
 
+    // Menu Text
+    "No Devices Found" => string NO_DEVICES;
+    "No MIDI Devices Found" => string NO_MIDI;
+
     fun @construct(AddNodeEvent addNodeEvent, MoveCameraEvent moveCameraEvent, SaveLoadEvent saveLoadEvent) {
         addNodeEvent @=> this.addNodeEvent;
         moveCameraEvent @=> this.moveCameraEvent;
@@ -89,7 +93,7 @@ public class UIManager {
 
     fun void setMidiInUI(Enum midiInDeviceNames[]) {
         if (midiInDeviceNames.size() < 1) {
-            midiInDeviceNames << new Enum(-1, "No Midi Devices Found");
+            midiInDeviceNames << new Enum(-1, this.NO_MIDI);
         }
 
         new DropdownMenu(midiInDeviceNames) @=> this.midiInMenu;
@@ -104,8 +108,14 @@ public class UIManager {
     }
 
     fun void setDevicesUI(Enum deviceNames[]) {
+        for (int idx; idx < deviceNames.size(); idx++) {
+            if (deviceNames[idx].name.length() > 16) {
+                new Enum(idx, deviceNames[idx].name.substring(0, 16) + "...") @=> deviceNames[idx];
+            }
+        }
+
         if (deviceNames.size() < 1) {
-            deviceNames << new Enum(-1, "No Devices Found");
+            deviceNames << new Enum(-1, this.NO_DEVICES);
         }
 
         new DropdownMenu(deviceNames) @=> this.devicesMenu;
@@ -412,9 +422,11 @@ public class UIManager {
                         NodeType.NONE => int nodeType;
                         if (menuEntry.name.find("Game-Trak") != -1) {
                             NodeType.GAMETRAK => nodeType;
+                        } else if (menuEntry.name.find(this.NO_DEVICES) == -1) {
+                            NodeType.MOUSE => nodeType;
                         }
 
-                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id);
+                        this.addNodeEvent.set(nodeType, menuEntry.name, menuEntry.id, menuEntry.id);
                         this.addNodeEvent.signal();
                     }
 

@@ -6,7 +6,7 @@
 public class NodeType {
     // MIDI and HID Devices
     0 => static int MIDI_IN;
-    1 => static int MIDI_OUT;
+    1 => static int MOUSE;
     2 => static int GAMETRAK;
 
     // Audio and IO

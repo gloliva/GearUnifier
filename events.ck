@@ -2,11 +2,19 @@ public class AddNodeEvent extends Event {
     int nodeType;
     string menuName;
     int menuIdx;
+    -1 => int deviceId;
 
     fun void set(int type, string name, int idx) {
         type => this.nodeType;
         name => this.menuName;
         idx => this.menuIdx;
+    }
+
+    fun void set(int type, string name, int idx, int deviceId) {
+        type => this.nodeType;
+        name => this.menuName;
+        idx => this.menuIdx;
+        deviceId => this.deviceId;
     }
 }
 

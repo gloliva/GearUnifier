@@ -4,7 +4,7 @@
 @import {"../ui/composeBox.ck", "../ui/menu.ck", "../ui/popupBox.ck"}
 @import "base.ck"
 @import {"ambisonics.ck", "audio.ck", "midi.ck", "tuning.ck"}
-@import {"devices/gametrack.ck"}
+@import {"devices/gametrack.ck", "devices/mouse.ck"}
 @import "livecoding/chuck.ck"
 @import "modifiers/random.ck"
 @import {"sequencing/composer.ck", "sequencing/sequencer.ck", "sequencing/player.ck", "sequencing/transport.ck"}
@@ -59,7 +59,6 @@ public class NodeManager {
 
     // Available Midi Devices
     Enum midiInDevices[0];
-    Enum midiOutDevices[0];
 
     // Available HID Devices
     Enum hidDevices[0];
@@ -210,6 +209,13 @@ public class NodeManager {
             } else if (addNodeEvent.nodeType == NodeType.AUDIO_OUT) {
                 AudioOutNode audioOut(dac.channels());
                 this.addNode(audioOut, true);
+            } else if (addNodeEvent.nodeType == NodeType.MOUSE) {
+                MouseNode mouse(addNodeEvent.deviceId);
+
+                // Check if mouse device was opened successfully
+                if (mouse.good) {
+                    this.addNode(mouse, true);
+                }
             } else if (addNodeEvent.nodeType == NodeType.GAMETRAK) {
                 GameTrakNode gametrak(addNodeEvent.menuIdx);
 
@@ -387,15 +393,24 @@ public class NodeManager {
     }
 
     fun void findHIDDevices() {
+        Hid hid;
         20 => int deviceLimit;
+
+        // Mouse devices
         for (int deviceId; deviceId < deviceLimit; deviceId++) {
-            Hid hid;
-            if (!hid.openJoystick(deviceId, true)) return;
+            if (!hid.openMouse(deviceId, true)) break;
 
             // Add HID device to list
             this.hidDevices << new Enum(deviceId, hid.name());
         }
 
+        // Joystick devices
+        for (int deviceId; deviceId < deviceLimit; deviceId++) {
+            if (!hid.openJoystick(deviceId, true)) break;
+
+            // Add HID device to list
+            this.hidDevices << new Enum(deviceId, hid.name());
+        }
     }
 
     fun int midiDeviceConnected(string deviceName, string nodeClassName) {

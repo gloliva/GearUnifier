@@ -53,7 +53,6 @@ public class GameTrakNode extends Node {
         1 => this.good;
         deadzone => this.deadzones[0] => this.deadzones[1];
 
-
         // Set node ID and name
         "GameTrak-Node" => this.name;
         this.setNodeID();
@@ -110,7 +109,6 @@ public class GameTrakNode extends Node {
                                 this.deadzones[1] => deadzone;
                             }
                             Math.clampf((1 - ((this.msg.axisPosition + 1) / 2) - deadzone), 0., 1.) => this.nodeOutputsBox.outs(axis).next;
-                            // if( axis[this.msg.which].next() < 0 ) 0 => axis[this.msg.which].next;
                         }
                     }
                 }
