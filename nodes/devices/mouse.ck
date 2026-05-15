@@ -101,4 +101,13 @@ public class MouseNode extends Node {
             }
         }
     }
+
+    fun HashMap serialize() {
+        super.serialize() @=> HashMap data;
+
+        data.set("deviceId", this.mouse.num());
+        data.set("deviceName", this.mouse.name());
+
+        return data;
+    }
 }

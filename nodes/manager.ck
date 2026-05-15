@@ -580,6 +580,14 @@ public class NodeManager {
             } else if (nodeClassName == AudioOutNode.typeOf().name()) {
                 AudioOutNode audioOut(dac.channels());
                 audioOut @=> currNode;
+            } else if (nodeClassName == MouseNode.typeOf().name()) {
+                nodeData.getInt("deviceId") => int deviceId;
+                MouseNode mouse(deviceId);
+                mouse @=> currNode;
+            } else if (nodeClassName == GameTrakNode.typeOf().name()) {
+                nodeData.getInt("deviceId") => int deviceId;
+                GameTrakNode gametrak(deviceId);
+                gametrak @=> currNode;
             } else if (nodeClassName == AmbPannerNode.typeOf().name()) {
                 // Instantiate node
                 nodeData.getInt("order") => int order;

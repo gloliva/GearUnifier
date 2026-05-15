@@ -122,4 +122,13 @@ public class GameTrakNode extends Node {
             }
         }
     }
+
+    fun HashMap serialize() {
+        super.serialize() @=> HashMap data;
+
+        data.set("deviceId", this.gt.num());
+        data.set("deviceName", this.gt.name());
+
+        return data;
+    }
 }
