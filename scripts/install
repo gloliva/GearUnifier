@@ -11,6 +11,9 @@ then
     chump update Patch;
     chump update smuck;
     echo "Done installing/updating."
+    echo "Moving chugins into chugin directory..."
+    cp ./chugins/UUID.chug /usr/local/lib/chuck/
+    echo "Done with installation."
 else
     echo "Command \"chump\" not found, please install the latest version of the \"chuck\" programming language."
     echo "\"chuck\" can be downloaded here: https://chuck.stanford.edu/release/"
