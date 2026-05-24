@@ -4,9 +4,37 @@
 
 **Gear Unifier for Modular Systems (GUMS)** is a node-based interactive software system that aids in the composition and performance with physical hardware. GUMS allows the user to easily connect and control hardware of different protocols, whether MIDI, serial, or control voltage (CV). The GUMS software is extremely configurable for a variety of hardware and software configurations. An example use case might be to connect 1) a custom MIDI controller that sends CC values over Bluetooth, 2) a traditional MIDI keyboard that supports polyphonic aftertouch, and 3) a Eurorack modular synthesizer for a live performance. In this setup, the user may want to modulate the FM parameters of a Eurorack oscillator module using the custom MIDI controller, and control the pitch of this oscillator with the MIDI keyboard. This is simply achieved by adding two MIDI In nodes to the patch, which correspond to their respective MIDI devices, selecting the appropriate outputs (CC data for the first MIDI node, pitch, gate, and aftertouch data for the second MIDI node), and connecting the outputs to the Audio Out node, which will be configured to be the Eurorack's audio interface module.
 
+## Table of Contents
+
+- [Why GUMS Over Other Software?](#why-gums-over-other-software)
+- [Why the name GUMS?](#why-the-name-gums)
+- [How to Run](#how-to-run)
+- [Nodes and Connections](#nodes-and-connections)
+- [Components of a Node](#components-of-a-node)
+  - [Name Section](#name-section)
+  - [Options Section](#options-section)
+  - [Inputs Section](#inputs-section)
+  - [Outputs Section](#outputs-section)
+  - [Buttons Section](#buttons-section)
+  - [Visibility Section](#visibility-section)
+- [Navigating the UI](#navigating-the-ui)
+- [Sequencing](#sequencing)
+  - [MIDI Sequencing](#midi-sequencing)
+  - [Composer System](#composer-system)
+  - [Composer Notation](#composer-notation)
+
+---
+
 ## Why GUMS Over Other Software?
 
 GUMS was designed to be in the middle of programs like Max/MSP and VCV Rack in terms of ease-of-use and depth of customization. Providing high level abstractions for device management and sequencing, this allows the user to get started making music faster compared to programming languages (Max/MSP, ChucK, supercollider, etc.). On the flip side, GUMS provides enough flexibility and configuration through custom scripting should they want to go deeper than what a DAW or programs like VCV Rack provide.
+
+
+## Why the name GUMS?
+
+Naming projects is difficult. I came up with the name Gear Unifier for Modular Systems early in the development process, and although I spent a lot of time trying to think of a catchier name, this one stuck. *Modular Systems* in this context does not just refer to modular synthesizers, but to any setup that involves many individual components, such as custom serial devices, networked computers, MIDI keyboards, analog synths, digital software, etc. The purpose of this software is to act as the central hub between those devices, giving complete control to the user in how they communicate with each other (i.e., *unifying* them).
+
+GUMS, while being a silly acronym, is like "gum", a sticky substance used to bind objects together (e.g., your gear). Yes, this is all a bit of stretch to justify a bad name.
 
 
 ## How to Run
