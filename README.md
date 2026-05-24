@@ -1,26 +1,13 @@
 # Gear Unifier for Modular Systems (GUMS)
 
-## Technical Documentation
-
----
-
 ## Application Overview
 
 **Gear Unifier for Modular Systems (GUMS)** is a node-based interactive software system that aids in the composition and performance with physical hardware. GUMS allows the user to easily connect and control hardware of different protocols, whether MIDI, serial, or control voltage (CV). The GUMS software is extremely configurable for a variety of hardware and software configurations. An example use case might be to connect 1) a custom MIDI controller that sends CC values over Bluetooth, 2) a traditional MIDI keyboard that supports polyphonic aftertouch, and 3) a Eurorack modular synthesizer for a live performance. In this setup, the user may want to modulate the FM parameters of a Eurorack oscillator module using the custom MIDI controller, and control the pitch of this oscillator with the MIDI keyboard. This is simply achieved by adding two MIDI In nodes to the patch, which correspond to their respective MIDI devices, selecting the appropriate outputs (CC data for the first MIDI node, pitch, gate, and aftertouch data for the second MIDI node), and connecting the outputs to the Audio Out node, which will be configured to be the Eurorack's audio interface module.
-
----
 
 ## Why GUMS Over Other Software?
 
 GUMS was designed to be in the middle of programs like Max/MSP and VCV Rack in terms of ease-of-use and depth of customization. Providing high level abstractions for device management and sequencing, this allows the user to get started making music faster compared to programming languages (Max/MSP, ChucK, supercollider, etc.). On the flip side, GUMS provides enough flexibility and configuration through custom scripting should they want to go deeper than what a DAW or programs like VCV Rack provide.
 
----
-
-## How to Download
-
-GUMS can be downloaded from GitHub: [GUMS Repository](https://github.com/gloliva/GearUnifier).
-
----
 
 ## How to Run
 
@@ -108,8 +95,6 @@ Finally, if you want to explicitly set the sample rate to 48000, the full comman
 chuck --adc:2 --in:8 --dac:3 --out:16 --srate:48000 main.ck
 ```
 
----
-
 ## Nodes and Connections
 
 GUMS is a node-based visual configuration language, similar to languages like Max/MSP and TouchDesigner. The user will add nodes to the screen, which can represent a variety of objects, such as MIDI devices, sequencers, effects, live coding environments, data visualization tools, and more.
@@ -121,8 +106,6 @@ Clicking on a node's output jack will start a connection. A red wire will appear
 Most outputs are sent as a "signal", which is a continuous stream of numbers. Whether this signal is processed at audio rate (sample by sample) or control rate is dependent upon both the output type and how the input node processes the incoming data. The goal is that this distinction for different inputs/outputs is typically "what you would expect" and happens "automagically".
 
 For inputs that toggle or trigger something, a value greater than 0. is considered HIGH (or "on") and a value of less than or equal to 0. is considered LOW (or "off"). For example, the MIDI In node has a "Latch" input. Sending in a HIGH signal to this input will enable Latch (meaning MIDI Note Off messages will be ignored). Sending a LOW signal will turn Latch off.
-
----
 
 ## Components of a Node
 
@@ -158,8 +141,6 @@ Some nodes have a Button section, which is a series of buttons, that when clicke
 
 Most nodes have a Visibility section, which is the very last section of the node. The Visibility section allows you to hide sections of a node that you might not currently need. The Visibility section is tailored to each node, but most nodes have three buttons, "Opts" corresponding to the Options section, "Ins" for the Inputs section, and "Outs" for the outputs. Clicking on this button will cause the entire section to be hidden and the node's size to be condensed. To show the section, click on the corresponding button again. Hiding a node's inputs or outputs section will not remove or disable the connections, they will still continue to function as you would expect.
 
----
-
 ## Navigating the UI
 
 The GUMS UI is fairly simple to use. The top bar contains the categories of nodes that can be added to the current patch. Clicking on one of these categories opens a dropdown menu with the different nodes that belong to that category. For example, clicking on the "Effects" category shows the nodes "Wavefolder", "Distortion", and "Delay". Clicking on a node in this dropdown menu will add it to the middle of the screen.
@@ -169,8 +150,6 @@ Nodes can be selected by clicking on the node's "Name" section. This is the top 
 The bottom bar contains the buttons for Saving and Loading patches. These buttons function as you would expect: the "Save As" button will always open a File Dialog window that allows you to enter the name and location of the saved patch. If the patch has not previously been saved, the "Save" button will act as the "Save As" button, otherwise it will save to the current filename. The "Load" button will open a File Dialog window that allows you to select a previously saved patch. The "New" button will clear the screen, removing all connections and nodes. **WARNING**: when a File Dialog window is opened, the software will pause, which will halt all audio and graphics processing until the window is closed. Thus, it is advised to not open this window via Save/Load in the middle of a performance.
 
 Vertical mouse scrolling will scroll the screen up / down. Zoom into a patch with `cmd`-`+` and zoom out with `cmd`-`-`.
-
----
 
 ## Sequencing
 
